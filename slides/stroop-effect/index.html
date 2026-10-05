@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ストループ効果 — 人間もAIも「意味」に引っ張られる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#1B1F2A; --muted:#5B6274; --line:#D8DDE6; --soft:#E9EDF3;
+  --R:#E60012; --B:#0068B7; --G:#009944; --Y:#EDBE00;
+  --ok:#0B7A3E; --ng:#C4001A;
+  --disp:"Dela Gothic One","Hiragino Kaku Gothic StdN","Yu Gothic",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14171E; --panel:#1C2029; --ink:#EDEFF4; --muted:#A3AABB; --line:#2E3442; --soft:#242A35;
+    --R:#FF4B4B; --B:#4CA2FF; --G:#2FCF79; --Y:#FFD83A; --ok:#3DDC84; --ng:#FF6B6B;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14171E; --panel:#1C2029; --ink:#EDEFF4; --muted:#A3AABB; --line:#2E3442; --soft:#242A35;
+  --R:#FF4B4B; --B:#4CA2FF; --G:#2FCF79; --Y:#FFD83A; --ok:#3DDC84; --ng:#FF6B6B;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.7;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--B);outline-offset:3px}
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{flex:1;position:relative;overflow:hidden}
+.slide{position:absolute;inset:0;overflow-y:auto;padding:clamp(20px,4vw,56px) clamp(20px,6vw,88px);opacity:0;visibility:hidden;transition:opacity .35s ease}
+.slide.on{opacity:1;visibility:visible}
+.inner{max-width:1080px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)}
+h1,h2{font-family:var(--disp);font-weight:400;margin:0;line-height:1.25;letter-spacing:.02em}
+h2{font-size:clamp(24px,3.6vw,40px)}
+.lead{font-size:clamp(15px,1.7vw,19px);color:var(--muted);margin:0;max-width:44em}
+.kR{color:var(--R)}.kB{color:var(--B)}.kG{color:var(--G)}.kY{color:var(--Y)}
+
+/* nav */
+.nav{display:flex;align-items:center;gap:12px;padding:10px clamp(16px,4vw,40px);border-top:1px solid var(--line);background:var(--panel)}
+.nav .pg{font-size:13px;color:var(--muted);min-width:4.5em;font-variant-numeric:tabular-nums}
+.bar{flex:1;height:4px;background:var(--soft);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink);transition:width .35s ease}
+.nb{border:1px solid var(--line);background:transparent;border-radius:8px;width:40px;height:36px;font-size:18px;line-height:1}
+.nb:disabled{opacity:.3;cursor:default}
+
+/* hero */
+.hero-words{display:flex;gap:clamp(6px,2vw,22px);flex-wrap:wrap}
+.hero-words button{border:0;background:none;padding:0;font-family:var(--disp);font-size:clamp(72px,15vw,180px);line-height:1;transition:color .25s}
+.hero h1{font-size:clamp(34px,5.6vw,64px)}
+.hint{font-size:13px;color:var(--muted)}
+
+/* test */
+.test{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(16px,3vw,36px);align-items:stretch}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:clamp(16px,2.4vw,28px)}
+.screen{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:300px}
+.word{font-family:var(--disp);font-size:clamp(84px,14vw,150px);line-height:1;min-height:1em}
+.fix{font-size:48px;color:var(--muted)}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%;max-width:440px}
+.keys button{border:2px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 0;font-weight:700;font-size:18px}
+.keys button span{display:block;font-size:11px;color:var(--muted);font-weight:500}
+.keys button[data-c="R"]{border-color:var(--R)}.keys button[data-c="B"]{border-color:var(--B)}.keys button[data-c="G"]{border-color:var(--G)}.keys button[data-c="Y"]{border-color:var(--Y)}
+.primary{border:0;background:var(--ink);color:var(--bg);border-radius:10px;padding:12px 22px;font-weight:700}
+.ghost{border:1px solid var(--line);background:transparent;border-radius:10px;padding:10px 18px}
+.res h3{margin:0 0 8px;font-size:16px}
+.rt{display:grid;grid-template-columns:5em 1fr 4.5em;align-items:center;gap:10px;margin:10px 0;font-size:14px}
+.rt .track{height:14px;background:var(--soft);border-radius:7px;overflow:hidden}
+.rt .fill{height:100%;width:0;border-radius:7px;transition:width .6s ease}
+.rt b{text-align:right;font-variant-numeric:tabular-nums}
+.big{font-family:var(--disp);font-size:clamp(30px,4vw,44px);line-height:1.2}
+.small{font-size:13px;color:var(--muted);margin:0}
+.prog{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* grid */
+.gwrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(16px,3vw,40px);align-items:center}
+.kgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(4px,1vw,10px);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:clamp(12px,2vw,24px)}
+.kgrid span{font-family:var(--disp);font-size:clamp(26px,4.4vw,48px);text-align:center;line-height:1.35;border-radius:8px;transition:opacity .25s,background .25s,transform .25s}
+.kgrid.focus span{opacity:.12}
+.kgrid.focus span.hit{opacity:1;background:var(--soft);transform:scale(1.06)}
+.kgrid.mono span{color:var(--ink)!important}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:9px 14px;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:700}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.chip{border:2px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.chip .lb{font-weight:700}
+.chip .ct{font-family:var(--disp);font-size:28px;line-height:1.1}
+.chip[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.ctl{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* explain */
+.pts{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(12px,2vw,24px);margin:0;padding:0;list-style:none}
+.pts li{border-top:3px solid var(--ink);padding-top:14px}
+.pts h3{margin:0 0 6px;font-size:18px}
+.pts p{margin:0;color:var(--muted);font-size:15px}
+.pathway{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:15px}
+.pathway .node{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 14px}
+.pathway .fast{font-weight:700}
+.arrow{color:var(--muted)}
+
+/* AI */
+.q{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 18px;font-weight:700;align-self:flex-start}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:8px 16px;font-size:14px}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.tblw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:15px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{padding:10px 12px;text-align:center;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{font-weight:700;background:var(--soft)}
+td:first-child,th:first-child{text-align:left}
+td.ok{color:var(--ok);font-weight:700}
+td.ng{color:var(--ng);font-weight:700}
+td.ans{font-weight:700}
+.verdict{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--muted);border-radius:12px;padding:14px 18px}
+.verdict.good{border-left-color:var(--ok)}.verdict.bad{border-left-color:var(--ng)}
+.verdict p{margin:0}
+.verdict .tag{font-family:var(--disp);font-size:22px;white-space:nowrap}
+
+/* takeaways */
+.take{display:grid;gap:14px;margin:0;padding:0;list-style:none;counter-reset:t}
+.take li{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px}
+.take li::before{counter-increment:t;content:counter(t);font-family:var(--disp);font-size:28px;line-height:1}
+.take h3{margin:0 0 2px;font-size:18px}
+.take p{margin:0;color:var(--muted);font-size:15px}
+.prompt{font-family:var(--body);background:var(--soft);border-radius:8px;padding:2px 8px;color:var(--ink)}
+
+/* venue launcher */
+.launch{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(12px,2vw,24px)}
+.launch .box{display:flex;flex-direction:column;gap:10px}
+.launch h3{margin:0;font-size:20px}
+.launch p{margin:0;color:var(--muted);font-size:15px}
+.launch .row{margin-top:auto}
+.spd{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.spd button{border:0;background:transparent;padding:8px 12px;font-size:14px}
+.spd button[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:700}
+
+/* venue overlay */
+.venue{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;flex-direction:column;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) 24px calc(env(safe-area-inset-bottom,0px) + 16px)}
+.venue.open{display:flex}
+.vtop{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px;color:var(--muted)}
+.vtop .close{border:1px solid var(--line);background:transparent;border-radius:8px;padding:6px 14px}
+.vmain{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3vh;text-align:center;min-height:0}
+.vtitle{font-family:var(--disp);font-size:min(7vw,9vh);line-height:1.2;margin:0}
+.vsub{font-size:min(3.2vw,3.6vh);color:var(--muted);margin:0}
+.vgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:1vh 3vw}
+.vgrid span{font-family:var(--disp);font-size:min(9vw,11vh);line-height:1.15}
+.vword{font-family:var(--disp);font-size:min(42vw,58vh);line-height:1}
+.vclock{font-family:var(--disp);font-size:min(5vw,6vh);font-variant-numeric:tabular-nums;color:var(--muted)}
+.vres{display:grid;grid-template-columns:auto 1fr auto;gap:2vh 3vw;align-items:center;width:min(1100px,90vw);font-size:min(3.4vw,4vh)}
+.vres .track{height:min(4vh,40px);background:var(--soft);border-radius:999px;overflow:hidden}
+.vres .fill{height:100%;width:0;border-radius:999px;transition:width 1s ease}
+.vres b{font-family:var(--disp);font-weight:400;font-variant-numeric:tabular-nums}
+.vbig{font-family:var(--disp);font-size:min(6vw,8vh);margin:0}
+.vkey{font-size:15px;color:var(--muted)}
+.vkey kbd{font-family:var(--body);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 8px;background:var(--panel);color:var(--ink)}
+.vbtn{border:0;background:var(--ink);color:var(--bg);border-radius:12px;padding:14px 30px;font-weight:700;font-size:min(2.6vw,22px)}
+
+@media (max-width:760px){
+  .launch{grid-template-columns:1fr}
+  .test,.gwrap{grid-template-columns:1fr}
+  .pts{grid-template-columns:1fr}
+  .screen{min-height:240px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="deck">
+  <main class="stage" id="stage">
+
+    <!-- 1 -->
+    <section class="slide hero on" aria-label="タイトル">
+      <div class="inner">
+        <div class="hero-words" id="heroWords"></div>
+        <h1>ストループ効果</h1>
+        <p class="lead">人間もAIも、文字の「意味」に引っ張られる。<br>体験して、AIの回答と比べてみましょう。</p>
+        <p class="hint">文字をクリックすると色が入れ替わります。← → キーでスライド移動。</p>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" aria-label="体験テスト">
+      <div class="inner">
+        <h2>体験：文字ではなく「色」を答える</h2>
+        <p class="lead">表示された文字の<b>インクの色</b>をできるだけ速く選んでください（キー 1〜4 でも可）。全16問。</p>
+        <div class="test">
+          <div class="box screen" id="tScreen">
+            <div class="word" id="tWord"><span class="fix">＋</span></div>
+            <div class="keys" id="tKeys">
+              <button data-c="R">赤<span>1</span></button>
+              <button data-c="B">青<span>2</span></button>
+              <button data-c="G">緑<span>3</span></button>
+              <button data-c="Y">黄<span>4</span></button>
+            </div>
+            <div class="row"><button class="primary" id="tStart">テストを始める</button><span class="prog" id="tProg"></span></div>
+          </div>
+          <div class="box res" id="tRes">
+            <h3>あなたの反応時間（正解のみの平均）</h3>
+            <div class="rt"><span>一致</span><div class="track"><div class="fill" id="fC" style="background:var(--G)"></div></div><b id="vC">—</b></div>
+            <div class="rt"><span>不一致</span><div class="track"><div class="fill" id="fI" style="background:var(--R)"></div></div><b id="vI">—</b></div>
+            <p class="big" id="tDiff">—</p>
+            <p class="small" id="tNote">一致＝「赤」を赤で表示、不一致＝「赤」を青で表示。多くの人は不一致で遅くなり、間違いも増えます。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2b venue -->
+    <section class="slide" aria-label="会場で体験">
+      <div class="inner">
+        <h2>会場で体験：全員で色を声に出す</h2>
+        <p class="lead">大型スクリーンに全画面で映し、参加者全員で文字の<b>色</b>を読み上げます。進行はスペースキー1つで操作できます。</p>
+        <div class="launch">
+          <div class="box">
+            <h3>タイム比較</h3>
+            <p>「一致」と「不一致」の30文字を順に表示し、全員で色を読み終えるまでの時間を計ります。最後に2つのタイムを並べて比較します。</p>
+            <div class="row"><button class="primary" data-venue="race">全画面で始める</button></div>
+          </div>
+          <div class="box">
+            <h3>フラッシュ</h3>
+            <p>文字が1つずつ大きく自動で切り替わります。色を即答してもらい、速度を上げるほど言い間違いが増えます。</p>
+            <div class="row">
+              <div class="spd" role="group" aria-label="切り替え速度" id="spd">
+                <button data-ms="1500" aria-pressed="false">ゆっくり</button>
+                <button data-ms="1000" aria-pressed="true">ふつう</button>
+                <button data-ms="650" aria-pressed="false">速い</button>
+              </div>
+              <button class="primary" data-venue="flash">全画面で始める</button>
+            </div>
+          </div>
+        </div>
+        <p class="small">操作：<b>スペース</b> 開始・停止・次へ　<b>Esc</b> 終了</p>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" aria-label="数える問題">
+      <div class="inner">
+        <h2>問題：「赤」はいくつ？</h2>
+        <div class="gwrap">
+          <div class="kgrid" id="kgrid" aria-label="30文字の色付き漢字"></div>
+          <div class="ctl">
+            <p class="lead" style="font-size:16px">「赤」を数えるとき、<b>文字の種類</b>と<b>文字の色</b>のどちらで数えますか？ 数え方を選び、色を押すと該当箇所が光ります。</p>
+            <div class="seg" role="group" aria-label="数え方">
+              <button id="mWord" aria-pressed="true">文字の種類で数える</button>
+              <button id="mColor" aria-pressed="false">文字の色で数える</button>
+            </div>
+            <div class="chips" id="chips"></div>
+            <div class="row">
+              <button class="ghost" id="revealAll">答えをすべて表示</button>
+              <button class="ghost" id="monoBtn" aria-pressed="false">色を消す</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" aria-label="ストループ効果とは">
+      <div class="inner">
+        <h2>ストループ効果とは</h2>
+        <p class="lead">文字の意味と色が食い違うと、色を答えるのが遅くなり、誤りも増える現象。1935年に心理学者J.R.ストループが報告しました。</p>
+        <div class="pathway" aria-label="処理の流れ">
+          <span class="node fast">文字を読む（自動・高速）</span><span class="arrow">⇄ 衝突</span><span class="node">色を判断する（意識的・低速）</span><span class="arrow">→</span><span class="node">遅延・誤答</span>
+        </div>
+        <ul class="pts">
+          <li><h3>読むのは止められない</h3><p>大人にとって読字は自動化された処理。意識しなくても意味が先に立ち上がる。</p></li>
+          <li><h3>抑える力が必要</h3><p>正しく答えるには、自動的な反応を抑える「抑制」が要る。疲労や焦りで崩れやすい。</p></li>
+          <li><h3>質問の曖昧さも混乱の元</h3><p>「赤の文字」は種類か色か。問いが二通りに読めると、人もAIも解釈がぶれる。</p></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" aria-label="AIに聞いてみた">
+      <div class="inner">
+        <h2>同じ画像をAIに聞いてみた</h2>
+        <p class="q">「赤、青、黄、緑の文字はそれぞれいくつありますか？」</p>
+        <div class="tabs" role="tablist" id="aiTabs">
+          <button role="tab" aria-selected="true" data-k="gpt">ChatGPT</button>
+          <button role="tab" aria-selected="false" data-k="flash">Gemini Flash</button>
+          <button role="tab" aria-selected="false" data-k="think">Gemini 思考モード</button>
+        </div>
+        <div class="tblw"><table id="aiTable"></table></div>
+        <div class="verdict" id="aiVerdict"></div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" aria-label="示唆">
+      <div class="inner">
+        <h2>AI活用への示唆</h2>
+        <ol class="take">
+          <li><div><h3>問いの解釈を一つに絞る</h3><p>「赤の文字」ではなく <span class="prompt">文字の色が赤いものを数えて</span> のように、何を基準にするかを明示する。</p></div></li>
+          <li><div><h3>画像の数え上げは誤りやすい前提で使う</h3><p>高速モデルは自信をもって間違える。位置の列挙や再カウントをさせ、結果を検算する。</p></div></li>
+          <li><div><h3>精度が要る作業は推論モデルを選ぶ</h3><p>思考モードは曖昧さに気づき、二通りの解釈で正しく答えた。用途でモデルを使い分ける。</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+  </main>
+  <nav class="nav" aria-label="スライド操作">
+    <button class="nb" id="prev" aria-label="前へ">‹</button>
+    <span class="pg" id="pg">1 / 7</span>
+    <div class="bar"><i id="barI"></i></div>
+    <button class="nb" id="next" aria-label="次へ">›</button>
+  </nav>
+</div>
+<div class="venue" id="venue" role="dialog" aria-modal="true" aria-label="会場体験">
+  <div class="vtop"><span id="vStep"></span><button class="close" id="vClose">終了（Esc）</button></div>
+  <div class="vmain" id="vMain"></div>
+</div>
+
+<script>
+(function(){
+  const NAMES={R:'赤',B:'青',G:'緑',Y:'黄'}, KEYS=['R','B','G','Y'];
+  const col=c=>`var(--${c})`;
+
+  /* ---------- navigation ---------- */
+  const slides=[...document.querySelectorAll('.slide')]; let cur=0;
+  const pg=document.getElementById('pg'), barI=document.getElementById('barI');
+  function go(i){
+    cur=Math.max(0,Math.min(slides.length-1,i));
+    slides.forEach((s,k)=>{s.classList.toggle('on',k===cur);s.setAttribute('aria-hidden',k!==cur)});
+    pg.textContent=`${cur+1} / ${slides.length}`; barI.style.width=((cur+1)/slides.length*100)+'%';
+    document.getElementById('prev').disabled=cur===0; document.getElementById('next').disabled=cur===slides.length-1;
+  }
+  document.getElementById('prev').onclick=()=>go(cur-1);
+  document.getElementById('next').onclick=()=>go(cur+1);
+  let tx=null;
+  document.getElementById('stage').addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+  document.getElementById('stage').addEventListener('touchend',e=>{if(tx===null)return;const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>70)go(cur+(d<0?1:-1));tx=null});
+
+  /* ---------- hero ---------- */
+  const hero=document.getElementById('heroWords');
+  function derange(){let p;do{p=[...KEYS].sort(()=>Math.random()-.5)}while(p.some((c,i)=>c===KEYS[i]));return p}
+  function paintHero(){const p=derange();hero.innerHTML='';KEYS.forEach((k,i)=>{const b=document.createElement('button');b.textContent=NAMES[k];b.style.color=col(p[i]);b.setAttribute('aria-label',`${NAMES[k]}（${NAMES[p[i]]}色）`);b.onclick=paintHero;hero.appendChild(b)})}
+  paintHero();
+
+  /* ---------- reaction test ---------- */
+  const tWord=document.getElementById('tWord'), tStart=document.getElementById('tStart'), tProg=document.getElementById('tProg');
+  let trials=[], ti=-1, t0=0, live=false, results=[], timer=null;
+  function build(){
+    const t=[];
+    for(let i=0;i<16;i++){const w=KEYS[i%4];let c=w;if(i>=8){do{c=KEYS[Math.floor(Math.random()*4)]}while(c===w)}t.push({w,c,cong:i<8})}
+    return t.sort(()=>Math.random()-.5);
+  }
+  function next(){
+    ti++; live=false;
+    if(ti>=trials.length){finish();return}
+    tProg.textContent=`${ti+1} / ${trials.length}`;
+    tWord.innerHTML='<span class="fix">＋</span>';
+    timer=setTimeout(()=>{const tr=trials[ti];tWord.textContent=NAMES[tr.w];tWord.style.color=col(tr.c);t0=performance.now();live=true},450+Math.random()*300);
+  }
+  function answer(c){
+    if(!live)return; live=false;
+    const tr=trials[ti]; results.push({cong:tr.cong,ok:c===tr.c,rt:performance.now()-t0});
+    tWord.textContent=''; setTimeout(next,150);
+  }
+  function finish(){
+    tWord.style.color=''; tWord.innerHTML='<span class="fix">✓</span>'; tProg.textContent='完了';
+    tStart.textContent='もう一度'; tStart.hidden=false;
+    const avg=a=>a.length?a.reduce((s,x)=>s+x.rt,0)/a.length:NaN;
+    const c=results.filter(r=>r.cong&&r.ok), i=results.filter(r=>!r.cong&&r.ok);
+    const ac=avg(c), ai=avg(i), mx=Math.max(ac||0,ai||0)*1.15||1;
+    document.getElementById('vC').textContent=isNaN(ac)?'—':Math.round(ac)+'ms';
+    document.getElementById('vI').textContent=isNaN(ai)?'—':Math.round(ai)+'ms';
+    document.getElementById('fC').style.width=(ac/mx*100||0)+'%';
+    document.getElementById('fI').style.width=(ai/mx*100||0)+'%';
+    const d=Math.round(ai-ac), ec=results.filter(r=>r.cong&&!r.ok).length, ei=results.filter(r=>!r.cong&&!r.ok).length;
+    document.getElementById('tDiff').textContent=isNaN(d)?'—':(d>0?`不一致で +${d}ms 遅い`:`差 ${d}ms`);
+    document.getElementById('tNote').textContent=`誤答　一致：${ec}問／不一致：${ei}問。${d>0?'意味が色の判断を邪魔した分だけ遅れています。':'今回は差が出ませんでした。もう一度試すと変わることがあります。'}`;
+  }
+  tStart.onclick=()=>{clearTimeout(timer);trials=build();results=[];ti=-1;tStart.hidden=true;
+    ['vC','vI','tDiff'].forEach(id=>document.getElementById(id).textContent='—');['fC','fI'].forEach(id=>document.getElementById(id).style.width='0');
+    next()};
+  document.getElementById('tKeys').addEventListener('click',e=>{const b=e.target.closest('button');if(b)answer(b.dataset.c)});
+
+  document.addEventListener('keydown',e=>{
+    if(document.getElementById('venue').classList.contains('open'))return;
+    if(e.key==='ArrowRight'||e.key==='PageDown'){go(cur+1);return}
+    if(e.key==='ArrowLeft'||e.key==='PageUp'){go(cur-1);return}
+    if(cur===1&&['1','2','3','4'].includes(e.key))answer(KEYS[+e.key-1]);
+  });
+
+  /* ---------- counting grid (from original slide) ---------- */
+  const G=[['赤','R'],['青','B'],['緑','G'],['黄','B'],['赤','Y'],['青','B'],
+           ['緑','G'],['黄','R'],['赤','B'],['緑','G'],['黄','R'],['青','R'],
+           ['赤','Y'],['赤','R'],['緑','R'],['青','B'],['緑','R'],['黄','Y'],
+           ['青','G'],['黄','R'],['赤','G'],['緑','Y'],['黄','G'],['赤','B'],
+           ['青','Y'],['緑','B'],['青','B'],['黄','G'],['赤','G'],['緑','Y']];
+  const kg=document.getElementById('kgrid');
+  const cells=G.map(([w,c])=>{const s=document.createElement('span');s.textContent=w;s.style.color=col(c);s.dataset.w=w;s.dataset.c=c;kg.appendChild(s);return s});
+  let mode='word', sel=null, shown=new Set();
+  const chips=document.getElementById('chips');
+  const count=k=>mode==='word'?G.filter(g=>g[0]===NAMES[k]).length:G.filter(g=>g[1]===k).length;
+  function renderChips(){
+    chips.innerHTML='';
+    KEYS.forEach(k=>{const b=document.createElement('button');b.className='chip';b.style.borderColor=sel===k?'':col(k);
+      b.setAttribute('aria-pressed',sel===k);
+      b.innerHTML=`<span class="lb" style="color:${col(k)}">${NAMES[k]}</span><span class="ct">${shown.has(mode+k)?count(k):'?'}</span>`;
+      b.onclick=()=>{sel=sel===k?null:k;shown.add(mode+k);apply()};chips.appendChild(b)});
+  }
+  function apply(){
+    kg.classList.toggle('focus',!!sel);
+    cells.forEach(s=>s.classList.toggle('hit',!!sel&&(mode==='word'?s.dataset.w===NAMES[sel]:s.dataset.c===sel)));
+    renderChips();
+  }
+  function setMode(m){mode=m;document.getElementById('mWord').setAttribute('aria-pressed',m==='word');document.getElementById('mColor').setAttribute('aria-pressed',m==='color');apply()}
+  document.getElementById('mWord').onclick=()=>setMode('word');
+  document.getElementById('mColor').onclick=()=>setMode('color');
+  document.getElementById('revealAll').onclick=()=>{KEYS.forEach(k=>{shown.add('word'+k);shown.add('color'+k)});apply()};
+  const mono=document.getElementById('monoBtn');
+  mono.onclick=()=>{const on=!kg.classList.contains('mono');kg.classList.toggle('mono',on);mono.setAttribute('aria-pressed',on);mono.textContent=on?'色を戻す':'色を消す'};
+  apply();
+
+  /* ---------- AI comparison ---------- */
+  const TRUTH={word:[8,7,8,7],color:[8,8,8,6]}; // 赤 青 緑 黄
+  const AI={
+    gpt:{rows:[['文字の種類',[8,7,8,7]],['「赤色は何個？」',[6,null,null,null],'color']],
+         cls:'bad',tag:'半分正解',text:'文字の種類は正確に数えたが、追加で「赤色は何個？」と聞くと6個と回答（正解は8個）。色の判断で崩れた。'},
+    flash:{rows:[['文字の種類',[6,6,9,9]]],
+         cls:'bad',tag:'不正解',text:'位置まで列挙して自信ありげに回答したが、4色すべてで誤り。もっともらしい根拠と正しさは別物。'},
+    think:{rows:[['文字の種類',[8,7,8,7]],['文字の色',[8,8,8,6],'color']],
+         cls:'good',tag:'正解',text:'質問が二通りに読めることに自ら気づき、「漢字の種類」と「フォントの色」の両方で答え、どちらも正解。'}
+  };
+  const tbl=document.getElementById('aiTable'), ver=document.getElementById('aiVerdict');
+  function showAI(k){
+    document.querySelectorAll('#aiTabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.k===k));
+    const a=AI[k];
+    let h='<thead><tr><th>項目</th>'+KEYS.map(c=>`<th style="color:${col(c)}">${NAMES[c]}</th>`).join('')+'</tr></thead><tbody>';
+    a.rows.forEach(([lab,vals,basis])=>{
+      const t=TRUTH[basis||'word'];
+      h+=`<tr><td>AIの回答：${lab}</td>`+vals.map((v,i)=>v===null?'<td>—</td>':`<td class="${v===t[i]?'ok':'ng'}">${v} ${v===t[i]?'○':'×'}</td>`).join('')+'</tr>';
+    });
+    h+='<tr><td>正解：文字の種類</td>'+TRUTH.word.map(v=>`<td class="ans">${v}</td>`).join('')+'</tr>';
+    h+='<tr><td>正解：文字の色</td>'+TRUTH.color.map(v=>`<td class="ans">${v}</td>`).join('')+'</tr></tbody>';
+    tbl.innerHTML=h;
+    ver.className='verdict '+a.cls;
+    ver.innerHTML=`<span class="tag">${a.tag}</span><p>${a.text}</p>`;
+  }
+  document.getElementById('aiTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)showAI(b.dataset.k)});
+  showAI('gpt');
+
+  /* ---------- venue (large screen) ---------- */
+  const venue=document.getElementById('venue'), vMain=document.getElementById('vMain'), vStep=document.getElementById('vStep');
+  let vMode=null, vState=0, vT0=0, vRaf=null, vTimes={}, flashMs=1000, flashTimer=null, flashI=0, flashSeq=[];
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const fmt=ms=>(ms/1000).toFixed(1)+'秒';
+  function makeGrid(cong){
+    const out=[];let prev=null;
+    for(let i=0;i<30;i++){let w;do{w=pick(KEYS)}while(w===prev);prev=w;let c=w;if(!cong){do{c=pick(KEYS)}while(c===w)}out.push([w,c])}
+    return out;
+  }
+  const gridHTML=g=>'<div class="vgrid">'+g.map(([w,c])=>`<span style="color:${col(c)}">${NAMES[w]}</span>`).join('')+'</div>';
+  const keyHint=t=>`<p class="vkey"><kbd>スペース</kbd> ${t}</p>`;
+  function tick(){document.getElementById('vClock').textContent=fmt(performance.now()-vT0);vRaf=requestAnimationFrame(tick)}
+
+  // race: 0 intro1, 1 running1, 2 done1, 3 intro2, 4 running2, 5 result
+  const RACE=[{k:'C',label:'ラウンド1：一致',sub:'文字と色が同じです'},{k:'I',label:'ラウンド2：不一致',sub:'文字と色が違います'}];
+  let grids={};
+  function renderRace(){
+    cancelAnimationFrame(vRaf);
+    const r=RACE[vState<3?0:1];
+    if(vState===0||vState===3){
+      vStep.textContent=r.label;
+      vMain.innerHTML=`<p class="vtitle">${r.label}</p><p class="vsub">${r.sub}。左上から順に、文字の<b>色</b>を全員で声に出して読んでください。</p><button class="vbtn" id="vGo">スタート</button>${keyHint('でスタート')}`;
+    }else if(vState===1||vState===4){
+      vMain.innerHTML=gridHTML(grids[r.k])+`<div class="vclock" id="vClock">0.0秒</div>${keyHint('で読み終わり')}`;
+      vT0=performance.now();tick();
+    }else if(vState===2){
+      vMain.innerHTML=`<p class="vsub">ラウンド1のタイム</p><p class="vtitle">${fmt(vTimes.C)}</p><button class="vbtn" id="vGo">ラウンド2へ</button>${keyHint('で次へ')}`;
+    }else{
+      vStep.textContent='結果';
+      const mx=Math.max(vTimes.C,vTimes.I)*1.1, d=vTimes.I-vTimes.C;
+      vMain.innerHTML=`<p class="vbig">${d>0?`不一致は ${fmt(d)} 長くかかった`:'今回はほぼ差なし'}</p>
+        <div class="vres">
+          <span>一致</span><div class="track"><div class="fill" style="background:var(--G)" data-w="${vTimes.C/mx*100}"></div></div><b>${fmt(vTimes.C)}</b>
+          <span>不一致</span><div class="track"><div class="fill" style="background:var(--R)" data-w="${vTimes.I/mx*100}"></div></div><b>${fmt(vTimes.I)}</b>
+        </div>
+        <p class="vsub">文字の意味が、色の読み上げを邪魔しています。</p>
+        <div class="row"><button class="vbtn" id="vAgain">もう一度</button></div>${keyHint('で終了')}`;
+      requestAnimationFrame(()=>requestAnimationFrame(()=>vMain.querySelectorAll('.fill').forEach(f=>f.style.width=f.dataset.w+'%')));
+      const a=document.getElementById('vAgain'); if(a)a.onclick=e=>{e.stopPropagation();startRace()};
+    }
+    const g=document.getElementById('vGo'); if(g)g.onclick=e=>{e.stopPropagation();raceNext()};
+  }
+  function raceNext(){
+    if(vState===1)vTimes.C=performance.now()-vT0;
+    if(vState===4)vTimes.I=performance.now()-vT0;
+    if(vState===5){closeVenue();return}
+    vState++;renderRace();
+  }
+  function startRace(){grids={C:makeGrid(true),I:makeGrid(false)};vTimes={};vState=0;renderRace()}
+
+  // flash: 0 intro, 1 running, 2 paused, 3 end
+  function renderFlash(){
+    clearTimeout(flashTimer);
+    if(vState===0){
+      vStep.textContent='フラッシュ';
+      vMain.innerHTML=`<p class="vtitle">文字の<b>色</b>を即答</p><p class="vsub">文字が切り替わるたびに、全員で色を声に出してください。全20文字。</p><button class="vbtn" id="vGo">スタート</button>${keyHint('でスタート／一時停止')}`;
+      document.getElementById('vGo').onclick=e=>{e.stopPropagation();flashToggle()};
+    }else if(vState===3){
+      vStep.textContent='フラッシュ 終了';
+      vMain.innerHTML=`<p class="vtitle">言い間違えた人は？</p><p class="vsub">意味を読む処理は止められません。速くなるほど、読んだ文字をそのまま口にしてしまいます。</p><div class="row"><button class="vbtn" id="vAgain">もう一度</button></div>${keyHint('で終了')}`;
+      document.getElementById('vAgain').onclick=e=>{e.stopPropagation();startFlash()};
+    }else{
+      const [w,c]=flashSeq[flashI];
+      vStep.textContent=`${flashI+1} / ${flashSeq.length}${vState===2?'　一時停止中':''}`;
+      vMain.innerHTML=`<div class="vword" style="color:${col(c)}">${NAMES[w]}</div>`;
+      if(vState===1)flashTimer=setTimeout(()=>{flashI++;if(flashI>=flashSeq.length)vState=3;renderFlash()},flashMs);
+    }
+  }
+  function flashToggle(){
+    if(vState===0){vState=1}else if(vState===1){vState=2}else if(vState===2){vState=1}else{closeVenue();return}
+    renderFlash();
+  }
+  function startFlash(){
+    flashSeq=[];let prev=null;
+    for(let i=0;i<20;i++){let w;do{w=pick(KEYS)}while(w===prev);prev=w;let c=w;if(i>=2&&Math.random()<.8){do{c=pick(KEYS)}while(c===w)}flashSeq.push([w,c])}
+    flashI=0;vState=0;renderFlash();
+  }
+
+  function openVenue(mode){
+    vMode=mode;venue.classList.add('open');
+    try{if(document.fullscreenEnabled&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}
+    mode==='race'?startRace():startFlash();
+    if(document.activeElement)document.activeElement.blur();
+  }
+  function closeVenue(){
+    clearTimeout(flashTimer);cancelAnimationFrame(vRaf);venue.classList.remove('open');vMode=null;
+    try{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}
+  }
+  document.querySelectorAll('[data-venue]').forEach(b=>b.onclick=()=>openVenue(b.dataset.venue));
+  document.getElementById('vClose').onclick=closeVenue;
+  document.getElementById('spd').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;flashMs=+b.dataset.ms;
+    document.querySelectorAll('#spd button').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+  document.addEventListener('keydown',e=>{
+    if(!venue.classList.contains('open'))return;
+    if(e.key==='Escape'){closeVenue();return}
+    if(e.key===' '||e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();vMode==='race'?raceNext():flashToggle()}
+  });
+  // presenter remote / click on the stage also advances
+  vMain.addEventListener('click',e=>{if(e.target.closest('button'))return;if(vMode==='race'&&(vState===1||vState===4))raceNext()});
+  document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&venue.classList.contains('open')){/* keep overlay; user may exit fullscreen only */}});
+
+  go(0);
+})();
+</script>
+</body>
+</html>

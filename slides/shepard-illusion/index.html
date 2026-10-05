@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>奥行きの錯視を体験する</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e6ebe7; --ink:#1f2a27; --muted:#5b6964; --line:#c3ccc7;
+  --top:#b8794a; --top-hi:#cf9466; --side:#7c4a2a; --leg:#5c3420;
+  --accent:#2347c9; --accent-soft:rgba(35,71,201,.18); --btn:#fff;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161c1b; --ink:#e7eeea; --muted:#9aa8a3; --line:#2f3a37;
+    --top:#c08354; --top-hi:#d9a074; --side:#6d3f22; --leg:#4d2b18;
+    --accent:#7d9bff; --accent-soft:rgba(125,155,255,.22); --btn:#222b29;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161c1b; --ink:#e7eeea; --muted:#9aa8a3; --line:#2f3a37;
+  --top:#c08354; --top-hi:#d9a074; --side:#6d3f22; --leg:#4d2b18;
+  --accent:#7d9bff; --accent-soft:rgba(125,155,255,.22); --btn:#222b29;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.7}
+main{max-width:880px;margin:0 auto;padding:28px 20px 48px}
+h1{font-size:clamp(1.9rem,5vw,2.8rem);font-weight:900;letter-spacing:.02em;margin:0 0 4px;line-height:1.2}
+.lead{color:var(--muted);margin:0 0 20px;max-width:40em}
+.stage{background:var(--btn);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+svg{display:block;width:100%;height:auto}
+.depth{transition:opacity .6s ease}
+.top{transition:fill .4s ease, stroke .4s ease}
+.q{padding:18px 20px;border-top:1px solid var(--line)}
+.q p{margin:0 0 10px;font-weight:700;font-size:1.1rem}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-size:.95rem;padding:9px 16px;border-radius:999px;border:1.5px solid var(--line);
+  background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--ink)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.answer{display:none;margin-top:12px;padding:12px 14px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:4px}
+.answer.show{display:block}
+.controls{padding:16px 20px 20px;border-top:1px solid var(--line);display:grid;gap:14px}
+.controls label{font-size:.9rem;color:var(--muted);display:flex;align-items:center;gap:12px}
+input[type=range]{flex:1;accent-color:var(--accent)}
+.why{margin-top:28px;max-width:40em}
+.why h2{font-size:1.15rem;margin:0 0 6px}
+.why p{margin:0 0 10px;color:var(--muted)}
+h2.sec{font-size:1.55rem;font-weight:900;margin:48px 0 2px;line-height:1.3}
+h2.sec:first-of-type{margin-top:28px}
+.fade{transition:opacity .6s ease}
+@media (prefers-reduced-motion: reduce){.depth,.top,.fade{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>奥行きを読みすぎる脳</h1>
+  <p class="lead">平面の図形でも、脳は勝手に立体として解釈します。2つの実験で確かめてみましょう。</p>
+
+  <h2 class="sec">シェパード錯視</h2>
+  <p class="lead">2つのテーブルの天板を見比べてください。直感で答えてから、仕掛けを確かめます。</p>
+
+  <div class="stage">
+    <svg id="svg" viewBox="0 0 800 440" role="img" aria-label="2つのテーブルの図"></svg>
+
+    <div class="q" id="quiz">
+      <p>2つの天板、形と大きさはどうですか？</p>
+      <div class="row">
+        <button data-a="left">左のほうが細長い</button>
+        <button data-a="right">右のほうが大きい</button>
+        <button data-a="same">まったく同じ</button>
+      </div>
+      <div class="answer" id="answer"></div>
+    </div>
+
+    <div class="controls">
+      <div class="row">
+        <button class="primary" id="overlay">左の天板を右に重ねる</button>
+        <button id="depthBtn" aria-pressed="false">脚と厚みを消す</button>
+        <button id="edgeBtn" aria-pressed="false">長辺を色分け</button>
+      </div>
+      <label>重ね合わせ
+        <input type="range" id="slider" min="0" max="1000" value="0" aria-label="重ね合わせの進み具合">
+      </label>
+    </div>
+  </div>
+
+  <section class="why">
+    <h2>なぜ違って見えるのか</h2>
+    <p>脳は脚や厚みの手がかりから「これは奥行きのある机だ」と解釈し、奥へ伸びる辺を自動的に長く補正します。左は長辺が奥へ、右は短辺が奥へ向いているため、同じ平行四辺形が違う形に見えます。</p>
+    <p>脚を消すと錯覚が弱まるのは、立体の手がかりがなくなるからです。それでも完全には消えないことが多く、この補正が意識では止められない処理だと分かります。</p>
+  </section>
+
+  <h2 class="sec">楕円は「傾いた円」に見える</h2>
+  <p class="lead">網膜に映るのはただの楕円です。それでも脳は「斜めから見た円」として受け取ろうとします。</p>
+
+  <div class="stage">
+    <svg id="esvg" viewBox="0 0 800 420" role="img" aria-label="楕円と、それを傾いた円として見る図"></svg>
+
+    <div class="q" id="equiz">
+      <p>この図形、何に見えますか？</p>
+      <div class="row">
+        <button data-a="flat">平らな楕円</button>
+        <button data-a="tilt">斜めから見た円（皿やコインの上面）</button>
+      </div>
+      <div class="answer" id="eanswer"></div>
+    </div>
+
+    <div class="controls">
+      <div class="row">
+        <button class="primary" id="tiltBtn">円を倒してみる</button>
+        <button id="ctxBtn" aria-pressed="false">立体の手がかりを足す</button>
+        <button id="sideBtn" aria-pressed="false">横から見た図を出す</button>
+      </div>
+      <label>縦横比
+        <input type="range" id="eslider" min="15" max="100" value="38" aria-label="楕円の縦横比">
+        <span id="ereadout" style="min-width:9.5em;text-align:right"></span>
+      </label>
+    </div>
+  </div>
+
+  <section class="why">
+    <h2>なぜ円に見えるのか</h2>
+    <p>現実の世界には、正面から見た楕円よりも、斜めから見た円（皿、コップの口、タイヤ）のほうがずっと多くあります。そのため脳は、楕円を見ると「よくある円が傾いている」という解釈を優先します。これを形の恒常性と呼びます。</p>
+    <p>縦横比が分かれば傾きも逆算できます。比率が 0.5 なら約 60°、0.38 なら約 68° 倒した円と同じ見え方です。円柱や影の手がかりを足すと、この解釈はさらに強くなります。</p>
+  </section>
+</main>
+
+<script>
+(function(){
+  const svg = document.getElementById('svg');
+  const U = [78,-168], V = [118,34];         // 天板の2辺ベクトル（共通形状）
+  const CA = [235,215], CB = [565,250];       // 各天板の中心
+  const ROT_B = -96;                          // 右の天板の回転角
+  const LEG_H = 78, SKIRT = 14, LEG_W = 9;
+  let t = 0, showDepth = true, showEdges = false, anim = null;
+
+  const rot = (p,deg)=>{const r=deg*Math.PI/180,c=Math.cos(r),s=Math.sin(r);return [p[0]*c-p[1]*s,p[0]*s+p[1]*c]};
+  function verts(center,deg){
+    const u=rot(U,deg), v=rot(V,deg);
+    const p0=[-(u[0]+v[0])/2,-(u[1]+v[1])/2];
+    const pts=[p0,[p0[0]+u[0],p0[1]+u[1]],[p0[0]+u[0]+v[0],p0[1]+u[1]+v[1]],[p0[0]+v[0],p0[1]+v[1]]];
+    return pts.map(p=>[p[0]+center[0],p[1]+center[1]]);
+  }
+  const P = pts=>pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+
+  function table(center,deg){
+    const v = verts(center,deg);
+    const cx=center[0], cy=center[1];
+    let legsBack='', legsFront='', skirt='';
+    // 脚：一番奥（最上部）の頂点は天板の後ろに描く
+    const order=[...v].sort((a,b)=>a[1]-b[1]);
+    order.forEach((p,i)=>{
+      const r=`<rect x="${(p[0]-LEG_W/2).toFixed(1)}" y="${p[1].toFixed(1)}" width="${LEG_W}" height="${LEG_H}" fill="var(--leg)"/>`;
+      if(i===0) legsBack+=r; else legsFront+=r;
+    });
+    // 手前を向く辺に厚み
+    for(let i=0;i<4;i++){
+      const a=v[i], b=v[(i+1)%4];
+      const mx=(a[0]+b[0])/2-cx, my=(a[1]+b[1])/2-cy;
+      let nx=b[1]-a[1], ny=-(b[0]-a[0]);
+      if(nx*mx+ny*my<0){nx=-nx;ny=-ny}
+      if(ny>0){
+        skirt+=`<polygon points="${P([a,b,[b[0],b[1]+SKIRT],[a[0],a[1]+SKIRT]])}" fill="var(--side)"/>`;
+      }
+    }
+    return {v, back:legsBack, front:legsFront+skirt};
+  }
+
+  function edgeLines(v){
+    // v0-v1 と v2-v3 が長辺
+    return `<line x1="${v[0][0]}" y1="${v[0][1]}" x2="${v[1][0]}" y2="${v[1][1]}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="${v[2][0]}" y1="${v[2][1]}" x2="${v[3][0]}" y2="${v[3][1]}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
+  }
+
+  const ease = x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+
+  function render(){
+    const A=table(CA,0), B=table(CB,ROT_B);
+    const k=ease(t);
+    const gc=[CA[0]+(CB[0]-CA[0])*k, CA[1]+(CB[1]-CA[1])*k];
+    const gv=verts(gc,ROT_B*k);
+    const op=showDepth?1:0;
+    const topFill = 'var(--top)';
+    let s='';
+    s+=`<g class="depth" style="opacity:${op}">${A.back}${B.back}${A.front}${B.front}</g>`;
+    s+=`<polygon class="top" points="${P(A.v)}" fill="${topFill}" stroke="var(--side)" stroke-width="1.5" stroke-linejoin="round" style="opacity:${t>0?0.35:1}"/>`;
+    s+=`<polygon class="top" points="${P(B.v)}" fill="${topFill}" stroke="var(--side)" stroke-width="1.5" stroke-linejoin="round"/>`;
+    if(showEdges){ s+=edgeLines(A.v)+edgeLines(B.v); }
+    if(t>0){
+      s+=`<polygon points="${P(gv)}" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="7 5" stroke-linejoin="round"/>`;
+      if(showEdges) s+=edgeLines(gv);
+    }
+    svg.innerHTML=s;
+    document.getElementById('slider').value=Math.round(t*1000);
+  }
+
+  function animateTo(target){
+    if(anim) cancelAnimationFrame(anim);
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){t=target;render();updateBtn();return}
+    const start=t, dur=1800*Math.abs(target-start)+1, t0=performance.now();
+    const step=now=>{
+      const p=Math.min(1,(now-t0)/dur);
+      t=start+(target-start)*p; render();
+      if(p<1) anim=requestAnimationFrame(step); else {anim=null;updateBtn()}
+    };
+    anim=requestAnimationFrame(step);
+  }
+  const ovBtn=document.getElementById('overlay');
+  function updateBtn(){ ovBtn.textContent = t>0.5 ? '元の位置に戻す' : '左の天板を右に重ねる'; }
+
+  ovBtn.addEventListener('click',()=>animateTo(t>0.5?0:1));
+  document.getElementById('slider').addEventListener('input',e=>{
+    if(anim){cancelAnimationFrame(anim);anim=null}
+    t=e.target.value/1000; render(); updateBtn();
+  });
+  const dBtn=document.getElementById('depthBtn');
+  dBtn.addEventListener('click',()=>{
+    showDepth=!showDepth; dBtn.setAttribute('aria-pressed',String(!showDepth));
+    dBtn.textContent = showDepth ? '脚と厚みを消す' : '脚と厚みを戻す'; render();
+  });
+  const eBtn=document.getElementById('edgeBtn');
+  eBtn.addEventListener('click',()=>{
+    showEdges=!showEdges; eBtn.setAttribute('aria-pressed',String(showEdges)); render();
+  });
+
+  const msgs={
+    left:'ほとんどの人がそう感じます。でも実は、2つの天板は回転させただけのまったく同じ平行四辺形です。',
+    right:'そう見えますよね。でも実は、2つの天板は回転させただけのまったく同じ平行四辺形です。',
+    same:'正解です。とはいえ、知っていても違って見えるはず。重ねて確かめてみましょう。'
+  };
+  document.querySelectorAll('#quiz [data-a]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('#quiz [data-a]').forEach(x=>x.setAttribute('aria-pressed','false'));
+      b.setAttribute('aria-pressed','true');
+      const a=document.getElementById('answer');
+      a.textContent=msgs[b.dataset.a]; a.classList.add('show');
+      setTimeout(()=>animateTo(1),500);
+    });
+  });
+
+  render();
+})();
+
+(function(){
+  const svg=document.getElementById('esvg');
+  const CX=290, CY=150, RX=150, HMAX=130;
+  const DX=690, DY=210, R=72;
+  let ratio=0.38, target=0.38, ctx=false, side=false, anim=null;
+
+  function render(){
+    const ry=RX*ratio;
+    const th=Math.acos(ratio), deg=Math.round(th*180/Math.PI);
+    const H=HMAX*Math.sin(th);
+    let s='';
+    // 立体の手がかり：影と円柱
+    s+=`<g class="fade" style="opacity:${ctx?1:0}">
+      <ellipse cx="${CX+34}" cy="${CY+H+8}" rx="${RX*1.08}" ry="${Math.max(ry*1.05,4)}" fill="var(--ink)" opacity=".13"/>
+      <path d="M${CX-RX},${CY} L${CX-RX},${CY+H} A${RX} ${ry} 0 0 0 ${CX+RX},${CY+H} L${CX+RX},${CY} Z" fill="var(--side)"/>
+      <ellipse cx="${CX}" cy="${CY}" rx="${RX*0.82}" ry="${ry*0.82}" fill="none" stroke="var(--side)" stroke-width="2" opacity=".55"/>
+    </g>`;
+    s+=`<ellipse cx="${CX}" cy="${CY}" rx="${RX}" ry="${ry}" fill="var(--top)" stroke="var(--side)" stroke-width="1.5"/>`;
+    if(ctx) s+=`<ellipse cx="${CX}" cy="${CY}" rx="${RX*0.82}" ry="${ry*0.82}" fill="none" stroke="var(--side)" stroke-width="2" opacity=".5"/>`;
+    // 横から見た図
+    const sx=R*Math.sin(th), sy=R*Math.cos(th);
+    s+=`<g class="fade" style="opacity:${side?1:0}">
+      <rect x="548" y="70" width="234" height="280" rx="14" fill="var(--bg)" stroke="var(--line)"/>
+      <text x="565" y="98" fill="var(--muted)" font-size="14">横から見ると</text>
+      <path d="M572,${DY} q14,-12 28,0 q-14,12 -28,0 Z" fill="none" stroke="var(--ink)" stroke-width="2"/>
+      <circle cx="586" cy="${DY}" r="4" fill="var(--ink)"/>
+      <line x1="${DX}" y1="${DY-R}" x2="${DX}" y2="${DY+R}" stroke="var(--muted)" stroke-dasharray="3 4"/>
+      <line x1="618" y1="${DY-sy}" x2="${DX-sx}" y2="${DY-sy}" stroke="var(--accent)" stroke-dasharray="5 4"/>
+      <line x1="618" y1="${DY+sy}" x2="${DX+sx}" y2="${DY+sy}" stroke="var(--accent)" stroke-dasharray="5 4"/>
+      <line x1="618" y1="${DY-sy}" x2="618" y2="${DY+sy}" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+      <line x1="${DX-sx}" y1="${DY-sy}" x2="${DX+sx}" y2="${DY+sy}" stroke="var(--side)" stroke-width="7" stroke-linecap="round"/>
+      <text x="${DX+14}" y="${DY-R+6}" fill="var(--ink)" font-size="15" font-weight="700">${deg}°</text>
+      <text x="565" y="334" fill="var(--muted)" font-size="13">青：目に映る高さ</text>
+    </g>`;
+    svg.innerHTML=s;
+    document.getElementById('eslider').value=Math.round(ratio*100);
+    document.getElementById('ereadout').textContent=`比率 ${ratio.toFixed(2)}　傾き ${deg}°`;
+  }
+
+  function animate(from,to,dur){
+    if(anim) cancelAnimationFrame(anim);
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){ratio=to;render();return}
+    const t0=performance.now();
+    const step=now=>{
+      const p=Math.min(1,(now-t0)/dur), k=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+      ratio=from+(to-from)*k; render();
+      if(p<1) anim=requestAnimationFrame(step); else anim=null;
+    };
+    anim=requestAnimationFrame(step);
+  }
+
+  document.getElementById('tiltBtn').addEventListener('click',()=>{
+    const to = target>0.95 ? 0.38 : target;
+    ratio=1; render();
+    setTimeout(()=>animate(1,to,1800),350);
+  });
+  document.getElementById('eslider').addEventListener('input',e=>{
+    if(anim){cancelAnimationFrame(anim);anim=null}
+    ratio=target=e.target.value/100; render();
+  });
+  const cBtn=document.getElementById('ctxBtn');
+  const setCtx=v=>{ctx=v;cBtn.setAttribute('aria-pressed',String(v));cBtn.textContent=v?'立体の手がかりを消す':'立体の手がかりを足す';render()};
+  cBtn.addEventListener('click',()=>setCtx(!ctx));
+  const sBtn=document.getElementById('sideBtn');
+  const setSide=v=>{side=v;sBtn.setAttribute('aria-pressed',String(v));sBtn.textContent=v?'横から見た図を隠す':'横から見た図を出す';render()};
+  sBtn.addEventListener('click',()=>setSide(!side));
+
+  const msgs={
+    flat:'紙の上では、確かに平らな楕円です。それでも「何かの丸い面を斜めから見ている」感じが少しありませんか。円柱と影を足すと、その感覚がはっきりします。',
+    tilt:'多くの人がそう答えます。目に映っているのは楕円なのに、脳は「傾いた円」という解釈を選びました。横から見た図で、どれだけ倒れているかを確認できます。'
+  };
+  document.querySelectorAll('#equiz [data-a]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('#equiz [data-a]').forEach(x=>x.setAttribute('aria-pressed','false'));
+      b.setAttribute('aria-pressed','true');
+      const a=document.getElementById('eanswer');
+      a.textContent=msgs[b.dataset.a]; a.classList.add('show');
+      setTimeout(()=>{setCtx(true); setSide(true);},400);
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
