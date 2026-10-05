@@ -3,7 +3,35 @@
     "title": "AIに情報を正しく渡す共通ルール",
     "description": "Markdown・JSON・YAML・CSV・RDB・SQL・APIを、例とインタラクティブな操作で理解する",
     "path": "slides/ai-data-levels/",
-    "tags": ["データ形式", "基礎"],
+    "tags": ["基礎"],
+    "updated": "2026-10-05"
+  },
+  {
+    "title": "AI QUEST　あなたはAI時代の何者になる？",
+    "description": "質問に答えて冒険者タイプを診断。AI時代の自分の役割を、ゲーム感覚で見つける",
+    "path": "slides/ai-quest/",
+    "tags": ["診断"],
+    "updated": "2026-10-05"
+  },
+  {
+    "title": "生成AIは、画像の中のモノを正しく数えられるか",
+    "description": "リンゴ18個・キャラクター19体を各AIに数えさせた検証。数えるのが苦手な理由と、実務で数えさせる3原則",
+    "path": "slides/ai-counting/",
+    "tags": ["AIの得意・不得意"],
+    "updated": "2026-10-05"
+  },
+  {
+    "title": "奥行きを読みすぎる脳（シェパード錯視）",
+    "description": "同じ形が違って見える錯視を体験し、脳が見えないものを補って判断するしくみを知る",
+    "path": "slides/shepard-illusion/",
+    "tags": ["人間の認知"],
+    "updated": "2026-10-05"
+  },
+  {
+    "title": "ストループ効果　人間もAIも「意味」に引っ張られる",
+    "description": "文字ではなく色を答える体験と、同じ画像をAIに聞いた結果から、AI活用への示唆を考える",
+    "path": "slides/stroop-effect/",
+    "tags": ["人間の認知", "AIの得意・不得意"],
     "updated": "2026-10-05"
   }
 ]
