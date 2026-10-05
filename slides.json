@@ -1,0 +1,9 @@
+[
+  {
+    "title": "AIに情報を正しく渡す共通ルール",
+    "description": "Markdown・JSON・YAML・CSV・RDB・SQL・APIを、例とインタラクティブな操作で理解する",
+    "path": "slides/ai-data-levels/",
+    "tags": ["データ形式", "基礎"],
+    "updated": "2026-10-05"
+  }
+]
