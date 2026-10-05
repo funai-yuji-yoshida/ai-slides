@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AIに情報を正しく渡す共通ルール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2; --line:#D9DEE7; --ok:#1F7A5A; --ng:#B3412F;
+  --s0:#C9CFDA; --s1:#9FAAD0; --s2:#7584C2; --s3:#5363B0; --s4:#3A4A9E; --s5:#2B3A8C;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --mark:#F2C230; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE; --line:#2C3346; --ok:#5BC79E; --ng:#E98572;
+    --s0:#3A4156; --s1:#465392; --s2:#5262A8; --s3:#6475BE; --s4:#7787D2; --s5:#8C9BEA;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --mark:#F2C230; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE; --line:#2C3346; --ok:#5BC79E; --ng:#E98572;
+  --s0:#3A4156; --s1:#465392; --s2:#5262A8; --s3:#6475BE; --s4:#7787D2; --s5:#8C9BEA;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono",Consolas,"Courier New",monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}.stair{animation:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none;counter-reset:t}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(32px,5.4vw,64px);font-weight:900;line-height:1.25;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 28px}
+.lv{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.lead{font-size:clamp(17px,1.9vw,22px);color:var(--sub);max-width:36em;margin:0}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:start}
+.cols.wide-right{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+@media (max-width:820px){.cols,.cols.wide-right{grid-template-columns:1fr}}
+
+.analogy{background:var(--mark-soft);border-radius:8px;padding:16px 20px;margin:0 0 18px}
+.analogy b{display:block;font-size:15px;color:var(--sub);font-weight:500}
+.analogy p{margin:2px 0 0;font-size:clamp(17px,1.8vw,22px);font-weight:700;line-height:1.5}
+.points{margin:0;padding:0;list-style:none}
+.points li{padding:8px 0 8px 22px;position:relative;border-bottom:1px solid var(--line)}
+.points li::before{content:"";position:absolute;left:4px;top:1.05em;width:8px;height:8px;border-radius:50%;background:var(--indigo)}
+.cap{font-size:14px;color:var(--sub);margin:0 0 6px}
+pre{margin:0;background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:16px 20px;font-size:clamp(13px,1.25vw,16px);line-height:1.7;overflow-x:auto;white-space:pre}
+.k{color:#9FB4FF}.s{color:#F2C230}.c{color:#8B93A8}.h{color:#7FD6B8;font-weight:600}
+.hl{background:rgba(242,194,48,.28);border-radius:3px;outline:1px solid rgba(242,194,48,.7)}
+
+/* toggles */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0 0 12px;flex-wrap:wrap}
+.seg button{border:none;background:var(--surface);padding:7px 16px;font-size:15px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:#fff}
+.panel[hidden]{display:none}
+
+/* title */
+.title-note{margin-top:36px;color:var(--sub);font-size:15px}
+.formula{font-size:clamp(26px,4.4vw,52px);font-weight:900;line-height:1.45;margin:0 0 20px}
+.formula em{font-style:normal;background:linear-gradient(transparent 62%,var(--mark) 62%)}
+
+/* stairs */
+.stairs{display:grid;grid-template-columns:repeat(6,1fr);align-items:end;gap:6px;height:clamp(200px,38vh,340px);margin-top:28px}
+.stair{border:none;border-radius:6px 6px 0 0;padding:10px;color:#fff;display:flex;flex-direction:column;align-items:flex-start;text-align:left;transform-origin:bottom;animation:rise .7s cubic-bezier(.2,.8,.2,1) both;transition:filter .2s}
+.stair:hover{filter:brightness(1.12)}
+.stair b{font-size:clamp(13px,1.5vw,17px);line-height:1.3}
+.stair span{font-size:clamp(11px,1.25vw,15px);line-height:1.35;opacity:.92;margin-top:2px}
+.stair small{font-size:clamp(10px,1.05vw,13px);opacity:.8;margin-top:auto;line-height:1.35}
+.stair:nth-child(1){height:22%;background:var(--s0);color:var(--ink)}
+.stair:nth-child(2){height:36%;background:var(--s1);animation-delay:.08s}
+.stair:nth-child(3){height:50%;background:var(--s2);animation-delay:.16s}
+.stair:nth-child(4){height:66%;background:var(--s3);animation-delay:.24s}
+.stair:nth-child(5){height:82%;background:var(--s4);animation-delay:.32s}
+.stair:nth-child(6){height:100%;background:var(--s5);animation-delay:.40s}
+@keyframes rise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.axis{display:flex;justify-content:space-between;color:var(--sub);font-size:14px;border-top:2px solid var(--ink);padding-top:6px}
+@media (max-width:620px){.stair small{display:none}.stair{padding:6px 4px}}
+
+/* AI slide */
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:8px}
+.trio div{border-top:4px solid var(--indigo);background:var(--surface);padding:16px 18px;border-radius:0 0 8px 8px}
+.trio b{display:block;font-size:clamp(16px,1.7vw,20px);margin-bottom:4px}
+.trio p{margin:0;color:var(--sub);font-size:15px}
+.trio div:last-child{border-top-color:var(--mark)}
+@media (max-width:820px){.trio{grid-template-columns:1fr}}
+.so{margin-top:22px;font-size:clamp(18px,2vw,24px);font-weight:700}
+
+.fmt3 div{display:flex;flex-direction:column;gap:8px}
+.fmt3 b{font-size:clamp(20px,2.2vw,26px)!important}
+.fmt3 .who{color:var(--indigo);font-weight:700;font-size:clamp(15px,1.5vw,18px)}
+.fmt3 pre{font-size:clamp(12px,1.1vw,14px);padding:12px 14px}
+.vs{display:flex;flex-wrap:wrap;gap:12px 40px;margin-top:24px;font-size:clamp(18px,2.2vw,26px);font-weight:700}
+.vs p{margin:0;background:linear-gradient(transparent 62%,var(--mark) 62%)}
+.vs b{color:var(--indigo)}
+.tbl.sum td{white-space:normal;padding:10px 14px}
+.tbl.sum td.key{white-space:nowrap}
+/* prompt */
+.answer{background:var(--surface);border-radius:8px;padding:14px 18px;border-left:4px solid var(--line);font-size:15px}
+.answer.ng{border-left-color:var(--ng)}.answer.ok{border-left-color:var(--ok)}
+.answer b{display:block;margin-bottom:4px}
+.answer.ng b{color:var(--ng)}.answer.ok b{color:var(--ok)}
+.recipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:16px}
+.recipe div{background:var(--indigo-soft);border-radius:6px;padding:8px 10px;font-size:14px}
+.recipe b{display:block;color:var(--indigo);font-size:15px}
+@media (max-width:620px){.recipe{grid-template-columns:repeat(2,1fr)}}
+
+/* markdown render */
+.render{background:var(--surface);border-radius:8px;padding:16px 22px;border:1px solid var(--line)}
+.render h3{margin:0 0 6px;font-size:22px}
+.render h4{margin:12px 0 4px;font-size:17px;color:var(--indigo)}
+.render ul{margin:0;padding-left:1.3em}
+.render strong{background:linear-gradient(transparent 60%,var(--mark) 60%)}
+
+/* json form */
+.form{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 0}
+.form button{display:grid;grid-template-columns:7em 1fr;gap:10px;width:100%;text-align:left;border:none;background:none;padding:9px 18px;border-bottom:1px dashed var(--line)}
+.form button:last-child{border-bottom:none}
+.form button span:first-child{color:var(--sub);font-size:14px}
+.form button.on{background:var(--mark-soft)}
+pre .row{display:inline-block;width:100%;padding:0 4px;border-radius:3px}
+
+/* tables */
+.tbl{width:100%;border-collapse:collapse;font-size:clamp(13px,1.25vw,16px);background:var(--surface);border-radius:8px;overflow:hidden}
+.tbl th,.tbl td{padding:6px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.tbl th{background:var(--indigo-soft);color:var(--indigo);font-weight:700}
+.tbl .key{color:var(--indigo);font-weight:700}
+.scroll{overflow-x:auto;border-radius:8px}
+.tbl tr.pick{cursor:pointer}
+.tbl tr.pick:hover td{background:var(--indigo-soft)}
+.tbl tr.on td{background:var(--mark-soft)}
+.tbl tr.dim td{opacity:.35}
+.rdb-note{margin-top:14px;font-weight:700;min-height:1.8em}
+.link{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:14px;margin:10px 0}
+.link::before,.link::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* SQL */
+.qbtns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.qbtns button{border:1px solid var(--indigo);background:transparent;color:var(--indigo);border-radius:20px;padding:6px 16px;font-size:15px}
+.qbtns button[aria-pressed="true"]{background:var(--indigo);color:#fff}
+
+/* API */
+.flow{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;margin:8px 0 16px}
+.node{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+.node b{display:block;font-size:clamp(16px,1.7vw,20px)}
+.node span{font-size:13px;color:var(--sub)}
+.wire{position:relative;width:clamp(80px,14vw,200px);height:40px}
+.wire::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px dashed var(--line)}
+.packet{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);background:var(--mark);color:#1C2430;font-size:12px;font-weight:700;border-radius:12px;padding:2px 10px;opacity:0;white-space:nowrap}
+.packet.go{animation:go 1s ease forwards}
+.packet.back{animation:back 1s ease forwards;background:var(--indigo);color:#fff}
+@keyframes go{0%{left:0;opacity:1}100%{left:100%;opacity:1}}
+@keyframes back{0%{left:100%;opacity:1}100%{left:0;opacity:1}}
+.sendbtn{border:none;background:var(--indigo);color:#fff;border-radius:8px;padding:9px 20px;font-weight:700}
+.zip{border:1px solid var(--line);border-radius:6px;padding:8px 10px;font:inherit;width:9em;background:var(--surface);color:var(--ink)}
+
+/* compare */
+.lvtabs button{min-width:3.4em}
+.ai-view{margin-top:12px;display:flex;gap:10px;align-items:baseline;font-size:16px}
+.ai-view b{white-space:nowrap;color:var(--indigo)}
+
+/* rules */
+.rules{list-style:none;margin:0;padding:0}
+.rules li{display:grid;grid-template-columns:minmax(12em,auto) 1fr;gap:20px;padding:14px 0;border-top:1px solid var(--line);align-items:baseline}
+.rules li:last-child{border-bottom:1px solid var(--line)}
+.rules .if{color:var(--sub)}
+.rules .then{font-weight:700;font-size:clamp(18px,2vw,24px)}
+@media (max-width:620px){.rules li{grid-template-columns:1fr;gap:0}}
+.caution{margin-top:22px;padding:14px 20px;background:var(--surface);border-left:4px solid var(--mark);border-radius:0 6px 6px 0;font-size:15px}
+.closing .from{color:var(--sub);font-size:clamp(18px,2.2vw,26px);margin:0}
+.closing .to{font-size:clamp(30px,5vw,60px);font-weight:900;line-height:1.35;margin:8px 0 0}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide" data-title="タイトル">
+ <div class="inner">
+  <h1>AIに情報を<br>正しく渡す共通ルール</h1>
+  <p class="lead">Markdown・JSON・CSVから、SQL・APIまで。AIに仕事をさせるための基礎知識を、例で理解します。</p>
+  <p class="title-note">← → キー、画面下のボタン、スワイプで操作できます</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="キーメッセージ">
+ <div class="inner">
+  <p class="formula">AIの回答の質 ＝<br><em>渡すデータの中身 × 渡し方</em></p>
+  <p class="lead">プロンプトの言い回しより先に、データの形を整えることが成果を左右します。</p>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="全体像：6つのレベル">
+ <div class="inner">
+  <h2>全体像：6つのレベル</h2>
+  <p class="def">段をクリックすると、その用語の解説へ移動します。</p>
+  <div class="stairs">
+   <button class="stair" data-jump="compare"><b>Lv0</b><span>ベタ打ち</span><small>人に話すように</small></button>
+   <button class="stair" data-jump="markdown"><b>Lv1</b><span>Markdown</span><small>文章を渡す</small></button>
+   <button class="stair" data-jump="json"><b>Lv2</b><span>JSON / YAML</span><small>構造化して渡す</small></button>
+   <button class="stair" data-jump="csv"><b>Lv3</b><span>CSV / RDB</span><small>大量データを扱う</small></button>
+   <button class="stair" data-jump="sql"><b>Lv4</b><span>SQL</span><small>検索・加工する</small></button>
+   <button class="stair" data-jump="api"><b>Lv5</b><span>API / JSON</span><small>システムとつなぐ</small></button>
+  </div>
+  <div class="axis"><span>人が読む</span><span>AIが読む</span><span>システムが動かす</span></div>
+ </div>
+</section>
+
+<!-- 4 AI -->
+<section class="slide" data-title="AIとは" id="s-ai">
+ <div class="inner">
+  <span class="lv">基礎</span>
+  <h2>AI（生成AI）</h2>
+  <p class="def">大量の文章から学び、続きの言葉を予測して文章を作る仕組み</p>
+  <div class="analogy"><b>たとえるなら</b><p>知識は豊富だが、あなたの会社のことは何も知らない「超優秀な新人」</p></div>
+  <div class="trio">
+   <div><b>得意</b><p>要約、分類、文章作成、アイデア出し、翻訳</p></div>
+   <div><b>知らない</b><p>社内ルール、顧客情報、昨日の会議の内容</p></div>
+   <div><b>あいまいだと</b><p>足りない情報をそれらしく推測で埋めてしまう</p></div>
+  </div>
+  <p class="so">だから「何を」「どんな形で」渡すかが重要になります。</p>
+ </div>
+</section>
+
+<!-- 5 Prompt -->
+<section class="slide" data-title="プロンプト" id="s-prompt">
+ <div class="inner">
+  <span class="lv">基礎</span>
+  <h2>プロンプト</h2>
+  <p class="def">AIへの指示書。新人への仕事の頼み方と同じです。</p>
+  <div class="seg" data-group="prompt">
+   <button aria-pressed="true" data-show="p-ng">あいまいな頼み方</button>
+   <button aria-pressed="false" data-show="p-ok">伝わる頼み方</button>
+  </div>
+  <div class="cols wide-right">
+   <div>
+    <div class="panel" id="p-ng"><div class="answer ng"><b>結果がぶれる</b>何を基準に、どんな形でまとめるかをAIが推測するため、毎回違う答えになります。</div></div>
+    <div class="panel" id="p-ok" hidden><div class="answer ok"><b>狙いどおりの結果</b>役割・目的・材料・出力形式がそろうと、そのまま使える答えが返ってきます。</div></div>
+    <div class="recipe">
+     <div><b>役割</b>誰として</div><div><b>目的</b>何のために</div><div><b>材料</b>何を見て</div><div><b>出力</b>どんな形で</div>
+    </div>
+   </div>
+   <div>
+    <pre class="panel" id="p-ng-code">問い合わせをまとめて</pre>
+    <pre class="panel" id="p-ok-code" hidden><span class="h"># 役割</span>
+あなたは営業事務の担当者です。
+<span class="h"># 目的</span>
+今日対応すべき問い合わせを決めたい。
+<span class="h"># 材料</span>
+添付のCSV（問い合わせ一覧）
+<span class="h"># 出力</span>
+優先度順の表：会社名／内容／対応期限</pre>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 6 Markdown -->
+<section class="slide" data-title="Markdown" id="s-markdown" data-key="markdown">
+ <div class="inner">
+  <span class="lv">Lv1</span>
+  <h2>Markdown</h2>
+  <p class="def">記号で見出しや箇条書きを表す、シンプルな文章の書き方</p>
+  <div class="cols">
+   <div>
+    <div class="analogy"><b>たとえるなら</b><p>Wordの「見出し」「箇条書き」を、記号だけで書いたメモ</p></div>
+    <ul class="points">
+     <li><code>#</code> 見出し　<code>-</code> 箇条書き　<code>**</code> 強調</li>
+     <li>AIは区切りから「どこに何が書いてあるか」を正確につかめる</li>
+     <li>ChatGPTやGeminiの回答も、実はMarkdownで書かれている</li>
+    </ul>
+   </div>
+   <div>
+    <p class="cap">書いたもの</p>
+<pre><span class="h"># 定例会議メモ（10/5）</span>
+<span class="h">## 決定事項</span>
+- 新商品の発売日は **11月15日**
+- 価格は据え置き
+<span class="h">## 宿題</span>
+- 販促案：吉田（10/12まで）</pre>
+    <p class="cap" style="margin-top:12px">表示されると</p>
+    <div class="render"><h3>定例会議メモ（10/5）</h3><h4>決定事項</h4><ul><li>新商品の発売日は <strong>11月15日</strong></li><li>価格は据え置き</li></ul><h4>宿題</h4><ul><li>販促案：吉田（10/12まで）</li></ul></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 7 JSON -->
+<section class="slide" data-title="JSON" id="s-json" data-key="json">
+ <div class="inner">
+  <span class="lv">Lv2</span>
+  <h2>JSON</h2>
+  <p class="def">「項目名：値」のセットで情報を表す、データの書き方</p>
+  <div class="cols">
+   <div>
+    <div class="analogy"><b>たとえるなら</b><p>記入済みの申込書。欄の名前と書かれた内容がセットになっている</p></div>
+    <ul class="points">
+     <li>項目が固定されるので、AIが読み違えない</li>
+     <li>「この形で返して」と出力形式の指定にも使える</li>
+     <li>システム同士のやりとりの標準形式（→ API）</li>
+    </ul>
+   </div>
+   <div>
+    <p class="cap">申込書の欄をクリックすると、対応する行が光ります</p>
+    <div class="form" id="jsonForm">
+     <button data-k="company"><span>会社名</span><span>株式会社A</span></button>
+     <button data-k="contact"><span>担当者</span><span>吉田</span></button>
+     <button data-k="request"><span>依頼内容</span><span>見積もり再送</span></button>
+     <button data-k="priority"><span>優先度</span><span>高</span></button>
+    </div>
+<pre style="margin-top:12px" id="jsonCode">{
+<span class="row" data-k="company">  <span class="k">"company"</span>: <span class="s">"株式会社A"</span>,</span>
+<span class="row" data-k="contact">  <span class="k">"contact"</span>: <span class="s">"吉田"</span>,</span>
+<span class="row" data-k="request">  <span class="k">"request"</span>: <span class="s">"見積もり再送"</span>,</span>
+<span class="row" data-k="priority">  <span class="k">"priority"</span>: <span class="s">"高"</span></span>
+}</pre>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 8 YAML -->
+<section class="slide" data-title="YAML" id="s-yaml">
+ <div class="inner">
+  <span class="lv">Lv2</span>
+  <h2>YAML</h2>
+  <p class="def">JSONと同じ情報を、人が読み書きしやすくした書き方</p>
+  <div class="cols">
+   <div>
+    <div class="analogy"><b>たとえるなら</b><p>カッコや記号を減らして、字下げ（インデント）で整理した設定メモ</p></div>
+    <ul class="points">
+     <li>字下げの深さが「階層」を表す（ずれると意味が変わる）</li>
+     <li>AIエージェントやチャットボットの設定ファイルでよく使う</li>
+     <li>人が書くならYAML、機械に渡すならJSONが目安</li>
+    </ul>
+   </div>
+   <div>
+    <p class="cap">社内チャットボットの設定（同じ内容を切り替え）</p>
+    <div class="seg" data-group="yaml">
+     <button aria-pressed="true" data-show="y-yaml">YAML</button>
+     <button aria-pressed="false" data-show="y-json">JSON</button>
+    </div>
+<pre class="panel" id="y-yaml"><span class="k">bot</span>:
+  <span class="k">name</span>: <span class="s">総務アシスタント</span>
+  <span class="k">tone</span>: <span class="s">ていねい</span>
+  <span class="k">rules</span>:
+    - <span class="s">社内規程に基づいて回答する</span>
+    - <span class="s">不明なときは総務部へ案内する</span></pre>
+<pre class="panel" id="y-json" hidden>{
+  <span class="k">"bot"</span>: {
+    <span class="k">"name"</span>: <span class="s">"総務アシスタント"</span>,
+    <span class="k">"tone"</span>: <span class="s">"ていねい"</span>,
+    <span class="k">"rules"</span>: [
+      <span class="s">"社内規程に基づいて回答する"</span>,
+      <span class="s">"不明なときは総務部へ案内する"</span>
+    ]
+  }
+}</pre>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 8b MD/JSON/YAML -->
+<section class="slide" data-title="Markdown・JSON・YAMLの違い" id="s-mjy">
+ <div class="inner">
+  <h2>Markdown・JSON・YAMLの違い</h2>
+  <p class="def">どれもテキストですが、「誰が読み書きするか」が違います。</p>
+  <div class="trio fmt3">
+   <div><b>Markdown</b><p class="who">人間が読みやすい</p>
+<pre><span class="h">## 問い合わせ</span>
+- 会社：株式会社A
+- 優先度：高</pre><p>使う場面：プロンプト・資料・指示書</p></div>
+   <div><b>JSON</b><p class="who">AI・システムが扱いやすい</p>
+<pre>{
+  <span class="k">"company"</span>: <span class="s">"株式会社A"</span>,
+  <span class="k">"priority"</span>: <span class="s">"高"</span>
+}</pre><p>使う場面：AIへの入出力・API</p></div>
+   <div><b>YAML</b><p class="who">人間が設定を書きやすい</p>
+<pre><span class="k">company</span>: <span class="s">株式会社A</span>
+<span class="k">priority</span>: <span class="s">高</span></pre><p>使う場面：AI設定・設定ファイル</p></div>
+  </div>
+  <div class="vs">
+   <p><b>JSON</b>＝機械に渡しやすい</p>
+   <p><b>YAML</b>＝人間が設定を書きやすい</p>
+  </div>
+ </div>
+</section>
+
+<!-- 9 CSV -->
+<section class="slide" data-title="CSV" id="s-csv" data-key="csv">
+ <div class="inner">
+  <span class="lv">Lv3</span>
+  <h2>CSV</h2>
+  <p class="def">1行に1件、項目をカンマで区切ったテキストの表</p>
+  <div class="cols">
+   <div>
+    <div class="analogy"><b>たとえるなら</b><p>Excelの表から、色や罫線を取り除いた「中身だけ」</p></div>
+    <ul class="points">
+     <li>数百〜数万件でも同じルールで扱える</li>
+     <li>Excel・業務システム・AIの間で受け渡ししやすい</li>
+     <li>集計はAIにコードで計算させ、必ず検算する</li>
+    </ul>
+   </div>
+   <div>
+    <div class="seg" data-group="csv">
+     <button aria-pressed="true" data-show="c-text">CSVの中身</button>
+     <button aria-pressed="false" data-show="c-table">表で見ると</button>
+    </div>
+<pre class="panel" id="c-text"><span class="k">日付,会社,内容,優先度</span>
+2026-10-01,株式会社A,見積もり再送,高
+2026-10-02,B商事,納期確認,中
+2026-10-03,C工業,資料請求,低</pre>
+    <div class="panel scroll" id="c-table" hidden>
+     <table class="tbl"><thead><tr><th>日付</th><th>会社</th><th>内容</th><th>優先度</th></tr></thead>
+     <tbody><tr><td>2026-10-01</td><td>株式会社A</td><td>見積もり再送</td><td>高</td></tr><tr><td>2026-10-02</td><td>B商事</td><td>納期確認</td><td>中</td></tr><tr><td>2026-10-03</td><td>C工業</td><td>資料請求</td><td>低</td></tr></tbody></table>
+    </div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 10 RDB -->
+<section class="slide" data-title="RDB" id="s-rdb">
+ <div class="inner">
+  <span class="lv">Lv3</span>
+  <h2>RDB（リレーショナルデータベース）</h2>
+  <p class="def">複数の表を「共通の番号」でつないで管理する仕組み</p>
+  <div class="cols wide-right">
+   <div>
+    <div class="analogy"><b>たとえるなら</b><p>顧客台帳と受注台帳を「顧客番号」でひも付けた帳簿セット</p></div>
+    <ul class="points">
+     <li>同じ情報を何度も書かないので、修正が1か所で済む</li>
+     <li>CRMや販売管理など、多くの業務システムの中身</li>
+     <li>AIに渡すときは、必要な表をつないで取り出す（→ SQL）</li>
+    </ul>
+   </div>
+   <div>
+    <p class="cap">顧客をクリックすると、その顧客の注文がつながります</p>
+    <div class="scroll"><table class="tbl" id="custTbl"><thead><tr><th>顧客番号</th><th>会社名</th><th>地域</th></tr></thead><tbody></tbody></table></div>
+    <div class="link">顧客番号でつながる</div>
+    <div class="scroll"><table class="tbl" id="ordTbl"><thead><tr><th>注文番号</th><th>顧客番号</th><th>商品</th><th>数量</th></tr></thead><tbody></tbody></table></div>
+    <p class="rdb-note" id="rdbNote">　</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 11 SQL -->
+<section class="slide" data-title="SQL" id="s-sql" data-key="sql">
+ <div class="inner">
+  <span class="lv">Lv4</span>
+  <h2>SQL</h2>
+  <p class="def">データベースから、必要なデータだけを取り出すための言語</p>
+  <div class="cols">
+   <div>
+    <div class="analogy"><b>たとえるなら</b><p>資料室の担当者に渡す「この条件の資料だけ出して」という依頼メモ</p></div>
+    <ul class="points">
+     <li>全件ではなく、絞り込んでからAIに渡すと精度もコストも改善</li>
+     <li>SQL自体は、日本語で頼めばAIが書いてくれる</li>
+    </ul>
+   </div>
+   <div>
+    <p class="cap">やりたいことを選ぶと、SQLと結果が表示されます</p>
+    <div class="qbtns" id="qbtns"></div>
+    <pre id="sqlCode"></pre>
+    <div class="scroll" style="margin-top:12px"><table class="tbl" id="sqlRes"></table></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 12 API -->
+<section class="slide" data-title="API" id="s-api" data-key="api">
+ <div class="inner">
+  <span class="lv">Lv5</span>
+  <h2>API</h2>
+  <p class="def">システム同士が決まった形式（主にJSON）でデータをやりとりする窓口</p>
+  <div class="cols">
+   <div>
+    <div class="analogy"><b>たとえるなら</b><p>レストランの店員。注文を厨房に伝え、料理を席まで運んでくれる</p></div>
+    <ul class="points">
+     <li>人がコピー＆ペーストしなくても、データが自動で流れる</li>
+     <li>ChatGPTやGeminiも、APIで業務システムから呼び出せる</li>
+     <li>AIの判断結果を、CRMや業務アプリに直接登録できる</li>
+    </ul>
+   </div>
+   <div>
+    <p class="cap">郵便番号から住所を調べるAPIの例</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+     <input class="zip" id="zip" value="100-0005" aria-label="郵便番号">
+     <button class="sendbtn" id="sendBtn">リクエストを送る</button>
+    </div>
+    <div class="flow">
+     <div class="node"><b>あなたのシステム</b><span>お客さん</span></div>
+     <div class="wire"><span class="packet" id="packet"></span></div>
+     <div class="node"><b>住所検索サービス</b><span>厨房</span></div>
+    </div>
+<pre id="apiLog"><span class="c">ボタンを押すと、やりとりが表示されます</span></pre>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 13 Compare -->
+<section class="slide" data-title="同じ情報で比べる" id="s-compare">
+ <div class="inner">
+  <h2>同じ情報を、7つの形で</h2>
+  <p class="def">「株式会社Aの吉田様から見積もり再送の依頼（急ぎ）」を各レベルで表すと</p>
+  <div class="seg lvtabs" id="lvtabs"></div>
+  <pre id="lvCode"></pre>
+  <p class="ai-view"><b>AIから見ると</b><span id="lvNote"></span></p>
+ </div>
+</section>
+
+<!-- 13b Summary -->
+<section class="slide" data-title="知識の一覧">
+ <div class="inner">
+  <h2>知識の一覧</h2>
+  <p class="def">それぞれをAI活用のどこで使うかを押さえておきます。</p>
+  <div class="scroll"><table class="tbl sum">
+   <thead><tr><th>知識</th><th>一言でいうと</th><th>AI活用で何に使う？</th></tr></thead>
+   <tbody>
+    <tr><td class="key">Markdown</td><td>人間にもAIにも読みやすい文章の書き方</td><td>プロンプト・資料・指示書</td></tr>
+    <tr><td class="key">JSON</td><td>データを機械が扱いやすく整理する形式</td><td>AIへの入出力・API・構造化データ</td></tr>
+    <tr><td class="key">YAML</td><td>設定情報を人間にも読みやすく書く形式</td><td>AI設定・プロンプト・設定ファイル</td></tr>
+    <tr><td class="key">CSV</td><td>表をデータとして保存する形式</td><td>Excel／スプレッドシートとの連携</td></tr>
+    <tr><td class="key">RDB</td><td>データを表形式で整理して保存する仕組み</td><td>顧客・商品・売上などの大量データ</td></tr>
+    <tr><td class="key">SQL</td><td>RDBに「このデータを出して」とお願いする言葉</td><td>データ検索・集計</td></tr>
+    <tr><td class="key">API</td><td>システム同士がデータを受け渡す窓口</td><td>AIと他システムの連携</td></tr>
+   </tbody></table></div>
+ </div>
+</section>
+
+<!-- 14 Rules -->
+<section class="slide" data-title="迷ったときの使い分け">
+ <div class="inner">
+  <h2>迷ったときの使い分け</h2>
+  <p class="def">形式選びは「誰が読むか」と「件数」で決まります。</p>
+  <ul class="rules">
+   <li><span class="if">人も読む文章なら</span><span class="then">Markdown</span></li>
+   <li><span class="if">項目が決まっているなら</span><span class="then">JSON / YAML</span></li>
+   <li><span class="if">件数が多いなら</span><span class="then">CSV / RDB</span></li>
+   <li><span class="if">一部だけ使うなら</span><span class="then">SQLで絞ってから渡す</span></li>
+   <li><span class="if">毎回の作業を自動化するなら</span><span class="then">API連携</span></li>
+  </ul>
+  <p class="caution">個人情報や社外秘のデータは、社内ルールで許可された環境以外に入力しないこと。練習にはダミーデータを使います。</p>
+ </div>
+</section>
+
+<!-- 15 Closing -->
+<section class="slide closing" data-title="まとめ">
+ <div class="inner">
+  <p class="from">「AIを使う人」から</p>
+  <p class="to">「AIにデータを食わせて<br>仕事をさせる人」へ</p>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">← 前へ</button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド">次へ →</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=document.getElementById('prev'),nextB=document.getElementById('next');
+  const prog=document.getElementById('prog'),count=document.getElementById('count');
+  const toc=document.getElementById('toc'),tocBtn=document.getElementById('tocBtn'),tocList=document.getElementById('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li');const b=document.createElement('button');
+    b.innerHTML='<span>'+(i+1)+'</span>'+s.dataset.title;b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=document.getElementById('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!e.target.closest('.scroll,pre'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+  document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>{const t=document.getElementById('s-'+b.dataset.jump);show(slides.indexOf(t))});
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+
+  // segmented toggles
+  document.querySelectorAll('.seg[data-group]').forEach(seg=>{
+    const btns=[...seg.querySelectorAll('button')];
+    btns.forEach(b=>b.onclick=()=>{btns.forEach(x=>{x.setAttribute('aria-pressed',x===b);
+      const p=document.getElementById(x.dataset.show);if(p)p.hidden=x!==b;
+      const c=document.getElementById(x.dataset.show+'-code');if(c)c.hidden=x!==b;});});
+  });
+
+  // JSON link
+  const form=document.getElementById('jsonForm'),rows=document.querySelectorAll('#jsonCode .row');
+  form.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    form.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    rows.forEach(r=>r.classList.toggle('hl',r.dataset.k===b.dataset.k));});
+
+  // RDB
+  const cust=[['C01','株式会社A','東京'],['C02','B商事','大阪'],['C03','C工業','名古屋']];
+  const ord=[['O101','C01','プリンター','3台'],['O102','C02','トナー','10本'],['O103','C01','保守契約','1件'],['O104','C03','コピー用紙','50箱'],['O105','C02','プリンター','1台']];
+  const cb=document.querySelector('#custTbl tbody'),ob=document.querySelector('#ordTbl tbody'),note=document.getElementById('rdbNote');
+  cust.forEach(c=>{const tr=document.createElement('tr');tr.className='pick';tr.tabIndex=0;tr.dataset.id=c[0];
+    tr.innerHTML='<td class="key">'+c[0]+'</td><td>'+c[1]+'</td><td>'+c[2]+'</td>';cb.appendChild(tr);
+    const act=()=>{cb.querySelectorAll('tr').forEach(x=>x.classList.toggle('on',x===tr));
+      let n=0;ob.querySelectorAll('tr').forEach(x=>{const m=x.dataset.c===c[0];if(m)n++;x.classList.toggle('on',m);x.classList.toggle('dim',!m)});
+      note.textContent=c[1]+'の注文は '+n+' 件。会社名は顧客台帳に1回書くだけで済みます。';};
+    tr.onclick=act;tr.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();act()}};});
+  ord.forEach(o=>{const tr=document.createElement('tr');tr.dataset.c=o[1];
+    tr.innerHTML='<td>'+o[0]+'</td><td class="key">'+o[1]+'</td><td>'+o[2]+'</td><td>'+o[3]+'</td>';ob.appendChild(tr);});
+
+  // SQL
+  const inq=[['2026-10-01','株式会社A','見積もり再送','高'],['2026-10-02','B商事','納期確認','中'],['2026-10-03','株式会社A','請求書の宛名変更','中'],['2026-10-03','C工業','資料請求','低'],['2026-10-04','B商事','不具合の連絡','高']];
+  const qs=[
+    {l:'全件を見る',sql:'<span class="k">SELECT</span> *\n<span class="k">FROM</span> inquiries;',h:['日付','会社','内容','優先度'],r:()=>inq},
+    {l:'優先度「高」だけ',sql:'<span class="k">SELECT</span> 会社, 内容\n<span class="k">FROM</span> inquiries\n<span class="k">WHERE</span> 優先度 = <span class="s">\'高\'</span>;',h:['会社','内容'],r:()=>inq.filter(x=>x[3]==='高').map(x=>[x[1],x[2]])},
+    {l:'会社ごとの件数',sql:'<span class="k">SELECT</span> 会社, <span class="k">COUNT</span>(*) <span class="k">AS</span> 件数\n<span class="k">FROM</span> inquiries\n<span class="k">GROUP BY</span> 会社;',h:['会社','件数'],r:()=>{const m={};inq.forEach(x=>m[x[1]]=(m[x[1]]||0)+1);return Object.entries(m)}},
+    {l:'新しい順に3件',sql:'<span class="k">SELECT</span> 日付, 会社, 内容\n<span class="k">FROM</span> inquiries\n<span class="k">ORDER BY</span> 日付 <span class="k">DESC</span>\n<span class="k">LIMIT</span> 3;',h:['日付','会社','内容'],r:()=>inq.slice().reverse().slice(0,3).map(x=>[x[0],x[1],x[2]])}
+  ];
+  const qb=document.getElementById('qbtns'),sc=document.getElementById('sqlCode'),sr=document.getElementById('sqlRes');
+  qs.forEach((q,i)=>{const b=document.createElement('button');b.textContent=q.l;b.setAttribute('aria-pressed','false');
+    b.onclick=()=>{qb.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));sc.innerHTML=q.sql;
+      sr.innerHTML='<thead><tr>'+q.h.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+q.r().map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</tbody>';};
+    qb.appendChild(b);if(i===0)b.click();});
+
+  // API
+  const zips={'1000005':'東京都千代田区丸の内','5300001':'大阪府大阪市北区梅田','4500002':'愛知県名古屋市中村区名駅'};
+  const sendBtn=document.getElementById('sendBtn'),pk=document.getElementById('packet'),log=document.getElementById('apiLog'),zip=document.getElementById('zip');
+  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  sendBtn.onclick=()=>{
+    const z=zip.value.replace(/[^0-9]/g,'');
+    log.innerHTML='<span class="c">① リクエスト（注文）</span>\n<span class="k">GET</span> /address?zipcode='+z+'\n\n<span class="c">送信中…</span>';
+    pk.className='packet';void pk.offsetWidth;pk.textContent='注文';pk.className='packet go';
+    setTimeout(()=>{pk.className='packet';void pk.offsetWidth;pk.textContent='料理';pk.className='packet back';
+      setTimeout(()=>{
+        const a=zips[z];
+        log.innerHTML='<span class="c">① リクエスト（注文）</span>\n<span class="k">GET</span> /address?zipcode='+z+'\n\n<span class="c">② レスポンス（料理）JSONで返ってくる</span>\n'+
+        (a?'{\n  <span class="k">"zipcode"</span>: <span class="s">"'+z+'"</span>,\n  <span class="k">"address"</span>: <span class="s">"'+a+'"</span>\n}':'{\n  <span class="k">"error"</span>: <span class="s">"該当する住所がありません"</span>\n}\n<span class="c">試せる例：100-0005 / 530-0001 / 450-0002</span>');
+      },reduce?0:1000);},reduce?0:1000);
+  };
+
+  // Compare levels
+  const lv=[
+    {t:'Lv0 ベタ打ち',c:'10月1日に株式会社Aの吉田さんから、見積もりを\nもう一度送ってほしいって連絡がありました。\n急ぎらしいです。',n:'どこが日付で、どこが要件かを推測して読む。件数が増えると漏れや誤読が起きる。'},
+    {t:'Lv1 Markdown',c:'<span class="h">## 問い合わせ</span>\n- 日付：2026-10-01\n- 会社：株式会社A\n- 担当：吉田様\n- 内容：見積もりの再送\n- 優先度：高',n:'人間が読みやすい。区切りがあるのでAIも取り違えにくい。'},
+    {t:'Lv2 JSON',c:'{\n  <span class="k">"date"</span>: <span class="s">"2026-10-01"</span>,\n  <span class="k">"company"</span>: <span class="s">"株式会社A"</span>,\n  <span class="k">"contact"</span>: <span class="s">"吉田"</span>,\n  <span class="k">"request"</span>: <span class="s">"見積もり再送"</span>,\n  <span class="k">"priority"</span>: <span class="s">"高"</span>\n}',n:'AI・システムが扱いやすい。項目が固定され、出力も同じ形で返せる。'},
+    {t:'Lv2 YAML',c:'<span class="k">date</span>: <span class="s">2026-10-01</span>\n<span class="k">company</span>: <span class="s">株式会社A</span>\n<span class="k">contact</span>: <span class="s">吉田</span>\n<span class="k">request</span>: <span class="s">見積もり再送</span>\n<span class="k">priority</span>: <span class="s">高</span>',n:'人間が設定を書きやすい。中身はJSONと同じで、記号が少なく読み書きしやすい。'},
+    {t:'Lv3 CSV',c:'<span class="k">date,company,contact,request,priority</span>\n2026-10-01,株式会社A,吉田,見積もり再送,高\n2026-10-02,B商事,佐藤,納期確認,中\n2026-10-03,C工業,鈴木,資料請求,低',n:'1行1件で何件でも同じルール。集計や並べ替えができる。'},
+    {t:'Lv4 SQL',c:'<span class="k">SELECT</span> company, request\n<span class="k">FROM</span>   inquiries\n<span class="k">WHERE</span>  priority = <span class="s">\'高\'</span>\n<span class="k">ORDER BY</span> date;',n:'必要な分だけ受け取れるので、精度が上がりコストも下がる。'},
+    {t:'Lv5 API',c:'<span class="k">POST</span> /api/inquiries\n{\n  <span class="k">"company"</span>: <span class="s">"株式会社A"</span>,\n  <span class="k">"request"</span>: <span class="s">"見積もり再送"</span>,\n  <span class="k">"priority"</span>: <span class="s">"高"</span>,\n  <span class="k">"assigned_to"</span>: <span class="s">"営業1課"</span>\n}\n<span class="c">→ 201 Created（登録完了）</span>',n:'人を介さず、判断結果が業務システムに直接届く。'}
+  ];
+  const lt=document.getElementById('lvtabs'),lc=document.getElementById('lvCode'),ln=document.getElementById('lvNote');
+  lv.forEach((x,i)=>{const b=document.createElement('button');b.textContent=x.t;b.setAttribute('aria-pressed','false');
+    b.onclick=()=>{lt.querySelectorAll('button').forEach(y=>y.setAttribute('aria-pressed',y===b));lc.innerHTML=x.c;ln.textContent=x.n;};
+    lt.appendChild(b);if(i===0)b.click();});
+})();
+</script>
+</body>
+</html>
