@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AIを疑う力｜AIを使っても騙されないための30の知識</title>
+<meta name="description" content="生成AIを業務で使う前に知っておきたい、人間の認知バイアス・データの落とし穴・AIの性質・セキュリティを30項目で解説する事典">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --c-human:#6D3FC0; --c-data:#0E7490; --c-ai:#2B3A8C; --c-comp:#4B5565; --c-sec:#B42318; --c-judge:#8A5A00;
+  --ok:#1F7A5A; --ng:#B3412F;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --mark-soft:#3A3320;
+    --c-human:#B79BF0; --c-data:#5CC3D6; --c-ai:#8C9BEA; --c-comp:#AAB4C4; --c-sec:#F08A7E; --c-judge:#E2B455;
+    --ok:#5BC79E; --ng:#E98572;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --mark-soft:#3A3320;
+  --c-human:#B79BF0; --c-data:#5CC3D6; --c-ai:#8C9BEA; --c-comp:#AAB4C4; --c-sec:#F08A7E; --c-judge:#E2B455;
+  --ok:#5BC79E; --ng:#E98572;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 132px);scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.wrap{max-width:960px;margin:0 auto;padding:0 22px}
+a{color:var(--indigo)}
+
+.topnav{padding:16px 0 0}
+.topnav a{font-size:14px;color:var(--sub);text-decoration:none}
+.topnav a:hover{color:var(--ink)}
+
+/* hero */
+.hero{padding:44px 0 36px}
+.hero h1{font-size:clamp(40px,7vw,76px);font-weight:900;line-height:1.15;margin:0 0 14px;letter-spacing:.01em}
+.hero .sub{font-size:clamp(18px,2.4vw,24px);font-weight:700;margin:0 0 22px}
+.hero p{color:var(--sub);max-width:40em;margin:0 0 14px}
+.message{margin:30px 0 0;padding:26px 0;border-top:2px solid var(--ink);border-bottom:1px solid var(--line)}
+.message p{margin:0;font-size:clamp(20px,3vw,30px);font-weight:900;line-height:1.5;color:var(--ink);max-width:none}
+.message em{font-style:normal;background:linear-gradient(transparent 62%,var(--mark) 62%)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:18px;font-size:14px;color:var(--sub)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+
+h2{font-size:clamp(24px,3.4vw,34px);font-weight:900;margin:0 0 6px;line-height:1.35}
+.h2note{color:var(--sub);margin:0 0 22px}
+
+/* top10 */
+.top10{padding:36px 0 20px}
+.toplist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;counter-reset:n}
+.toplist li{border-top:1px solid var(--line)}
+.toplist li:nth-last-child(-n+2){border-bottom:1px solid var(--line)}
+.toplist button{display:grid;grid-template-columns:2.2em 1fr;gap:6px;width:100%;text-align:left;background:none;border:none;padding:13px 2px;align-items:baseline}
+.toplist .no{font-size:22px;font-weight:900;color:var(--indigo);line-height:1}
+.toplist .tt{font-weight:700;line-height:1.5}
+.toplist button:hover .tt{text-decoration:underline;text-decoration-color:var(--mark);text-decoration-thickness:3px;text-underline-offset:4px}
+@media (max-width:700px){.toplist{grid-template-columns:1fr}.toplist li:nth-last-child(2){border-bottom:none}}
+
+/* toolbar */
+.all{padding:36px 0 20px}
+.toolbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 12px;margin:0 0 12px;border-bottom:1px solid var(--line)}
+.toolbar .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.search{flex:1;min-width:200px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;font-size:16px}
+.count{font-size:14px;color:var(--sub);white-space:nowrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chips button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* cards */
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border-radius:10px;border-left:5px solid var(--cc);overflow:hidden}
+.card summary{list-style:none;cursor:pointer;padding:16px 20px;display:grid;grid-template-columns:1fr auto;gap:2px 16px;align-items:center}
+.card summary::-webkit-details-marker{display:none}
+.card .cat{font-size:13px;color:var(--cc);font-weight:700}
+.card .nm{font-size:clamp(18px,2.2vw,21px);font-weight:900;line-height:1.45;grid-column:1}
+.card .one{grid-column:1;color:var(--sub);font-size:15px;line-height:1.6}
+.card .chev{grid-row:1/4;grid-column:2;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:transform .2s;color:var(--sub);font-size:14px}
+.card[open] .chev{transform:rotate(180deg)}
+.card .body{padding:2px 20px 20px;border-top:1px solid var(--line);margin:0 20px;padding-left:0;padding-right:0}
+.blk{display:grid;grid-template-columns:8.5em 1fr;gap:4px 18px;padding:12px 0;border-bottom:1px dashed var(--line)}
+.blk:last-of-type{border-bottom:none}
+.blk dt{font-size:14px;font-weight:700;color:var(--sub);padding-top:2px}
+.blk dd{margin:0}
+.blk.tip dd{font-weight:700}
+@media (max-width:620px){.blk{grid-template-columns:1fr;gap:0}.chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}}
+.extra{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:10px;font-size:14px}
+.extra .lab{color:var(--sub)}
+.rel{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:2px 10px;font-size:14px}
+.rel:hover{border-color:var(--indigo);color:var(--indigo)}
+.slink{display:inline-flex;gap:6px;align-items:center;background:var(--mark-soft);border-radius:6px;padding:4px 12px;text-decoration:none;color:var(--ink);font-size:14px;font-weight:700}
+.empty{color:var(--sub);padding:20px 0}
+.flash{animation:flash 1.4s ease}
+@keyframes flash{0%{box-shadow:0 0 0 4px var(--mark)}100%{box-shadow:0 0 0 0 transparent}}
+
+/* demos */
+.demo{margin:16px 0 6px;padding:18px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.demo h4{margin:0 0 4px;font-size:16px}
+.demo .q{color:var(--sub);font-size:15px;margin:0 0 12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.seg button{border:none;background:var(--surface);padding:6px 14px;font-size:14px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:#fff}
+.btn{border:none;background:var(--indigo);color:#fff;border-radius:8px;padding:8px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;border:1px solid var(--indigo);color:var(--indigo)}
+.bars{display:grid;gap:8px}
+.barrow{display:grid;grid-template-columns:9em 1fr 3.4em;gap:10px;align-items:center;font-size:14px}
+.bartrack{height:16px;background:var(--surface);border-radius:4px;overflow:hidden}
+.barfill{height:100%;border-radius:4px;transition:width .5s}
+.barrow .v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.verdict{margin:12px 0 0;font-weight:700}
+.tblw{overflow-x:auto}
+.mini{border-collapse:collapse;font-size:14px;margin-top:10px;min-width:100%}
+.mini th,.mini td{border-bottom:1px solid var(--line);padding:5px 10px;text-align:right;white-space:nowrap}
+.mini th:first-child,.mini td:first-child{text-align:left}
+.chart{width:100%;height:auto;display:block;background:var(--surface);border-radius:8px}
+.chartlegend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--sub);margin:8px 0}
+.chartlegend span{display:inline-flex;align-items:center;gap:6px}
+.chartlegend i{width:18px;height:3px;display:inline-block;border-radius:2px}
+.anc-num{display:inline-block;font-size:26px;font-weight:900;color:var(--indigo);padding:0 4px}
+.anc input{width:7em;border:1px solid var(--line);border-radius:6px;padding:7px 10px;background:var(--surface)}
+.out{margin-top:12px;padding:12px 14px;background:var(--surface);border-radius:8px;font-size:15px}
+.out[hidden]{display:none}
+.gen{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:620px){.gen{grid-template-columns:1fr}}
+.gen .box{background:var(--surface);border-radius:8px;padding:12px 14px}
+.gen .box b{display:block;font-size:13px;color:var(--sub);margin-bottom:6px}
+.gen .ans{font-size:18px;font-weight:700;min-height:2.2em;line-height:1.5}
+.gen .hist{font-size:13px;color:var(--sub);margin-top:8px}
+
+/* closing */
+.check{padding:44px 0 20px}
+.five{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.five li{background:var(--surface);border-radius:10px;padding:14px 14px 16px;border-top:4px solid var(--indigo)}
+.five b{display:block;font-size:20px;font-weight:900}
+.five span{font-size:14px;color:var(--sub);line-height:1.6;display:block;margin-top:4px}
+@media (max-width:820px){.five{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.closing{padding:48px 0 80px}
+.closing p{margin:0;font-size:clamp(24px,4vw,40px);font-weight:900;line-height:1.45}
+.closing small{display:block;margin-top:14px;font-size:15px;color:var(--sub);font-weight:400}
+footer{border-top:1px solid var(--line);padding:20px 0 40px;font-size:13px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav"><a href="../../">← スライド一覧</a></nav>
+
+<header class="hero">
+  <h1>AIを疑う力</h1>
+  <p class="sub">AIを使っても騙されないための30の知識</p>
+  <p>AIの使い方を学ぶ前に知っておきたいのは、AIそのもののクセ、人間側の認知バイアス、そしてデータの落とし穴です。プロンプトの技術より先にこれを押さえると、AI活用の質が大きく変わります。</p>
+  <div class="message"><p>大切なのは、<em>AIに答えを出させる力</em>より<br><em>AIの答えを疑う力</em>。</p></div>
+  <div class="legend" id="legend"></div>
+</header>
+
+<section class="top10" aria-labelledby="t10">
+  <h2 id="t10">まず読む10項目</h2>
+  <p class="h2note">30項目の中から、最初に押さえておきたいものを選びました。クリックすると解説が開きます。</p>
+  <ol class="toplist" id="toplist"></ol>
+</section>
+
+<section class="all" aria-labelledby="t30">
+  <h2 id="t30">30の知識</h2>
+  <p class="h2note">分類やキーワードで絞り込めます。</p>
+  <div class="toolbar">
+    <div class="row">
+      <input class="search" id="q" type="search" placeholder="キーワードで探す（例：バイアス、計算、権限）" aria-label="キーワードで探す">
+      <span class="count" id="count" aria-live="polite"></span>
+    </div>
+    <div class="chips" id="chips" aria-label="分類で絞り込む"></div>
+  </div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<section class="check" aria-labelledby="tc">
+  <h2 id="tc">AIの回答を受け取ったら、5つを確認</h2>
+  <p class="h2note">迷ったら、この5点だけでも確かめる習慣をつけましょう。</p>
+  <ol class="five">
+    <li><b>根拠</b><span>何をもとにそう言えるのか</span></li>
+    <li><b>出典</b><span>元の情報は実在し、最新か</span></li>
+    <li><b>計算</b><span>数値は別の手段で確かめたか</span></li>
+    <li><b>前提</b><span>渡した情報に偏りや抜けはないか</span></li>
+    <li><b>反例</b><span>逆の結論になる可能性はないか</span></li>
+  </ol>
+</section>
+
+<section class="closing">
+  <p>AIの回答が平均的で、もっともらしいときこそ、<br>「なんとなく変だ」という違和感を大切に。</p>
+  <small>AIを疑う力は、AI時代の人間にとって重要な能力です。</small>
+</section>
+</div>
+<footer><div class="wrap">本ページの事例・数値は、説明のための架空の例です。</div></footer>
+
+<script>
+(function(){
+const CATS={
+  human:{n:'人間の認知',c:'--c-human'},
+  data:{n:'データ・統計',c:'--c-data'},
+  ai:{n:'AIの性質',c:'--c-ai'},
+  comp:{n:'コンピュータとの違い',c:'--c-comp'},
+  sec:{n:'セキュリティ',c:'--c-sec'},
+  judge:{n:'判断',c:'--c-judge'}
+};
+const SL={
+  stroop:{t:'体験スライド：ストループ効果',u:'../stroop-effect/'},
+  shepard:{t:'体験スライド：シェパード錯視',u:'../shepard-illusion/'},
+  counting:{t:'検証スライド：AIはモノを数えられるか',u:'../ai-counting/'},
+  levels:{t:'解説スライド：AIに情報を正しく渡す共通ルール',u:'../ai-data-levels/'}
+};
+const D=[
+ {id:'serial-position',c:'human',n:'系列位置効果',s:'並んだ情報のうち、最初と最後は記憶に残りやすく、中間は抜けやすい。',p:'長い指示の最初と最後に影響され、中間に書いた条件が抜けやすい。AIでも、長い入力の中間にある情報を見落としやすい傾向が報告されています。',e:'10個の条件を並べて依頼したら、5〜6番目の条件だけ守られていなかった。',t:'重要な条件は冒頭か末尾に置き、見出しや箇条書きで区切って渡す。',r:['context','cognitive-load']},
+ {id:'confirmation',c:'human',n:'確証バイアス',s:'自分の考えに合う情報ばかりを集め、反する情報を軽く見てしまう。',p:'自分の仮説に合うAIの回答だけを採用してしまう。聞き方そのものが誘導になることもある。',e:'「この施策は効果がありますよね？」と聞き、賛成する回答だけを企画書に使った。',t:'「反対の立場から反論して」「この結論が間違っている可能性は？」と、あえて逆の視点を出させる。',r:['survivorship','automation','halo']},
+ {id:'anchoring',c:'human',n:'アンカリング効果',s:'最初に見た数字が基準（錨）になり、その後の判断が引っ張られる。',p:'AIが最初に提示した数字や評価に、その後の判断が引っ張られる。',e:'AIが最初に出した見積もり額を基準に、社内の予算を決めてしまった。',t:'AIに聞く前に自分の見立てを書き出しておく。条件を変えて複数の案を出させ、比べる。',r:['halo','base-rate'],demo:'anchoring'},
+ {id:'halo',c:'human',n:'ハロー効果',s:'目立つ特徴に引っ張られて、全体の評価まで高く（または低く）なる。',p:'「AIが言った」「きれいにまとまっている」というだけで、正しそうに感じてしまう。',e:'整った文章と表で出てきた市場分析を、中身を確かめずに信じた。',t:'見た目の整い方と、内容の正しさを分けて評価する。',r:['automation','plausible']},
+ {id:'automation',c:'human',n:'自動化バイアス',s:'機械やシステムの判断を、人間が無批判に受け入れてしまう。',p:'AIの判断を人間がそのまま受け入れ、誤りに気づけなくなる。',e:'カーナビの指示どおりに進んで行き止まりに入る。AIの要約をそのまま報告書に使い、誤りが残った。',t:'最終判断者を決めておき、重要な数値と固有名詞は原典で確認する。',r:['halo','hitl','evaluate']},
+ {id:'normalcy',c:'human',n:'正常性バイアス',s:'異常な事態を「たぶん大丈夫」と過小評価してしまう。',p:'AIの明らかにおかしい回答を「たぶん大丈夫」と見過ごしてしまう。',e:'前月と桁が違う集計結果を、「AIが出したから」とそのまま流した。',t:'「桁が違う」「急に変化した」「出典がない」など、立ち止まる条件を決めておく。',r:['automation','somatic']},
+ {id:'cognitive-load',c:'human',n:'認知負荷',s:'人が一度に処理できる情報の量には限りがある。',p:'AIが出す情報量が多すぎると、人間自身が判断できなくなる。',e:'AIが出した10ページの分析を読み切れず、結論だけを採用した。',t:'「結論を3行で」「判断に必要な情報だけ」と、出力の量と形を指定する。',r:['serial-position','automation'],sl:['stroop']},
+ {id:'somatic',c:'human',n:'ソマティック・マーカー仮説',s:'体が感じる「なんとなく変だ」という感覚が、判断を助けているという仮説。',p:'数値化できない違和感も、AIの回答を見直す大切な判断材料になる。',e:'AIの提案がきれいにまとまりすぎていて、現場の感覚と合わない気がした。',t:'違和感を言葉にして、AIに投げ返す。「この点が引っかかる。見落としていることは？」',r:['plausible','normalcy']},
+
+ {id:'simpson',c:'data',n:'シンプソンのパラドクス',s:'全体で見た傾向と、グループ別に見た傾向が逆になる現象。',p:'全体の集計だけを見ると、グループ別の実態と逆の結論を出してしまう。',e:'下の体験を参照。全体の成約率ではAチームが上なのに、顧客区分別に見るとどちらもBチームが上。',t:'「区分別にも集計して」と指示し、全体と内訳の両方を見てから判断する。',r:['selection','correlation'],demo:'simpson'},
+ {id:'correlation',c:'data',n:'相関と因果の混同',s:'一緒に増えたり減ったりしているだけで、原因と結果とは限らない。',p:'「一緒に増えた」だけなのに、一方が原因だと思い込んでしまう。AIも相関を因果のように説明することがある。',e:'研修を受けた社員ほど成績がよい。でも、もともと意欲の高い人が研修に参加しているだけかもしれない。',t:'「第3の要因はないか」「因果が逆ではないか」をAIに聞き、自分でも考える。',r:['simpson','regression'],demo:'correlation'},
+ {id:'regression',c:'data',n:'平均への回帰',s:'極端な結果の次は、平均に近い結果が出やすい。',p:'何もしなくても平均に戻っただけの変化を、AIや施策の効果と説明してしまう。',e:'売上が最悪だった店舗にAIツールを入れたら、翌月に改善した。でも、何もしなくても戻っていたかもしれない。',t:'導入しなかった店舗や期間と並べて、効果を比べる。',r:['correlation','survivorship']},
+ {id:'selection',c:'data',n:'選択バイアス',s:'偏って選ばれたデータから、全体の結論を出してしまう。',p:'AIに渡したデータの範囲だけで結論を出し、渡していないデータの存在を忘れる。',e:'問い合わせフォームの声だけを分析して、「顧客は不満が多い」と結論づけた。',t:'「このデータに含まれていないのは誰か」を考え、AIにも聞く。',r:['survivorship','simpson']},
+ {id:'survivorship',c:'data',n:'生存者バイアス',s:'生き残った（成功した）例だけを見て判断してしまう。',p:'成功事例だけを見て、「これをやれば成功する」と考えてしまう。',e:'第二次世界大戦中、帰還した戦闘機の被弾跡を調べ、「穴が多い場所を補強しよう」と考えた。しかし統計学者のエイブラハム・ウォールドは、「そこは撃たれても帰ってこられた場所だ。本当に補強すべきは、帰還できなかった機体が被弾したエンジンやコックピットだ」と指摘した。AI活用でも、成功企業の事例だけを集めさせると、同じ落とし穴にはまる。',t:'失敗事例や撤退事例もあわせて集めさせ、比べる。',r:['selection','confirmation']},
+ {id:'base-rate',c:'data',n:'ベースレート無視',s:'個別の特徴に目を奪われて、もともとの割合（基準率）を無視してしまう。',p:'「精度99%」などの数字に目を奪われ、そもそも何%の確率で起きることなのかを見落とす。',e:'精度99%の不正検知AIが「不正」と判定した。不正が1万件に1件しかないなら、「不正」判定のほとんどは誤検知になる。',t:'判断の前に、「全体の何%で起きることか」を確認する。',r:['anchoring','selection']},
+
+ {id:'not-search',c:'ai',n:'生成AIは「検索」しているとは限らない',s:'調べて答えているのではなく、学習したパターンからもっともらしい文章を作っていることがある。',p:'検索結果のように見えても、実際には学習した知識から文章を作っただけのことがある。',e:'「最新の補助金制度は？」と聞いたら、検索せずに、学習した時点の古い情報で答えた。',t:'最新性や正確さが必要なときは検索機能を使い、出典のURLを開いて確認する。',r:['not-database','knowledge-boundary','hallucination']},
+ {id:'probabilistic',c:'ai',n:'生成AIは確率的な生成モデル',s:'次に来る言葉を確率で選びながら、文章を組み立てている。',p:'「よく見かける答え」と「正しい答え」は別。AIが知っているように見えても、正しいとは限らない。',e:'世の中でよく見かける誤解は、AIも「よく見かける答え」として出しやすい。',t:'重要な事実は、AIとは別の情報源で裏を取る。',r:['determinism','hallucination','plausible']},
+ {id:'hallucination',c:'ai',n:'ハルシネーション',s:'事実ではない内容を、もっともらしく自然な文章で答えてしまう現象。',p:'存在しない情報でも、自然な文章で自信ありげに回答する。仕組み上、完全になくすことは難しい。',e:'実在しない論文・判例・URLを、本物らしい書式で挙げた。',t:'固有名詞・数値・出典は必ず原典で確認する。「わからなければ、わからないと答えて」と指示する。',r:['not-search','probabilistic','not-database'],sl:['shepard']},
+ {id:'not-calculator',c:'ai',n:'LLMは計算機ではない',s:'計算しているのではなく、計算結果らしい文字列を予測していることがある。',p:'単純な計算や数を数える作業でも、間違える可能性がある。',e:'桁の多い掛け算、表の合計、画像の中のモノの数を間違えた。',t:'計算はコード実行機能やExcelに任せ、AIには式や手順を作らせる。',r:['not-database','compute-search'],sl:['counting']},
+ {id:'not-database',c:'ai',n:'LLMはデータベースではない',s:'情報を正確に保存して、そのまま取り出す仕組みではない。',p:'原典の正確な文言や、最新の情報を保証するものではない。',e:'社内規程についてAIに聞いたら、要旨は合っていたが、条文番号と文言が違っていた。',t:'原典をAIに渡して「この資料の範囲だけで答えて」と指示する。',r:['not-search','hallucination']},
+ {id:'context',c:'ai',n:'コンテキスト依存',s:'与えた情報、その順番、指示の書き方によって、回答が変わる。',p:'同じ質問でも、前提の書き方や情報の並べ方で、まったく違う回答になる。',e:'同じ相談でも、前提を先に書くか後に書くかで、提案の方向性が変わった。',t:'目的・前提・制約を毎回はっきり書き、Markdownなどで区切って渡す。',r:['serial-position','ambiguity'],sl:['levels','stroop']},
+ {id:'ambiguity',c:'ai',n:'曖昧さへの弱さ',s:'人間なら察してくれる曖昧な言葉を、AIは誤解しやすい。',p:'「適当に」「普通に」「いい感じに」など、人には通じる曖昧さを取り違える。',e:'「いい感じにまとめて」と頼んだら、想定と違う長さとトーンで返ってきた。',t:'「300字で」「箇条書き3つで」「社外向けの丁寧語で」と具体的に指定する。',r:['context']},
+ {id:'plausible',c:'ai',n:'平均化・もっともらしさ',s:'多くの文章に共通する、無難で平均的な答えになりやすい。',p:'誰にでも当てはまる一般論が、もっともらしく出てくる。',e:'自社の戦略案を頼んだら、どの会社にも当てはまる一般論が並んだ。',t:'自社固有の情報を渡し、「一般論を除いて」「尖った案を3つ」と頼む。回答が平均的だと感じたら、それが疑うサイン。',r:['somatic','probabilistic','halo']},
+ {id:'knowledge-boundary',c:'ai',n:'知識の境界',s:'学習した時点や、検索の有無によって、AIが知っている範囲は違う。',p:'最近の出来事や変更を知らないまま、古い情報で答えることがある。',e:'最近の法改正や新製品を知らないまま、改正前の情報で説明した。',t:'「いつ時点の情報か」を確認し、最新の情報は検索や資料で補う。',r:['not-search','not-database']},
+
+ {id:'determinism',c:'comp',n:'決定論と確率論',s:'従来のプログラムは同じ入力に同じ結果を返す。生成AIは、同じ質問でも答えが変わることがある。',p:'同じ質問をしても、毎回同じ答えが返ってくるとは限らない。',e:'同じ依頼を2人が出したら、それぞれ違う結論が返ってきた。',t:'何度か出させて比べる。再現性が必要な処理は出力形式を固定し、ルールで決められる部分はプログラムに任せる。',r:['probabilistic','compute-search'],demo:'probabilistic'},
+ {id:'compute-search',c:'comp',n:'計算・検索・推論の違い',s:'AIの答えが「計算」「検索」「推論（推測）」のどれで出てきたのかは、見た目では区別できない。',p:'「AIが答えた」というだけでは、何を根拠にした答えなのかが分からない。',e:'「市場規模は約3,000億円」が、統計を検索した結果なのか、AIの推測なのか分からなかった。',t:'「根拠と出典を示して」「推測の部分は推測と明記して」と指示する。',r:['not-search','not-calculator','evaluate']},
+
+ {id:'prompt-injection',c:'sec',n:'プロンプトインジェクション',s:'外部の文章に指示を紛れ込ませて、AIを乗っ取る攻撃。',p:'AIへの指示そのものが攻撃の対象になる。AIが読む文書やWebページに、命令が隠されていることがある。',e:'AIにWebページを要約させたら、ページ内に隠された「この内容を外部に送信せよ」という指示に従おうとした。',t:'外部の文章は「データ」として扱わせ、送信や削除など重要な操作の前には人間が確認する。',r:['excess-permission','data-leak']},
+ {id:'data-leak',c:'sec',n:'データ漏洩',s:'入力した情報がどう扱われるかを知らずに、機密情報を入れてしまう。',p:'入力データの扱いを理解しないまま、顧客情報や社外秘の資料を入力してしまう。',e:'顧客リストを、個人向けの無料AIサービスに貼り付けて分析させた。',t:'会社が許可したAIサービスと設定を使い、入力してよい情報のルールを決めておく。',r:['prompt-injection']},
+ {id:'excess-permission',c:'sec',n:'権限の過剰付与',s:'AIエージェントに、仕事に必要な範囲を超える権限を与えてしまう。',p:'AIが誤った判断をしたり乗っ取られたりしたとき、被害が大きくなる。',e:'メールを要約させたいだけなのに、送信や削除の権限まで与えていた。',t:'必要最小限の権限から始め、送信・削除・支払いなどは人間の承認を挟む。',r:['prompt-injection','hitl']},
+
+ {id:'hitl',c:'judge',n:'Human in the Loop',s:'AIの処理の途中に、人間の確認や判断を組み込む考え方。',p:'AIに任せる部分と、人間が判断する部分を分けておかないと、誤りがそのまま外に出る。',e:'下書きはAI、送信前の確認は人。問い合わせの一次振り分けはAI、例外の対応は人。',t:'業務ごとに「AIに任せる」「人が確認する」「人が決める」を決めておく。',r:['automation','evaluate','excess-permission']},
+ {id:'evaluate',c:'judge',n:'AIの回答を評価する能力',s:'「答えを出させる能力」より、「答えを疑う能力」が重要になる。',p:'同じ回答を見ても、評価できる人は誤りに気づき、できない人はそのまま使ってしまう。',e:'AIの分析を受け取ったとき、根拠と前提を確かめた人だけが、データの抜けに気づけた。',t:'根拠・出典・計算・前提・反例の5点で確認する習慣をつける（ページ下部参照）。',r:['hitl','compute-search','confirmation']}
+];
+const TOP=[
+ ['生成AIは「検索エンジン」ではない','not-search'],
+ ['生成AIは「計算機」ではない','not-calculator'],
+ ['生成AIは「正解」を知っているわけではない','probabilistic'],
+ ['ハルシネーションは構造的に起こり得る','hallucination'],
+ ['AIの回答は、入力した情報と文脈に左右される','context'],
+ ['もっともらしい回答ほど疑う','plausible'],
+ ['相関関係と因果関係は違う','correlation'],
+ ['データの見方で、結論は変わる','simpson'],
+ ['人間自身も、確証バイアスや自動化バイアスに陥る','automation'],
+ ['AIに答えを求めるのではなく、AIと一緒に検証する','evaluate']
+];
+const byId=Object.fromEntries(D.map(d=>[d.id,d]));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const col=k=>'var('+CATS[k].c+')';
+
+// legend
+document.getElementById('legend').innerHTML=Object.entries(CATS).map(([k,v])=>'<span><i class="dot" style="background:'+col(k)+'"></i>'+v.n+'（'+D.filter(d=>d.c===k).length+'）</span>').join('');
+
+// top10
+document.getElementById('toplist').innerHTML=TOP.map((t,i)=>'<li><button data-go="'+t[1]+'"><span class="no">'+(i+1)+'</span><span class="tt">'+esc(t[0])+'</span></button></li>').join('');
+
+// cards
+const cardsEl=document.getElementById('cards');
+cardsEl.innerHTML=D.map(d=>{
+  const rel=(d.r||[]).filter(x=>byId[x]).map(x=>'<button class="rel" data-go="'+x+'">'+esc(byId[x].n)+'</button>').join('');
+  const sl=(d.sl||[]).map(k=>'<a class="slink" href="'+SL[k].u+'">'+esc(SL[k].t)+' →</a>').join('');
+  return '<details class="card" id="'+d.id+'" data-c="'+d.c+'" style="--cc:'+col(d.c)+'">'+
+   '<summary><span class="cat">'+CATS[d.c].n+'</span><span class="nm">'+esc(d.n)+'</span><span class="one">'+esc(d.s)+'</span><span class="chev" aria-hidden="true">▼</span></summary>'+
+   '<div class="body"><dl>'+
+   '<div class="blk"><dt>何が問題になるか</dt><dd>'+esc(d.p)+'</dd></div>'+
+   '<div class="blk"><dt>身近な例</dt><dd>'+esc(d.e)+'</dd></div>'+
+   '<div class="blk tip"><dt>対策</dt><dd>'+esc(d.t)+'</dd></div>'+
+   '</dl>'+(d.demo?'<div class="demo" data-demo="'+d.demo+'"></div>':'')+
+   (sl?'<div class="extra">'+sl+'</div>':'')+
+   (rel?'<div class="extra"><span class="lab">関連：</span>'+rel+'</div>':'')+
+   '</div></details>';
+}).join('')+'<p class="empty" id="empty" hidden>該当する項目はありません。</p>';
+
+// filters
+let curCat='all';
+const chips=document.getElementById('chips'),q=document.getElementById('q'),count=document.getElementById('count');
+chips.innerHTML='<button data-c="all" aria-pressed="true">すべて</button>'+Object.entries(CATS).map(([k,v])=>'<button data-c="'+k+'" aria-pressed="false"><i class="dot" style="background:'+col(k)+'"></i>'+v.n+'</button>').join('');
+function apply(){
+  const w=q.value.trim().toLowerCase();let n=0;
+  D.forEach(d=>{
+    const hay=(d.n+d.s+d.p+d.e+d.t+CATS[d.c].n).toLowerCase();
+    const ok=(curCat==='all'||d.c===curCat)&&(!w||hay.includes(w));
+    document.getElementById(d.id).hidden=!ok;if(ok)n++;
+  });
+  count.textContent=D.length+'件中 '+n+'件';
+  document.getElementById('empty').hidden=n>0;
+}
+chips.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;curCat=b.dataset.c;chips.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));apply();});
+q.addEventListener('input',apply);
+apply();
+
+// navigation
+function go(id,push){
+  const el=document.getElementById(id);if(!el)return;
+  if(el.hidden){curCat='all';q.value='';chips.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.c==='all'));apply();}
+  el.open=true;
+  requestAnimationFrame(()=>{const tb=document.querySelector('.toolbar');const y=el.getBoundingClientRect().top+window.scrollY-(tb?tb.offsetHeight:0)-12;window.scrollTo({top:y,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');});
+  if(push!==false){try{history.replaceState(null,'','#'+id);}catch(e){}}
+}
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]');if(g){e.preventDefault();go(g.dataset.go);return;}
+});
+cardsEl.addEventListener('toggle',e=>{const d=e.target;if(d.open){try{history.replaceState(null,'','#'+d.id);}catch(err){}}},true);
+if(location.hash&&byId[location.hash.slice(1)])setTimeout(()=>go(location.hash.slice(1),false),60);
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(byId[h])go(h,false);});
+
+// ===== demos =====
+const demos={
+ simpson(el){
+  const data={A:{new:[4,20],old:[48,80]},B:{new:[20,80],old:[14,20]}};
+  const pct=(a,b)=>Math.round(a/b*100);
+  el.innerHTML='<h4>体験：どちらの営業チームが優秀？</h4><p class="q">表示を切り替えて、成約率を比べてください（架空のデータ）。</p>'+
+   '<div class="seg"><button aria-pressed="true" data-v="all">全体で見る</button><button aria-pressed="false" data-v="seg">顧客区分別に見る</button></div>'+
+   '<div class="bars"></div><p class="verdict"></p>'+
+   '<div class="tblw"><table class="mini"><thead><tr><th>チーム</th><th>新規顧客</th><th>既存顧客</th><th>全体</th></tr></thead><tbody>'+
+   ['A','B'].map(t=>{const d=data[t];return '<tr><td>'+t+'チーム</td><td>'+d.new[0]+'/'+d.new[1]+'件</td><td>'+d.old[0]+'/'+d.old[1]+'件</td><td>'+(d.new[0]+d.old[0])+'/'+(d.new[1]+d.old[1])+'件</td></tr>'}).join('')+
+   '</tbody></table></div>';
+  const bars=el.querySelector('.bars'),ver=el.querySelector('.verdict');
+  function row(l,v,c){return '<div class="barrow"><span>'+l+'</span><div class="bartrack"><div class="barfill" style="width:'+v+'%;background:'+c+'"></div></div><span class="v">'+v+'%</span></div>'}
+  function show(v){
+   const A='var(--c-data)',B='var(--mark)';
+   if(v==='all'){
+    bars.innerHTML=row('Aチーム 全体',pct(52,100),A)+row('Bチーム 全体',pct(34,100),B);
+    ver.textContent='全体では、Aチームのほうが成約率が高く見えます。';
+   }else{
+    bars.innerHTML=row('A 新規顧客',pct(4,20),A)+row('B 新規顧客',pct(20,80),B)+row('A 既存顧客',pct(48,80),A)+row('B 既存顧客',pct(14,20),B);
+    ver.textContent='区分別では、新規も既存もBチームが上。Aチームは成約しやすい既存顧客の担当が多かっただけでした。';
+   }
+  }
+  el.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{el.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));show(b.dataset.v)});
+  show('all');
+ },
+ correlation(el){
+  const m=['1','2','3','4','5','6','7','8','9','10','11','12'];
+  const temp=[6,7,10,15,20,23,27,29,25,19,13,8];
+  const ice=[22,24,33,45,60,72,88,95,78,55,36,26];
+  const acc=[3,3,4,6,9,12,17,19,13,7,4,3];
+  const W=640,H=260,L=40,R=16,T=16,Bm=34;
+  const x=i=>L+i*(W-L-R)/11;
+  const sc=(arr,mn,mx)=>arr.map(v=>T+(1-(v-mn)/(mx-mn))*(H-T-Bm));
+  const path=ys=>ys.map((y,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y.toFixed(1)).join(' ');
+  const pI=path(sc(ice,0,100)),pA=path(sc(acc,0,20)),pT=path(sc(temp,0,32));
+  el.innerHTML='<h4>体験：アイスが売れると、水難事故が増える？</h4><p class="q">月ごとのアイスの売上と水難事故の件数です（架空のデータ）。アイスの売上は事故の原因でしょうか？</p>'+
+   '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="アイス売上と水難事故の月別推移">'+
+   [0,1,2,3].map(i=>{const y=T+i*(H-T-Bm)/3;return '<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'" stroke="var(--line)"/>'}).join('')+
+   m.map((t,i)=>'<text x="'+x(i)+'" y="'+(H-12)+'" font-size="12" text-anchor="middle" fill="var(--sub)">'+t+'月</text>').join('')+
+   '<path d="'+pI+'" fill="none" stroke="var(--c-data)" stroke-width="3"/>'+
+   '<path d="'+pA+'" fill="none" stroke="var(--c-sec)" stroke-width="3" stroke-dasharray="7 5"/>'+
+   '<path class="tline" d="'+pT+'" fill="none" stroke="var(--mark)" stroke-width="5" opacity="0" style="transition:opacity .6s"/>'+
+   '</svg>'+
+   '<div class="chartlegend"><span><i style="background:var(--c-data)"></i>アイスの売上</span><span><i style="background:var(--c-sec)"></i>水難事故の件数</span><span class="tleg" style="display:none"><i style="background:var(--mark);height:5px"></i>気温</span></div>'+
+   '<button class="btn ghost">隠れた要因を表示する</button><div class="out" hidden>両方を動かしていたのは<b>気温</b>です。暑い月はアイスが売れ、海や川に行く人も増えます。アイスの売上と事故は、同じ原因で一緒に動いていただけで、片方が片方の原因ではありません。</div>';
+  el.querySelector('.btn').onclick=function(){el.querySelector('.tline').setAttribute('opacity','1');el.querySelector('.tleg').style.display='';el.querySelector('.out').hidden=false;this.remove();};
+ },
+ anchoring(el){
+  const a=Math.random()<.5?10:65;
+  el.innerHTML='<h4>体験：アフリカにある国の数は？</h4><p class="q">調べずに、直感で答えてください。</p>'+
+   '<div class="anc"><p style="margin:0 0 10px">アフリカの国の数は、<span class="anc-num">'+a+'</span>か国より多いと思いますか？</p>'+
+   '<button class="btn ghost" data-a="多い">多い</button> <button class="btn ghost" data-a="少ない">少ない</button>'+
+   '<div class="st2" hidden style="margin-top:14px">では、何か国だと思いますか？　<input type="number" min="1" max="200" inputmode="numeric" aria-label="推定した国の数"> <button class="btn">答える</button></div>'+
+   '<div class="out" hidden></div></div>';
+  const st2=el.querySelector('.st2'),out=el.querySelector('.out'),inp=el.querySelector('input');
+  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{st2.hidden=false;inp.focus();});
+  el.querySelector('.st2 .btn').onclick=()=>{
+   const v=parseInt(inp.value,10);if(isNaN(v)){inp.focus();return;}
+   out.hidden=false;
+   out.innerHTML='あなたの答え：<b>'+v+'か国</b>　正解：<b>54か国</b>（国連加盟国）<br>最初に見た「'+a+'」という数字は、答えとは無関係です。それでも、'+(a===10?'小さい数字（10）を見た人は少なめに':'大きい数字（65）を見た人は多めに')+'答える傾向があります。これがアンカリング効果です。AIが最初に出した数字にも、同じように引っ張られます。<br><button class="btn ghost" style="margin-top:10px">別の数字でもう一度</button>';
+   out.querySelector('button').onclick=()=>demos.anchoring(el);
+  };
+ },
+ probabilistic(el){
+  const ai=['香りで、ひと息。','毎日に、深い一杯を。','急須の味を、ボトルで。','渋みの奥に、甘みあり。','朝の一杯が、今日を整える。','産地の香り、そのままに。','すっきり、でも、しっかり。','緑の時間をあなたに。'];
+  let last=-1,n=0,calcN=0;
+  el.innerHTML='<h4>体験：同じ質問を、何度もしてみる</h4><p class="q">ボタンを押すたびに、同じ質問をもう一度送ります（回答は例です）。</p>'+
+   '<div class="gen"><div class="box"><b>電卓：「128 × 4 は？」</b><div class="ans c1">－</div><div class="hist h1"></div></div>'+
+   '<div class="box"><b>生成AI：「新しい緑茶のキャッチコピーを1つ」</b><div class="ans c2">－</div><div class="hist h2"></div></div></div>'+
+   '<p style="margin:12px 0 0"><button class="btn">同じ質問をもう一度送る</button></p>'+
+   '<div class="out" hidden>電卓は何度聞いても同じ答え（決定論）。生成AIは、確率で言葉を選ぶため、聞くたびに答えが変わることがあります（確率論）。発想を広げるには便利ですが、「毎回同じ結果」が必要な業務では、出力形式を固定し、ルールで決められる部分はプログラムに任せます。</div>';
+  el.querySelector('.btn').onclick=()=>{
+   n++;let i;do{i=Math.floor(Math.random()*ai.length)}while(i===last);last=i;
+   el.querySelector('.c1').textContent='512';el.querySelector('.c2').textContent='「'+ai[i]+'」';
+   el.querySelector('.h1').textContent=n+'回目：毎回 512';el.querySelector('.h2').textContent=n+'回目';
+   if(n>=2)el.querySelector('.out').hidden=false;
+  };
+ }
+};
+document.querySelectorAll('[data-demo]').forEach(el=>demos[el.dataset.demo](el));
+})();
+</script>
+</body>
+</html>
