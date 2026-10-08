@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ほめると下がる、叱ると上がる？｜カーネマンに学ぶ直感とAIの付き合い方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --praise:#1F7A5A; --praise-soft:#DDF1E8; --scold:#B3412F; --scold-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --mark-soft:#3A3320;
+    --praise:#5BC79E; --praise-soft:#1B3A30; --scold:#E98572; --scold-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --mark-soft:#3A3320;
+  --praise:#5BC79E; --praise-soft:#1B3A30; --scold:#E98572; --scold-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+.bar{display:flex;align-items:center;gap:10px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;color:var(--ink);text-decoration:none;white-space:nowrap}
+.navbtn:disabled{opacity:.35;cursor:default}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:560px){.bar .hide-sm{display:none}}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+h1{font-size:clamp(34px,5.6vw,66px);font-weight:900;line-height:1.25;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 26px}
+.part{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.lead{font-size:clamp(17px,1.9vw,22px);color:var(--sub);max-width:36em;margin:0}
+.big{font-size:clamp(24px,3.6vw,44px);font-weight:900;line-height:1.45;margin:0 0 18px}
+.big em,.hl{font-style:normal;background:linear-gradient(transparent 62%,var(--mark) 62%)}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:start}
+.cols.r7{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+@media (max-width:820px){.cols,.cols.r7{grid-template-columns:1fr}}
+.points{margin:0;padding:0;list-style:none}
+.points li{padding:9px 0 9px 22px;position:relative;border-bottom:1px solid var(--line)}
+.points li::before{content:"";position:absolute;left:4px;top:1.1em;width:8px;height:8px;border-radius:50%;background:var(--indigo)}
+.note{font-size:14px;color:var(--sub);margin-top:16px}
+.card{background:var(--surface);border-radius:10px;padding:18px 20px}
+.btn{border:none;background:var(--indigo);color:#fff;border-radius:8px;padding:9px 18px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;border:1px solid var(--indigo);color:var(--indigo)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* title */
+.title-note{margin-top:34px;color:var(--sub);font-size:15px}
+.faces{display:flex;gap:14px;margin:0 0 24px;flex-wrap:wrap}
+.faces span{font-size:clamp(17px,2vw,22px);font-weight:700;padding:6px 16px;border-radius:999px}
+.faces .p{background:var(--praise-soft);color:var(--praise)}
+.faces .s{background:var(--scold-soft);color:var(--scold)}
+
+/* profile */
+.timeline{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+.timeline li{position:relative;padding:6px 0 10px 22px}
+.timeline li::before{content:"";position:absolute;left:-7px;top:.85em;width:12px;height:12px;border-radius:50%;background:var(--surface);border:3px solid var(--indigo)}
+.timeline b{display:inline-block;min-width:4.5em;color:var(--indigo)}
+
+/* story */
+.quote{border-left:5px solid var(--mark);padding:6px 0 6px 20px;margin:0 0 20px;font-size:clamp(18px,2.1vw,25px);font-weight:700;line-height:1.6}
+.quote small{display:block;font-size:14px;color:var(--sub);font-weight:400;margin-top:6px}
+
+/* game */
+.game{background:var(--surface);border-radius:12px;padding:20px}
+.g-head{display:flex;justify-content:space-between;color:var(--sub);font-size:14px;margin-bottom:8px}
+.g-score{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;min-height:84px}
+.g-num{font-size:clamp(48px,7vw,76px);font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+.g-lab{font-size:18px;font-weight:700}
+.g-diff{font-size:16px;font-weight:700}
+.up{color:var(--praise)}.down{color:var(--scold)}
+.g-meter{height:10px;background:var(--bg);border-radius:5px;overflow:hidden;margin:10px 0 16px}
+.g-meter span{display:block;height:100%;background:var(--indigo);transition:width .4s}
+.g-btns{display:flex;gap:10px;flex-wrap:wrap}
+.g-btns button{border:none;border-radius:8px;padding:10px 20px;font-weight:700;font-size:16px}
+.b-p{background:var(--praise);color:#fff}.b-s{background:var(--scold);color:#fff}.b-n{background:var(--bg);border:1px solid var(--line)!important}
+.g-log{display:flex;gap:4px;flex-wrap:wrap;margin-top:14px;min-height:28px}
+.g-log span{font-size:12px;border-radius:4px;padding:2px 7px;background:var(--bg);color:var(--sub)}
+.g-log .lp{background:var(--praise-soft);color:var(--praise)}.g-log .ls{background:var(--scold-soft);color:var(--scold)}
+.g-res{margin-top:14px}
+.g-res[hidden]{display:none}
+.res-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.res-grid div{border-radius:8px;padding:12px 14px}
+.res-grid .rp{background:var(--praise-soft)}.res-grid .rs{background:var(--scold-soft)}
+.res-grid b{display:block;font-size:14px}
+.res-grid strong{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums}
+.reveal{background:var(--mark-soft);border-radius:8px;padding:12px 16px;font-weight:700}
+
+/* sim */
+.simbars{display:grid;gap:12px}
+.sb{display:grid;grid-template-columns:10.5em 1fr 3em;gap:10px;align-items:center;font-size:15px}
+.sb .track{height:22px;background:var(--bg);border-radius:4px;overflow:hidden;position:relative}
+.sb .fill{height:100%;border-radius:4px;transition:width .6s}
+.sb .v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.grp{background:var(--surface);border-radius:10px;padding:16px 18px;margin-bottom:12px}
+.grp h4{margin:0 0 10px;font-size:16px}
+.grp p{margin:8px 0 0;font-size:15px;font-weight:700}
+
+/* algo */
+.tblw{overflow-x:auto;border-radius:8px}
+.tbl{width:100%;border-collapse:collapse;background:var(--surface);font-size:clamp(13px,1.3vw,16px)}
+.tbl th,.tbl td{padding:7px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{background:var(--indigo-soft);color:var(--indigo)}
+.tbl .err{font-size:12px;color:var(--sub);margin-left:4px}
+.tbl .miss{background:var(--scold-soft)}
+.tbl tfoot td{font-weight:900;background:var(--mark-soft)}
+.tbl tfoot[hidden]{display:none}
+.choice{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.out{margin-top:12px;background:var(--surface);border-radius:10px;padding:14px 18px}
+.out[hidden]{display:none}
+
+/* slider */
+.trust{background:var(--surface);border-radius:12px;padding:22px}
+.trust input[type=range]{width:100%;accent-color:var(--indigo);height:28px}
+.zones{display:grid;grid-template-columns:3fr 4fr 3fr;font-size:13px;color:var(--sub);text-align:center;margin-top:2px}
+.zones span{border-top:6px solid;padding-top:4px}
+.zones span:nth-child(1){border-color:var(--scold)}.zones span:nth-child(2){border-color:var(--praise)}.zones span:nth-child(3){border-color:var(--scold)}
+.tz{margin-top:16px;border-radius:10px;padding:14px 18px;min-height:120px}
+.tz b{display:block;font-size:clamp(18px,2vw,22px);margin-bottom:4px}
+.tz.bad{background:var(--scold-soft)}.tz.good{background:var(--praise-soft)}
+
+/* matrix */
+.mx{position:relative;aspect-ratio:1.25/1;background:var(--surface);border-radius:10px;border:1px solid var(--line);margin-left:22px;margin-bottom:24px}
+.mx .q{position:absolute;width:50%;height:50%;padding:10px 12px;font-size:13px;color:var(--sub);font-weight:700;line-height:1.4}
+.mx .q1{left:0;top:0;border-right:1px dashed var(--line);border-bottom:1px dashed var(--line)}
+.mx .q2{right:0;top:0;border-bottom:1px dashed var(--line);text-align:right}
+.mx .q3{left:0;bottom:0;border-right:1px dashed var(--line);display:flex;align-items:flex-end}
+.mx .q4{right:0;bottom:0;display:flex;align-items:flex-end;justify-content:flex-end;text-align:right}
+.mx .ax-x{position:absolute;bottom:-24px;left:0;right:0;text-align:center;font-size:13px;color:var(--sub)}
+.mx .ax-y{position:absolute;left:-24px;top:0;bottom:0;writing-mode:vertical-rl;text-align:center;font-size:13px;color:var(--sub);letter-spacing:.05em}
+.dotm{position:absolute;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:var(--line);border:none;transition:all .25s}
+.dotm.on{background:var(--mark);width:22px;height:22px;box-shadow:0 0 0 6px rgba(242,194,48,.3)}
+.exs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.exs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px;font-size:14px}
+.exs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mode{display:inline-block;font-weight:900;font-size:18px;margin-bottom:4px}
+
+/* ethics */
+.eth{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.eth{grid-template-columns:1fr}}
+.eth button{text-align:left;border:none;background:var(--surface);border-radius:10px;padding:16px 18px;border-top:4px solid var(--indigo);display:flex;flex-direction:column;gap:6px;min-height:150px}
+.eth .t{font-size:clamp(17px,1.8vw,20px);font-weight:900}
+.eth .qq{color:var(--sub);font-size:15px}
+.eth .a{display:none;font-size:15px;border-top:1px dashed var(--line);padding-top:8px;margin-top:auto}
+.eth .a b{color:var(--indigo)}
+.eth button.open{border-top-color:var(--mark)}
+.eth button.open .a{display:block}
+.eth .hint{font-size:12px;color:var(--sub);margin-top:auto}
+.eth button.open .hint{display:none}
+
+/* rx */
+.rx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.rx{grid-template-columns:1fr}}
+.rx div{background:var(--surface);border-radius:10px;padding:16px 18px}
+.rx b{display:block;font-size:clamp(17px,1.9vw,21px);margin-bottom:4px}
+.rx p{margin:0;font-size:15px;color:var(--sub)}
+.rx em{font-style:normal;color:var(--ink);font-weight:700}
+
+.closing .to{font-size:clamp(28px,4.6vw,56px);font-weight:900;line-height:1.4;margin:0 0 20px}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.links a{background:var(--mark-soft);border-radius:8px;padding:8px 14px;color:var(--ink);text-decoration:none;font-weight:700;font-size:15px}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<section class="slide" data-title="タイトル">
+ <div class="inner">
+  <div class="faces"><span class="p">ほめると、下がる？</span><span class="s">叱ると、上がる？</span></div>
+  <h1>直感を疑い、<br>アルゴリズムも疑う</h1>
+  <p class="lead">ダニエル・カーネマンの逸話から学ぶ、平均への回帰、アルゴリズム嫌悪、そしてAIに判断を委ねるときの課題。</p>
+  <p class="title-note">← → キー、画面下のボタン、スワイプで操作できます</p>
+ </div>
+</section>
+
+<section class="slide" data-title="ダニエル・カーネマンとは">
+ <div class="inner">
+  <h2>ダニエル・カーネマン</h2>
+  <p class="def">心理学者でありながら、ノーベル経済学賞を受賞した「行動経済学」の生みの親</p>
+  <div class="cols">
+   <div>
+    <ul class="points">
+     <li>「人間は常に合理的に判断する」という経済学の前提を、実験で覆した</li>
+     <li>人の直感には、<span class="hl">予測できるパターンの誤り（バイアス）</span>があることを示した</li>
+     <li>速い直感の「システム1」と、遅く論理的な「システム2」で思考を説明した</li>
+    </ul>
+   </div>
+   <ol class="timeline">
+    <li><b>1934年</b>テルアビブに生まれ、パリで幼少期を過ごす</li>
+    <li><b>1950年代</b>イスラエル国防軍の心理部門で、士官候補生の選抜に関わる</li>
+    <li><b>1969年頃</b>エイモス・トベルスキーとの共同研究を始める</li>
+    <li><b>2002年</b>ノーベル経済学賞を受賞</li>
+    <li><b>2011年</b>『ファスト＆スロー』を出版</li>
+    <li><b>2021年</b>共著『NOISE』を出版</li>
+    <li><b>2024年</b>90歳で逝去</li>
+   </ol>
+  </div>
+ </div>
+</section>
+
+<section class="slide" data-title="逸話：飛行教官の反論">
+ <div class="inner">
+  <span class="part">第1部　平均への回帰</span>
+  <h2>飛行教官の反論</h2>
+  <p class="def">1960年代、イスラエル空軍の飛行教官に「効果的な訓練の心理学」を教えていたときのこと</p>
+  <div class="cols r7">
+   <div>
+    <ul class="points">
+     <li>カーネマンは「失敗を罰するより、うまくできたときにほめる方が効果的」という研究結果を説明した</li>
+     <li>すると、ベテランの教官が反論した</li>
+    </ul>
+   </div>
+   <div>
+    <p class="quote">見事な着陸をほめると、次はたいてい下手になる。<br>ひどい着陸を怒鳴りつけると、次はたいてい上手くなる。<br>だから「ほめるのがよい」なんて言わないでくれ。<small>教官の主張（要旨）</small></p>
+    <p style="margin:0;font-weight:700">教官の観察そのものは、正しかった。では、結論も正しいのでしょうか？</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="slide" data-title="体験：あなたは飛行教官" id="s-game">
+ <div class="inner">
+  <span class="part">体験</span>
+  <h2>あなたは飛行教官</h2>
+  <p class="def">訓練生の着陸を見て、「ほめる」か「叱る」かを選んでください。全10回です。</p>
+  <div class="game" id="game">
+   <div class="g-head"><span id="gRound"></span><span>着陸の点数（100点満点）</span></div>
+   <div class="g-score"><span class="g-num" id="gNum">--</span><span class="g-lab" id="gLab"></span><span class="g-diff" id="gDiff"></span></div>
+   <div class="g-meter"><span id="gMeter" style="width:0"></span></div>
+   <div class="g-btns" id="gBtns">
+    <button class="b-p" data-a="p">ほめる</button>
+    <button class="b-s" data-a="s">叱る</button>
+    <button class="b-n" data-a="n">何も言わない</button>
+   </div>
+   <div class="g-log" id="gLog"></div>
+   <div class="g-res" id="gRes" hidden>
+    <div class="res-grid">
+     <div class="rp"><b>ほめた次の着陸</b><strong id="rP">-</strong></div>
+     <div class="rs"><b>叱った次の着陸</b><strong id="rS">-</strong></div>
+    </div>
+    <p class="reveal">種明かし：着陸の点数は、毎回ランダムに決めていました。あなたの言葉は、次の着陸に一切影響していません。</p><p class="note" style="margin-top:8px">よい着陸の後にほめ、悪い着陸の後に叱るという自然な選び方をすると、ほめた後は下がり、叱った後は上がる結果になりやすくなります。</p>
+    <button class="btn ghost" id="gAgain" style="margin-top:10px">もう一度やる</button>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="slide" data-title="種明かし：平均への回帰" id="s-sim">
+ <div class="inner">
+  <span class="part">第1部　平均への回帰</span>
+  <h2>正体は「平均への回帰」</h2>
+  <p class="def">極端によい（悪い）結果は、実力に偶然の上振れ（下振れ）が重なったもの。次は平均に近づきやすい。</p>
+  <div class="cols r7">
+   <div>
+    <ul class="points">
+     <li>ほめるのは、たまたま上振れした直後。次は平均に戻るので「下がった」ように見える</li>
+     <li>叱るのは、たまたま下振れした直後。次は平均に戻るので「上がった」ように見える</li>
+     <li>言葉の効果がゼロでも、教官の観察どおりの結果が出る</li>
+    </ul>
+    <p class="note">カーネマンはこの場で、床の目標にコインを後ろ向きに投げさせ、1回目に近かった人ほど2回目は遠くなることも示しました。</p>
+   </div>
+   <div>
+    <div class="grp"><h4>1回目が上位10%だった訓練生（＝ほめられる人）</h4>
+     <div class="simbars">
+      <div class="sb"><span>1回目の平均</span><div class="track"><div class="fill" id="pa" style="background:var(--praise)"></div></div><span class="v" id="pav"></span></div>
+      <div class="sb"><span>2回目の平均</span><div class="track"><div class="fill" id="pb" style="background:var(--praise);opacity:.55"></div></div><span class="v" id="pbv"></span></div>
+     </div></div>
+    <div class="grp"><h4>1回目が下位10%だった訓練生（＝叱られる人）</h4>
+     <div class="simbars">
+      <div class="sb"><span>1回目の平均</span><div class="track"><div class="fill" id="sa" style="background:var(--scold)"></div></div><span class="v" id="sav"></span></div>
+      <div class="sb"><span>2回目の平均</span><div class="track"><div class="fill" id="sbb" style="background:var(--scold);opacity:.55"></div></div><span class="v" id="sbv"></span></div>
+     </div></div>
+    <button class="btn" id="simBtn">1,000人分をシミュレーションする</button>
+    <p class="note" style="margin-top:8px">条件：ほめても叱っても、2回目の点数には影響しない設定です。</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="slide" data-title="ビジネスとAIでの落とし穴">
+ <div class="inner">
+  <span class="part">第1部　平均への回帰</span>
+  <h2>なぜ、私たちは騙されるのか</h2>
+  <p class="def">直感（システム1）は、偶然の変化にも原因を見つけ、もっともらしい物語を作ってしまう。</p>
+  <div class="cols">
+   <div>
+    <p class="big">人は、<em>叱ると報われ、<br>ほめると罰せられる</em><br>ように見える世界にいる。</p>
+    <p class="note">カーネマンは、この誤解が「叱責が効く」という信念を強めてしまうと指摘しました。</p>
+   </div>
+   <div>
+    <ul class="points">
+     <li><b>最悪の月の後の施策：</b>売上が最悪の月にAIツールを導入したら翌月改善した。何もしなくても戻ったかもしれない</li>
+     <li><b>2年目のジンクス：</b>新人賞をとった選手が翌年に成績を落とす</li>
+     <li><b>AIの説明：</b>AIに「なぜ改善したか」を聞くと、偶然の変化にももっともらしい理由をつけて答える</li>
+     <li><b>対策：</b>導入しなかった店舗や期間と比べる。1回の結果ではなく、続けて観察する</li>
+    </ul>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="slide" data-title="直感と数式、どちらが当たる？">
+ <div class="inner">
+  <span class="part">第2部　アルゴリズム嫌悪</span>
+  <h2>直感と数式、どちらが当たる？</h2>
+  <p class="def">カーネマンは、単純な数式やルールが、専門家の直感に匹敵するか上回る場面が多いことを強調した。</p>
+  <div class="cols">
+   <div>
+    <ul class="points">
+     <li>心理学者ポール・ミールは1954年、臨床家の判断と統計的な予測を比べ、統計的な方法が同等以上であることを示した</li>
+     <li>カーネマン自身も軍で、面接官の「全体的な印象」をやめ、項目ごとに点数をつける方式に変えて予測を改善した</li>
+     <li>人間の判断には、偏り（バイアス）に加えて、同じ条件でも判断がばらつく「ノイズ」がある</li>
+    </ul>
+   </div>
+   <div class="card">
+    <p style="margin:0 0 8px;font-weight:700">妥当性の錯覚</p>
+    <p style="margin:0">軍の選抜で、面接官の評価は実際の成績をほとんど予測できていないと分かった。それでも現場に立つと、面接官たちは「この候補生は優秀だ」と強く確信してしまった。</p>
+    <p style="margin:12px 0 0;font-weight:700" class="hl">確信の強さは、正しさの証拠にならない。</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="slide" data-title="体験：どちらの予測を採用する？" id="s-algo">
+ <div class="inner">
+  <span class="part">体験</span>
+  <h2>来月の売上予測、どちらを採用する？</h2>
+  <p class="def">ベテラン担当者とAIの、過去6か月の予測実績です（単位：万円、架空のデータ）。</p>
+  <div class="tblw">
+   <table class="tbl">
+    <thead><tr><th>月</th><th>実績</th><th>ベテラン担当者の予測</th><th>AIの予測</th></tr></thead>
+    <tbody id="algoBody"></tbody>
+    <tfoot id="algoFoot" hidden><tr><td>平均のずれ</td><td></td><td id="mh"></td><td id="ma"></td></tr></tfoot>
+   </table>
+  </div>
+  <div class="choice"><button class="btn" data-pick="h">ベテラン担当者の予測を採用</button><button class="btn" data-pick="a">AIの予測を採用</button></div>
+  <div class="out" id="algoOut" hidden></div>
+ </div>
+</section>
+
+<section class="slide" data-title="アルゴリズム嫌悪">
+ <div class="inner">
+  <span class="part">第2部　アルゴリズム嫌悪</span>
+  <h2>アルゴリズム嫌悪</h2>
+  <p class="def">アルゴリズムが一度間違えるのを見ると、平均的には人間より正確でも、人はアルゴリズムを避けてしまう。</p>
+  <div class="cols">
+   <div>
+    <ul class="points">
+     <li>2015年、ディートフォーストらの研究が、この現象を「アルゴリズム嫌悪」として示した</li>
+     <li>人間の誤りは「次は学ぶだろう」と許せるのに、機械の誤りは「やはり信用できない」と受け取りやすい</li>
+     <li>自分の直感や経験を手放したくない気持ちも、判断を人間側に引き戻す</li>
+    </ul>
+   </div>
+   <div class="card">
+    <p style="margin:0 0 8px;font-weight:700">何が問題になるか</p>
+    <p style="margin:0">本来なら防げた誤りを、人間の直感を優先したために防げない。とくに、ばらつき（ノイズ）が大きい判断ほど損失が大きい。</p>
+    <p style="margin:12px 0 0;font-weight:700">ただし、大きく外れた原因を確かめずに「AIだから正しい」と信じるのも危険です。</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="slide" data-title="体験：嫌悪と過信のあいだ">
+ <div class="inner">
+  <span class="part">体験</span>
+  <h2>嫌悪と過信のあいだ</h2>
+  <p class="def">AIの判断をどれくらい信じますか？　つまみを動かしてみてください。</p>
+  <div class="trust">
+   <input type="range" id="trust" min="0" max="100" value="50" aria-label="AIの判断を信じる度合い">
+   <div class="zones"><span>アルゴリズム嫌悪</span><span>適切な信頼</span><span>自動化バイアス</span></div>
+   <div class="tz" id="tz"></div>
+  </div>
+ </div>
+</section>
+
+<section class="slide" data-title="体験：どこまでAIに任せる？">
+ <div class="inner">
+  <span class="part">第3部　AIに判断を委ねる</span>
+  <h2>どこまでAIに任せる？</h2>
+  <p class="def">業務を選ぶと、マトリクス上の位置と、任せ方の目安が表示されます。</p>
+  <div class="cols">
+   <div>
+    <div class="mx" id="mx">
+     <div class="q q1">影響大・規則性低<br>人が決める</div>
+     <div class="q q2">影響大・規則性高<br>AIが提案、人が決める</div>
+     <div class="q q3">影響小・規則性低<br>AIで発想を広げる</div>
+     <div class="q q4">影響小・規則性高<br>AIに任せる</div>
+     <div class="ax-x">結果の規則性・検証のしやすさ →</div>
+     <div class="ax-y">誤ったときの影響（上ほど大きい）</div>
+    </div>
+   </div>
+   <div>
+    <div class="exs" id="exs"></div>
+    <div class="card" id="exOut"><p style="margin:0;color:var(--sub)">業務を選んでください。</p></div>
+    <p class="note">カーネマンは、直感を信頼してよい条件として「規則性のある環境」と「結果がすぐ分かり、学べること」を挙げました。AIへの任せ方にも同じ考え方が使えます。</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="slide" data-title="AIに判断を委ねるときの6つの課題">
+ <div class="inner">
+  <span class="part">第3部　AIに判断を委ねる</span>
+  <h2>AIに判断を委ねるときの6つの課題</h2>
+  <p class="def">カードを押すと、考えるべき点が表示されます。</p>
+  <div class="eth" id="eth"></div>
+ </div>
+</section>
+
+<section class="slide" data-title="カーネマンからの処方箋">
+ <div class="inner">
+  <h2>カーネマンからの処方箋</h2>
+  <p class="def">直感にもAIにも頼り切らず、判断の「仕組み」を整える。</p>
+  <div class="rx">
+   <div><b>事前検分（プレモーテム）</b><p>始める前に「1年後、この計画は大失敗した」と仮定し、<em>失敗の理由を先に洗い出す</em>。AI導入計画にも使える。</p></div>
+   <div><b>独立した評価を集める</b><p>他人の意見やAIの回答を見る前に、<em>各自が自分の評価を書き出す</em>。最初の意見に引っ張られるのを防ぐ。</p></div>
+   <div><b>判断の衛生管理</b><p>評価項目を分け、<em>手順と基準を決めて判断する</em>。人の判断のばらつき（ノイズ）を減らす。</p></div>
+   <div><b>比較対象を置く</b><p>施策やAIの効果は、<em>やらなかった場合と比べて評価する</em>。平均への回帰に騙されない。</p></div>
+  </div>
+ </div>
+</section>
+
+<section class="slide closing" data-title="まとめ">
+ <div class="inner">
+  <p class="to">確信の強さは、<br>正しさの証拠ではない。</p>
+  <p class="lead">人の直感も、AIの答えも、疑って確かめる。そのうえで、互いの弱点を補い合うように組み合わせる。</p>
+  <div class="links">
+   <a href="../ai-pitfalls/#regression">AIを疑う力：平均への回帰 →</a>
+   <a href="../ai-pitfalls/#automation">AIを疑う力：自動化バイアス →</a>
+   <a href="../ai-pitfalls/#hitl">AIを疑う力：Human in the Loop →</a>
+  </div>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  // ===== deck =====
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=document.getElementById('prev'),nextB=document.getElementById('next');
+  const prog=document.getElementById('prog'),count=document.getElementById('count');
+  const toc=document.getElementById('toc'),tocBtn=document.getElementById('tocBtn'),tocList=document.getElementById('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li');const b=document.createElement('button');
+    b.innerHTML='<span>'+(i+1)+'</span>'+s.dataset.title;b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=document.getElementById('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!e.target.closest('.tblw,input,.mx'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+
+  const randn=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+
+  // ===== game =====
+  const G={el:{num:gNum,lab:gLab,diff:gDiff,meter:gMeter,round:gRound,btns:gBtns,log:gLog,res:gRes}};
+  const land=()=>Math.round(clamp(70+randn()*13,25,100));
+  const label=v=>v>=82?'見事な着陸！':v<=58?'危なっかしい着陸…':'まずまずの着陸';
+  function gReset(){G.r=0;G.score=land();G.hist=[];G.el.log.innerHTML='';G.el.res.hidden=true;G.el.btns.style.display='';G.el.diff.textContent='';render();}
+  function render(){
+    G.el.round.textContent=(G.r+1)+'回目の判断（全10回）';
+    G.el.num.textContent=G.score;G.el.lab.textContent=label(G.score);G.el.meter.style.width=G.score+'%';
+  }
+  G.el.btns.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    const a=b.dataset.a,prev=G.score,next=land();
+    G.hist.push({a,prev,next});
+    const sp=document.createElement('span');sp.className=a==='p'?'lp':a==='s'?'ls':'';
+    sp.textContent=(a==='p'?'ほめた':a==='s'?'叱った':'無言')+' '+prev+'→'+next;G.el.log.appendChild(sp);
+    G.r++;G.score=next;
+    const d=next-prev;G.el.diff.className='g-diff '+(d>=0?'up':'down');
+    G.el.diff.textContent=(a==='p'?'ほめた結果：':a==='s'?'叱った結果：':'次の着陸：')+(d>=0?'+':'')+d+'点';
+    if(G.r>=10){G.el.btns.style.display='none';G.el.round.textContent='10回の判断が終わりました';G.el.num.textContent=next;G.el.lab.textContent=label(next);G.el.meter.style.width=next+'%';finish();}
+    else render();
+  });
+  function finish(){
+    const avg=k=>{const x=G.hist.filter(h=>h.a===k);return x.length?(x.reduce((s,h)=>s+h.next-h.prev,0)/x.length):null};
+    const f=v=>v===null?'該当なし':(v>=0?'+':'')+v.toFixed(1)+'点';
+    rP.textContent=f(avg('p'));rS.textContent=f(avg('s'));
+    G.el.res.hidden=false;
+  }
+  gAgain.onclick=gReset;gReset();
+
+  // ===== simulation =====
+  function sim(){
+    const N=1000,arr=[];
+    for(let i=0;i<N;i++){const sk=70+randn()*5;arr.push([clamp(sk+randn()*11,0,100),clamp(sk+randn()*11,0,100)]);}
+    arr.sort((a,b)=>b[0]-a[0]);
+    const top=arr.slice(0,100),bot=arr.slice(-100);
+    const m=(g,i)=>g.reduce((s,x)=>s+x[i],0)/g.length;
+    const set=(id,v)=>{document.getElementById(id).style.width=v+'%';document.getElementById(id+'v').textContent=v.toFixed(0);};
+    set('pa',m(top,0));set('pb',m(top,1));set('sa',m(bot,0));
+    document.getElementById('sbb').style.width=m(bot,1)+'%';document.getElementById('sbv').textContent=m(bot,1).toFixed(0);
+  }
+  document.getElementById('simBtn').onclick=function(){sim();this.textContent='もう一度シミュレーションする';};
+
+  // ===== algorithm aversion =====
+  const rows=[['4月',1000,1080,1010],['5月',1100,1020,1090],['6月',1050,1130,1060],['7月',1200,1110,1190],['8月',1150,1230,1430],['9月',1250,1170,1240]];
+  const fmt=n=>n.toLocaleString('ja-JP');
+  algoBody.innerHTML=rows.map(r=>{const eh=Math.abs(r[2]-r[1]),ea=Math.abs(r[3]-r[1]);
+    return '<tr><td>'+r[0]+'</td><td>'+fmt(r[1])+'</td><td>'+fmt(r[2])+'<span class="err">（ずれ '+eh+'）</span></td><td'+(ea>200?' class="miss"':'')+'>'+fmt(r[3])+'<span class="err">（ずれ '+ea+'）</span></td></tr>'}).join('');
+  const mh=rows.reduce((s,r)=>s+Math.abs(r[2]-r[1]),0)/rows.length,ma=rows.reduce((s,r)=>s+Math.abs(r[3]-r[1]),0)/rows.length;
+  document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{
+    document.getElementById('mh').textContent=mh.toFixed(0)+'万円';document.getElementById('ma').textContent=ma.toFixed(0)+'万円';
+    algoFoot.hidden=false;
+    const pickH=b.dataset.pick==='h';
+    algoOut.hidden=false;
+    algoOut.innerHTML=(pickH?'<p style="margin:0 0 8px;font-weight:700">ベテラン担当者を選んだあなたは、多数派かもしれません。</p>':'<p style="margin:0 0 8px;font-weight:700">AIを選んだあなたは、平均のずれで判断できています。</p>')+
+     '<p style="margin:0">平均のずれは、AIが約'+ma.toFixed(0)+'万円、ベテラン担当者が約'+mh.toFixed(0)+'万円。8月の大きな外れが目立つため、AIを避けたくなります。研究では、アルゴリズムの誤りを一度見た人ほど、より不正確な人間の予測を選びやすいことが示されています。</p>'+
+     '<p style="margin:8px 0 0;font-size:15px;color:var(--sub)">正しい付き合い方は、8月に何が起きたのか（特売、天候、データの欠け）を確かめ、AIの弱点を把握したうえで使うことです。</p>';
+  });
+
+  // ===== trust slider =====
+  const tz=document.getElementById('tz'),tr=document.getElementById('trust');
+  function tzr(){
+    const v=+tr.value;
+    if(v<=30){tz.className='tz bad';tz.innerHTML='<b>アルゴリズム嫌悪</b>一度の失敗を理由にAIを使わず、自分の直感を優先する。AIなら防げた誤りや、判断のばらつきを見逃してしまう。';}
+    else if(v<70){tz.className='tz good';tz.innerHTML='<b>適切な信頼</b>AIの得意・不得意を把握し、根拠を確かめながら使う。外れたときは原因を調べ、任せる範囲を調整する。';}
+    else{tz.className='tz bad';tz.innerHTML='<b>自動化バイアス</b>AIの判断を確かめずにそのまま受け入れる。もっともらしい誤りやハルシネーションに気づけなくなる。';}
+  }
+  tr.oninput=tzr;tzr();
+
+  // ===== matrix =====
+  const EX=[
+   {n:'問い合わせの振り分け',x:82,y:78,m:'AIに任せる',d:'規則性があり、誤っても人が後から直せる。例外だけを人に回す仕組みにする。'},
+   {n:'キャッチコピー案',x:20,y:80,m:'AIで発想を広げる',d:'正解がない仕事。AIに大量の案を出させ、選ぶのは人。'},
+   {n:'在庫の発注量',x:74,y:44,m:'AIが提案、人が承認',d:'過去データから予測しやすいが、外れると損失が出る。特売や天候など、特殊な事情は人が補う。'},
+   {n:'融資の審査',x:72,y:16,m:'AIが提案、人が決める',d:'データで予測しやすい一方、影響が大きく説明責任がある。判断理由を説明でき、異議に対応できる体制が必要。'},
+   {n:'採用の合否',x:38,y:14,m:'人が決める（AIは補助）',d:'学習データの偏りがそのまま差別につながるおそれがある。AIは評価の観点整理や、偏りのチェックに使う。'},
+   {n:'新規事業の判断',x:14,y:22,m:'人が決める',d:'前例が少なく、結果が出るまで時間がかかる。AIは事前検分（失敗理由の洗い出し）の相手として使う。'}
+  ];
+  const mx=document.getElementById('mx'),exs=document.getElementById('exs'),exOut=document.getElementById('exOut');
+  EX.forEach((e,i)=>{
+    const dt=document.createElement('button');dt.className='dotm';dt.style.left=e.x+'%';dt.style.top=e.y+'%';dt.setAttribute('aria-label',e.n);dt.onclick=()=>pick(i);mx.appendChild(dt);e.dot=dt;
+    const b=document.createElement('button');b.textContent=e.n;b.setAttribute('aria-pressed','false');b.onclick=()=>pick(i);exs.appendChild(b);e.btn=b;
+  });
+  function pick(i){EX.forEach((e,j)=>{e.dot.classList.toggle('on',i===j);e.btn.setAttribute('aria-pressed',i===j)});
+    const e=EX[i];exOut.innerHTML='<span class="mode hl">'+e.m+'</span><p style="margin:6px 0 0">'+e.d+'</p>';}
+
+  // ===== ethics =====
+  const ETH=[
+   ['責任の所在','AIの判断で損害が出たら、誰が責任を負うのか？','<b>対策：</b>最終判断者を業務ごとに決め、AIはあくまで判断材料と位置づける。'],
+   ['説明できるか','なぜその結論になったのか、相手に説明できるか？','<b>対策：</b>判断理由を出力させ、説明が必要な業務では、説明できない仕組みを使わない。'],
+   ['データの偏り','過去のデータに含まれる偏見を、AIがそのまま再現していないか？','<b>対策：</b>属性ごとに結果を集計して偏りを確認し、学習データの出どころを把握する。'],
+   ['異議を申し立てられるか','AIの判断に納得できない人が、見直しを求められるか？','<b>対策：</b>人が再検討する窓口と手順を用意し、判断の記録を残す。'],
+   ['例外への対応','前例のない状況で、AIがもっともらしく間違えないか？','<b>対策：</b>「いつもと違う」条件を決めておき、該当したら人に判断を戻す。'],
+   ['人の判断力の衰え','任せきりにした結果、人が誤りに気づけなくなっていないか？','<b>対策：</b>定期的に人が自分で判断し、AIと比べる機会をつくる。']
+  ];
+  const eth=document.getElementById('eth');
+  eth.innerHTML=ETH.map(e=>'<button aria-expanded="false"><span class="t">'+e[0]+'</span><span class="qq">'+e[1]+'</span><span class="a">'+e[2]+'</span><span class="hint">押して対策を見る</span></button>').join('');
+  eth.querySelectorAll('button').forEach(b=>b.onclick=()=>{const o=b.classList.toggle('open');b.setAttribute('aria-expanded',o)});
+})();
+</script>
+</body>
+</html>
