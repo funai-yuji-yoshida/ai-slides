@@ -14,6 +14,7 @@
 
 | スライド | 内容 |
 |---|---|
+| [データ爆発時代に、企業はなぜ生成AIを使うのか](https://funai-yuji-yoshida.github.io/ai-slides/slides/data-explosion/) | 増え続けるデータと増えない人間の時間。生成AIに情報処理を任せ、生まれた時間を価値創造に振り向ける考え方を整理する |
 | [AIに情報を正しく渡す共通ルール](https://funai-yuji-yoshida.github.io/ai-slides/slides/ai-data-levels/) | AI・プロンプト・Markdown・JSON・YAML・CSV・RDB・SQL・APIを、6つのレベルで整理。同じ情報を形式ごとに比べながら、AIへのデータの渡し方を学ぶ |
 | [生成AIを止めないためのセキュリティ](https://funai-yuji-yoshida.github.io/ai-slides/slides/ai-security/) | AIで「使う」だけでなく「作る」時代の新しいリスク。DATAからGOVERNANCEまで8つの視点を、体験しながら学ぶ |
 | [AIを疑う力　AIを使っても騙されないための30の知識](https://funai-yuji-yoshida.github.io/ai-slides/slides/ai-pitfalls/) | 人間の認知バイアス、データの落とし穴、AIの性質、セキュリティを30項目で解説する事典。体験コンテンツ付き |
