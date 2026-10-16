@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>生成AIは「計算」していない？</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Old+Mincho:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --ok:#1F7A5A;
+  --sans:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+  --pen:"Zen Old Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  --dot:"JetBrains Mono","Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",monospace;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --ok:#5BC79E; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --ok:#5BC79E; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background-color:var(--bg);
+  color:var(--ink); font-family:var(--sans); line-height:1.7;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--mark);outline-offset:3px}
+
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--bg)}
+.deck-title{font-weight:700;font-size:.95rem}
+.level{display:inline-flex;border:2px solid var(--indigo);border-radius:999px;overflow:hidden}
+.level button{border:0;background:transparent;padding:6px 16px;cursor:pointer;font-weight:700;font-size:.9rem}
+.level button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+
+/* slides */
+main{flex:1;position:relative;overflow:hidden}
+.slide{position:absolute;inset:0;overflow-y:auto;padding:32px 20px 40px;display:none}
+.slide.active{display:block}
+.inner{max-width:880px;margin:0 auto}
+h1{font-size:clamp(2rem,6vw,3.4rem);line-height:1.25;margin:0 0 16px;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.6vw,2.2rem);line-height:1.35;margin:0 0 12px}
+.lead{font-size:clamp(1.05rem,2.2vw,1.25rem);max-width:40em;margin:0 0 24px}
+.note{font-family:var(--pen);font-weight:700;color:var(--indigo);font-size:1.1rem}
+.small{font-size:.85rem;color:var(--sub)}
+mark{background:linear-gradient(transparent 55%,var(--mark) 55%);color:inherit;padding:0 2px}
+
+/* engineer layer */
+.deep{display:none;margin-top:28px;background:var(--indigo-soft);border-left:6px solid var(--indigo);padding:16px 20px;border-radius:0 8px 8px 0}
+body.engineer .deep{display:block}
+.deep h3{margin:0 0 8px;font-size:1rem}
+.deep p,.deep li{font-size:.95rem}
+.deep ul{margin:0;padding-left:1.2em}
+code{font-family:var(--dot);background:var(--surface);padding:1px 6px;border-radius:4px;border:1px solid var(--line)}
+
+/* title slide */
+.versus{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch;margin:28px 0}
+.calc,.predict{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:20px}
+.vs{align-self:center;font-family:var(--pen);font-weight:700;color:var(--indigo);font-size:1.6rem}
+.lcd{font-family:var(--dot);font-size:2rem;background:var(--indigo-soft);border-radius:6px;padding:8px 14px;text-align:right;margin:8px 0}
+.predict .lcd{text-align:left}
+.cursor{display:inline-block;width:.55em;background:var(--ink);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* conclusion */
+.big-claim{font-size:clamp(1.6rem,4.6vw,2.6rem);font-weight:700;line-height:1.45;margin:8px 0 24px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.box h3{margin:0 0 6px;font-size:1.05rem}
+
+/* prediction demo */
+.prompts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip-btn{border:2px solid var(--ink);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;font-family:var(--dot);font-size:1.05rem}
+.chip-btn[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.demo{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:20px}
+.demo-input{font-family:var(--dot);font-size:1.6rem;margin-bottom:12px}
+.bar-row{display:grid;grid-template-columns:5.5em 1fr 3.5em;gap:10px;align-items:center;margin:6px 0}
+.bar-label{font-family:var(--dot);font-size:1.15rem;text-align:right}
+.bar-track{height:22px;background:var(--indigo-soft);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:var(--ink);width:0;transition:width .5s ease}
+.bar-row.top .bar-fill{background:var(--indigo)}
+.bar-pct{font-family:var(--dot);text-align:right}
+
+/* tokens */
+.tok-input{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.tok-input input{font-family:var(--dot);font-size:1.4rem;padding:6px 12px;border:2px solid var(--ink);border-radius:8px;background:var(--surface);color:var(--ink);width:min(100%,14em)}
+.tok-line{display:flex;align-items:center;gap:12px;margin:12px 0;flex-wrap:wrap}
+.tok-who{width:9em;font-weight:700;font-size:.95rem}
+.tokens{display:flex;gap:6px;flex-wrap:wrap}
+.tok{font-family:var(--dot);font-size:1.4rem;padding:4px 10px;border-radius:6px;border:2px solid var(--ink);background:var(--surface)}
+.tok:nth-child(3n+1){background:#FCE7C8;color:#1B2A4A}
+.tok:nth-child(3n+2){background:#CFE6F5;color:#1B2A4A}
+.tok:nth-child(3n){background:#D9F0DE;color:#1B2A4A}
+
+/* quiz */
+.quiz{display:grid;gap:14px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.q-text{font-weight:700;font-size:1.1rem;margin:0 0 10px}
+.q button.reveal{border:2px solid var(--ink);background:transparent;border-radius:8px;padding:4px 14px;cursor:pointer;font-weight:700}
+.answer{display:none;margin-top:10px}
+.q.open .answer{display:block}
+.q.open button.reveal{display:none}
+.answer .correct{font-family:var(--pen);font-weight:700;color:var(--indigo);font-size:1.3rem}
+
+/* paths diagram */
+.paths{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.path-col{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:16px 18px}
+.path-col.said{border-style:dashed}
+.path-col h3{margin:0 0 10px;font-size:1.05rem}
+.route{font-family:var(--dot);font-size:1.05rem;background:var(--indigo-soft);border-radius:6px;padding:8px 12px;margin:6px 0}
+.merge{font-family:var(--dot);font-size:1.4rem;text-align:center;margin-top:10px}
+
+/* ladder */
+.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.rung{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.rung h3{margin:0 0 6px;font-size:1.05rem}
+.meter{display:flex;gap:4px;margin:10px 0 4px}
+.meter span{flex:1;height:10px;border-radius:2px;background:var(--indigo-soft)}
+.meter span.on{background:var(--ok)}
+
+/* rules */
+.rules{counter-reset:r;list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.rules li{counter-increment:r;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px 14px 64px;position:relative}
+.rules li::before{content:counter(r);position:absolute;left:18px;top:12px;font-family:var(--pen);color:var(--indigo);font-weight:700;font-size:1.8rem;line-height:1}
+.rules strong{display:block;font-size:1.1rem}
+.prompt-ex{font-family:var(--dot);font-size:.95rem;background:var(--indigo-soft);border-radius:6px;padding:6px 10px;margin-top:6px;display:inline-block}
+
+/* footer */
+footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;border-top:1px solid var(--line);background:var(--bg)}
+.nav-btn{border:2px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 18px;cursor:pointer;font-weight:700}
+.nav-btn:disabled{opacity:.35;cursor:default}
+.dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.dots button{width:10px;height:10px;border-radius:50%;border:2px solid var(--sub);background:transparent;padding:0;cursor:pointer}
+.dots button[aria-current="true"]{background:var(--indigo);border-color:var(--indigo)}
+.count{font-family:var(--dot);font-size:.95rem;min-width:4em;text-align:center}
+
+@media (max-width:640px){
+  .versus,.two,.paths,.ladder{grid-template-columns:1fr}
+  .vs{text-align:center}
+  .tok-who{width:100%}
+  header{flex-wrap:wrap}
+  .dots{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .cursor{animation:none}
+  .bar-fill{transition:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="deck-title">生成AIは「計算」していない？</div>
+  <div class="level" role="group" aria-label="解説レベル">
+    <button type="button" data-level="basic" aria-pressed="true">かんたん</button>
+    <button type="button" data-level="engineer" aria-pressed="false">くわしく</button>
+  </div>
+</header>
+
+<main id="deck">
+
+<!-- 1 -->
+<section class="slide active" aria-label="タイトル">
+  <div class="inner">
+    <h1>生成AIは、<br>計算していない？</h1>
+    <p class="lead">AIが「17×24＝408」と答えたとき、中で起きているのは電卓と同じ計算でしょうか。</p>
+    <div class="versus">
+      <div class="calc">
+        <strong>電卓</strong>
+        <div class="lcd">408</div>
+        <p class="small">ルールどおりに必ず計算する。何度押しても同じ答え。</p>
+      </div>
+      <div class="vs">vs</div>
+      <div class="predict">
+        <strong>生成AI</strong>
+        <div class="lcd">17×24=<span class="cursor">&nbsp;</span></div>
+        <p class="small">次に来そうな文字を予測して書く。答えは「当たる」ことが多いだけ。</p>
+      </div>
+    </div>
+    <div class="deep">
+      <h3>このスライドの位置づけ</h3>
+      <p>LLMの数値処理を「予測モデルとしての性質」「トークナイズ」「内部メカニズム」「ツール委譲」の4観点で整理します。実務では、計算を確率的な生成に任せず、決定的な処理に委ねる設計判断の根拠として使えます。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" aria-label="結論">
+  <div class="inner">
+    <h2>結論</h2>
+    <p class="big-claim">生成AIは、計算ではなく<br><mark>「答えらしい続き」の予測</mark>をしている。</p>
+    <div class="two">
+      <div class="box">
+        <h3>だから当たる</h3>
+        <p>大量の文章で「2+3=」の後に「5」が来るパターンを見てきたので、よくある計算は正解しやすい。</p>
+      </div>
+      <div class="box">
+        <h3>だから外れる</h3>
+        <p>桁の多い計算や珍しい数字は、見たことのあるパターンから外れるため、もっともらしい間違いを出す。</p>
+      </div>
+    </div>
+    <div class="deep">
+      <h3>技術的には</h3>
+      <p>LLMは自己回帰モデルで、直前までのトークン列から次トークンの確率分布を出し、そこから1つ選ぶ処理を繰り返します。数式も自然文と同じトークン列として扱われ、四則演算専用の回路が設計されているわけではありません。ただし学習の結果として、内部に演算に近い仕組みが<em>自然に</em>できていることは分かっています（5枚目）。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" aria-label="予測の仕組み">
+  <div class="inner">
+    <h2>AIの頭の中をのぞいてみる</h2>
+    <p class="lead">入力を選ぶと、AIが「次に書く候補」とその確率のイメージが出ます。計算も文章も、同じ仕組みで扱われています。</p>
+    <div class="prompts" role="group" aria-label="入力例">
+      <button type="button" class="chip-btn" data-p="0" aria-pressed="true">2 + 3 =</button>
+      <button type="button" class="chip-btn" data-p="1" aria-pressed="false">17 × 24 =</button>
+      <button type="button" class="chip-btn" data-p="2" aria-pressed="false">今日の天気は</button>
+    </div>
+    <div class="demo">
+      <div class="demo-input" id="demoInput">2 + 3 =</div>
+      <div id="bars"></div>
+      <p class="small" id="demoNote"></p>
+    </div>
+    <p class="small">※ 数値は説明用のイメージです。実際の確率はモデルや設定で変わります。</p>
+    <div class="deep">
+      <h3>確率分布とサンプリング</h3>
+      <ul>
+        <li>出力層のlogitsをsoftmaxで確率にし、temperatureやtop-pの設定に従って1トークンを選びます。</li>
+        <li>temperatureを上げると低確率の候補（＝誤答）が選ばれやすくなります。数値を扱う用途では低めが無難です。</li>
+        <li>正答の確率が高くても1位とは限らず、同じ質問で答えが変わる「非決定性」の原因になります。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" aria-label="数字の見え方">
+  <div class="inner">
+    <h2>AIには、数字が「塊」で見えている</h2>
+    <p class="lead">AIは文字を1つずつではなく、<mark>トークン</mark>という塊に分けて読みます。数字も例外ではありません。</p>
+    <div class="tok-input">
+      <label for="numIn"><strong>数字を入力：</strong></label>
+      <input id="numIn" inputmode="numeric" value="1234567" maxlength="16" aria-describedby="tokHelp">
+    </div>
+    <div class="tok-line"><span class="tok-who">人間の読み方</span><div class="tokens" id="tokHuman"></div></div>
+    <div class="tok-line"><span class="tok-who">AIの読み方の例</span><div class="tokens" id="tokAI"></div></div>
+    <p class="note" id="tokHelp">人間は右から3桁で区切るのに、AIは左から区切ることがある。だから「一の位」がどこにあるか分かりにくい。</p>
+    <div class="deep">
+      <h3>トークナイザーの違い</h3>
+      <ul>
+        <li>GPT-4系のトークナイザー（cl100k）は数字を左から最大3桁ずつ区切ります。上の「AIの読み方の例」はこの方式を再現しています。</li>
+        <li>Llama 1/2系は数字を1桁ずつに分割します。分割方式によって桁合わせの難しさが変わることが研究でも示されています。</li>
+        <li>位の対応がトークン境界で崩れるため、繰り上がりを伴う多桁演算で誤りが出やすくなります。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" aria-label="クイズ">
+  <div class="inner">
+    <h2>AIが間違えやすい問題</h2>
+    <p class="lead">人間には簡単なのに、AIがつまずきやすかった問題です。理由を考えてから答えを開いてください。</p>
+    <div class="quiz">
+      <div class="q">
+        <p class="q-text">Q1. 9.11 と 9.9、大きいのはどっち？</p>
+        <button type="button" class="reveal">答えを見る</button>
+        <div class="answer"><span class="correct">9.9</span><p>「9.11」は日付やバージョン番号（9.11は9.9より新しい）の形でもよく登場します。その文脈に引っ張られて「9.11が大きい」と答える例が、以前のモデルでよく見られました。</p></div>
+      </div>
+      <div class="q">
+        <p class="q-text">Q2. 「strawberry」に r はいくつ？</p>
+        <button type="button" class="reveal">答えを見る</button>
+        <div class="answer"><span class="correct">3つ</span><p>単語が「straw」「berry」のような塊で見えているため、文字単位の数え上げが苦手です。「2つ」と答える例が話題になりました。</p></div>
+      </div>
+      <div class="q">
+        <p class="q-text">Q3. 4,839 × 7,262 ＝ ？</p>
+        <button type="button" class="reveal">答えを見る</button>
+        <div class="answer"><span class="correct">35,140,818</span><p>桁が多いほど「見たことのあるパターン」から外れます。上の桁は合っていて下の桁だけ違う、という“惜しい誤答”が典型です。</p></div>
+      </div>
+    </div>
+    <p class="small">※ 最近のモデルは改善が進み、これらの問題には正解することも増えています。それでも原因となる仕組みは同じです。</p>
+    <div class="deep">
+      <h3>誤りのパターン分析</h3>
+      <ul>
+        <li>Q1：数値比較が意味的な文脈（バージョン、章番号）と競合する。小数点以下を桁数で比較してしまう。</li>
+        <li>Q2：文字レベル情報はトークン埋め込みから間接的にしか取り出せない。</li>
+        <li>Q3：多桁乗算は部分積と繰り上がりの保持が必要で、1回の順伝播では計算量が足りない。上位桁は概算で当たりやすく、下位桁で崩れやすい。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" aria-label="説明と実際の処理">
+  <div class="inner">
+    <h2>AIの「説明」は、本当の処理とは限らない</h2>
+    <p class="lead">Anthropicの研究チームが、AIの内部を解析して「36＋59」をどう解いているか調べたところ、<mark>本人の説明とは違うやり方</mark>で計算していました。</p>
+    <div class="paths">
+      <div class="path-col">
+        <h3>内部で実際に起きていたこと</h3>
+        <div class="route">ルートA：だいたい 90 くらい</div>
+        <div class="route">ルートB：下1桁は 6＋9 → 5</div>
+        <div class="merge">合わせて → 95</div>
+        <p class="small">おおよその大きさと下1桁を、別々のルートで同時に処理していた。</p>
+      </div>
+      <div class="path-col said">
+        <h3>「どう計算した？」と聞くと…</h3>
+        <div class="route">6＋9＝15、1を繰り上げて</div>
+        <div class="route">3＋5＋1＝9</div>
+        <div class="merge">答えは 95</div>
+        <p class="small">学校で習う筆算の手順を説明した。答えは同じでも、やり方の説明は事実と違う。</p>
+      </div>
+    </div>
+    <p class="note">説明がもっともらしくても、それが根拠の証明にはならない。</p>
+    <p class="small">出典：Anthropic「Tracing the thoughts of a large language model」（2025年）。解析対象はClaude 3.5 Haiku。</p>
+    <div class="deep">
+      <h3>解釈可能性研究の要点</h3>
+      <ul>
+        <li>attribution graphにより、概算経路と下1桁を求める経路の並列処理が観測されました。</li>
+        <li>モデルは学習データ中の「人間による筆算の説明」を模倣して説明文を生成しており、自分の内部処理を参照しているわけではありません。</li>
+        <li>含意：Chain-of-Thoughtの文面は推論過程の忠実な記録とは限らない（faithfulness問題）。監査や説明責任の根拠としては、出力の検証可能性で担保する必要があります。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" aria-label="正確にする方法">
+  <div class="inner">
+    <h2>本当に「計算」させる方法</h2>
+    <p class="lead">同じAIでも、使い方しだいで正確さが大きく変わります。</p>
+    <div class="ladder">
+      <div class="rung">
+        <h3>そのまま答えさせる</h3>
+        <div class="meter" aria-label="正確さ 低"><span class="on"></span><span></span><span></span></div>
+        <p>予測だけで答える。簡単な計算はよいが、桁が増えると危ない。</p>
+      </div>
+      <div class="rung">
+        <h3>途中式を書かせる</h3>
+        <div class="meter" aria-label="正確さ 中"><span class="on"></span><span class="on"></span><span></span></div>
+        <p>「考える」モードや「順を追って」の指示で、ノートに書きながら解く状態になる。</p>
+      </div>
+      <div class="rung">
+        <h3>ツールで計算させる</h3>
+        <div class="meter" aria-label="正確さ 高"><span class="on"></span><span class="on"></span><span class="on"></span></div>
+        <p>コード実行や表計算を使うと、ここで初めて<strong>本当に計算</strong>している。</p>
+      </div>
+    </div>
+    <p class="small">※ 正確さのメーターは傾向を示すイメージです。</p>
+    <div class="deep">
+      <h3>設計パターン</h3>
+      <ul>
+        <li><strong>CoT／推論モデル</strong>：中間結果を出力トークンとして書き出すことで、外部ワーキングメモリと計算ステップ数を確保する。精度は上がるが保証はない。</li>
+        <li><strong>Function calling／コード実行</strong>：LLMには式の組み立てと結果の解釈だけを任せ、演算は決定的な処理系で行う。</li>
+        <li><strong>検証</strong>：構造化出力（JSON）で数値を受け取り、アプリ側で再計算・範囲チェックする。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" aria-label="実務ルール">
+  <div class="inner">
+    <h2>仕事で使うときの3つのルール</h2>
+    <ol class="rules">
+      <li><strong>数字は「計算して」ではなく「コードで計算して」と頼む</strong>
+        <span class="prompt-ex">この表の合計と平均を、Pythonで計算して出してください</span></li>
+      <li><strong>答えではなく「式」を出させる</strong>
+        <span class="prompt-ex">売上の前年比を求めるExcelの数式を教えてください</span></li>
+      <li><strong>金額・数量など重要な数字は、必ず人が検算する</strong>
+        <p class="small">AIの説明が自信満々でも、それは正しさの証拠ではありません。</p></li>
+    </ol>
+    <div class="deep">
+      <h3>システムに組み込むとき</h3>
+      <ul>
+        <li>見積・請求・在庫など金額や数量が関わる処理は、LLMの出力値をそのまま確定値にしない。</li>
+        <li>計算ロジックは関数・DB・スプレッドシート側に置き、LLMはパラメータ抽出と自然言語の整形に限定する。</li>
+        <li>ログに「LLMが出した値」と「再計算した値」を両方残し、差分を監視する。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" aria-label="まとめ">
+  <div class="inner">
+    <h2>まとめ</h2>
+    <p class="big-claim">AIの計算が正しいのは、<br>「当たった」か「道具を使った」から。</p>
+    <div class="two">
+      <div class="box"><h3>覚えておくこと</h3><p>AIは答えらしい続きを予測している。数字は塊で見えていて、説明も本当の処理とは限らない。</p></div>
+      <div class="box"><h3>やること</h3><p>計算はツールに任せ、式を出させ、重要な数字は検算する。</p></div>
+    </div>
+    <div class="deep">
+      <h3>さらに学ぶ</h3>
+      <ul>
+        <li>Anthropic「Tracing the thoughts of a large language model」（2025）</li>
+        <li>OpenAI tiktoken（cl100kのトークン分割を手元で確認できる）</li>
+        <li>キーワード：tokenization and arithmetic、CoT faithfulness、tool use</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <a class="nav-btn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+  <button type="button" class="nav-btn" id="prev">前へ</button>
+  <div class="dots" id="dots" aria-label="スライド一覧"></div>
+  <span class="count" id="count" aria-live="polite">1 / 9</span>
+  <button type="button" class="nav-btn" id="next">次へ</button>
+</footer>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  const dots=document.getElementById('dots');
+  const prev=document.getElementById('prev'), next=document.getElementById('next'), count=document.getElementById('count');
+  let i=0;
+  slides.forEach((s,n)=>{
+    const b=document.createElement('button');
+    b.type='button'; b.setAttribute('aria-label',(n+1)+'枚目：'+s.getAttribute('aria-label'));
+    b.addEventListener('click',()=>go(n)); dots.appendChild(b);
+  });
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    [...dots.children].forEach((d,k)=>d.setAttribute('aria-current',k===i?'true':'false'));
+    prev.disabled=i===0; next.disabled=i===slides.length-1;
+    count.textContent=(i+1)+' / '+slides.length;
+    slides[i].scrollTop=0;
+    if(i===2) render(current);
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}
+  }
+  prev.addEventListener('click',()=>go(i-1));
+  next.addEventListener('click',()=>go(i+1));
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT') return;
+    if(e.key==='ArrowRight'||e.key==='PageDown') go(i+1);
+    if(e.key==='ArrowLeft'||e.key==='PageUp') go(i-1);
+    if(e.key==='Home') go(0);
+    if(e.key==='End') go(slides.length-1);
+    if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{});} else document.exitFullscreen(); }
+  });
+  let sx=null,sy=null;
+  const deck=document.getElementById('deck');
+  deck.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+  deck.addEventListener('touchend',e=>{
+    if(sx===null) return;
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) go(i+(dx<0?1:-1));
+    sx=null;
+  },{passive:true});
+
+  // level toggle
+  const lv=[...document.querySelectorAll('.level button')];
+  function setLevel(l){
+    document.body.classList.toggle('engineer',l==='engineer');
+    lv.forEach(b=>b.setAttribute('aria-pressed',b.dataset.level===l?'true':'false'));
+    try{localStorage.setItem('aiCalcLevel',l)}catch(e){}
+  }
+  lv.forEach(b=>b.addEventListener('click',()=>setLevel(b.dataset.level)));
+  try{const s=localStorage.getItem('aiCalcLevel'); if(s) setLevel(s);}catch(e){}
+
+  // prediction demo
+  const data=[
+    {input:'2 + 3 =',rows:[['5',97],['6',1],['4',1],['その他',1]],note:'よく見る計算は、正解の確率がほぼ100%。だから迷わず当たる。'},
+    {input:'17 × 24 =',rows:[['408',46],['398',18],['418',14],['412',9],['その他',13]],note:'正解の408が1位でも、半分以上は別の候補。条件しだいで誤答が選ばれることもある。'},
+    {input:'今日の天気は',rows:[['晴れ',38],['雨',22],['くもり',20],['、',12],['その他',8]],note:'文章の続きを予測するのと、計算の答えを出すのは、AIにとって同じ作業。'}
+  ];
+  let current=0;
+  const bars=document.getElementById('bars');
+  function render(p){
+    current=p; const d=data[p];
+    document.getElementById('demoInput').textContent=d.input;
+    document.getElementById('demoNote').textContent=d.note;
+    bars.innerHTML='';
+    d.rows.forEach((r,k)=>{
+      const row=document.createElement('div'); row.className='bar-row'+(k===0?' top':'');
+      row.innerHTML='<span class="bar-label"></span><span class="bar-track"><span class="bar-fill"></span></span><span class="bar-pct"></span>';
+      row.querySelector('.bar-label').textContent=r[0];
+      row.querySelector('.bar-pct').textContent=r[1]+'%';
+      bars.appendChild(row);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{row.querySelector('.bar-fill').style.width=r[1]+'%'}));
+    });
+  }
+  document.querySelectorAll('.chip-btn').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.chip-btn').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+    render(+b.dataset.p);
+  }));
+
+  // tokenizer demo
+  const numIn=document.getElementById('numIn');
+  function chips(el,parts){el.innerHTML='';parts.forEach(p=>{const s=document.createElement('span');s.className='tok';s.textContent=p;el.appendChild(s)})}
+  function tok(){
+    const v=(numIn.value.replace(/\D/g,'')||'0').slice(0,16);
+    const human=[]; let r=v; while(r.length>3){human.unshift(r.slice(-3)); r=r.slice(0,-3)} human.unshift(r);
+    const ai=v.match(/\d{1,3}/g)||['0'];
+    chips(document.getElementById('tokHuman'),human);
+    chips(document.getElementById('tokAI'),ai);
+  }
+  numIn.addEventListener('input',tok); tok();
+
+  // quiz
+  document.querySelectorAll('.q .reveal').forEach(b=>b.addEventListener('click',()=>{
+    const q=b.closest('.q'); q.classList.add('open'); q.querySelector('.answer').setAttribute('tabindex','-1'); q.querySelector('.answer').focus();
+  }));
+
+  const h=parseInt(location.hash.slice(1),10);
+  go(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>

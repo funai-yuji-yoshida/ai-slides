@@ -1,5 +1,15 @@
 [
   {
+    "title": "生成AIは「計算」していない？",
+    "description": "電卓との違いを、次の文字の予測、トークン、AIが間違えやすい問題で体験し、計算をツールに任せる実務ルールを知る",
+    "path": "slides/ai-does-not-calculate/",
+    "tags": [
+      "基礎",
+      "AIの得意・不得意"
+    ],
+    "updated": "2026-10-16"
+  },
+  {
     "title": "AIセキュリティ事前学習　安全に使う・作る・守る",
     "description": "プロンプト攻撃、APIキー漏えい、AI生成アプリ、偽メール、SQL・ランサムウェアを、ミニ演習と理解度チェックで予習する（目安20〜30分）",
     "path": "slides/ai-security-prelearning/",
