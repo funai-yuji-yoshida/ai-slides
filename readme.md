@@ -14,6 +14,7 @@
 
 | スライド | 内容 |
 |---|---|
+| [RAG　AIに資料を持ち込ませる仕組み](https://funai-yuji-yoshida.github.io/ai-slides/slides/rag-basics/) | 検索した資料をAIに渡して答えさせるRAG。仕組み、必要になる理由、デメリットを、社内規程の架空の例で操作しながら学ぶ |
 | [AIの歴史　LLMの仕組みとハルシネーション](https://funai-yuji-yoshida.github.io/ai-slides/slides/ai-history-llm/) | ルールを書く時代から言葉を予測する時代へ。年表をたどり、LLMが文章を作る仕組みと、ハルシネーションが起きる理由・減らし方を、操作しながら学ぶ |
 | [生成AIは「計算」していない？](https://funai-yuji-yoshida.github.io/ai-slides/slides/ai-does-not-calculate/) | 電卓との違いを、次の文字の予測、トークン、AIが間違えやすい問題で体験し、計算をツールに任せる実務ルールを知る |
 | [AIセキュリティ事前学習　安全に使う・作る・守る](https://funai-yuji-yoshida.github.io/ai-slides/slides/ai-security-prelearning/) | プロンプト攻撃、APIキー漏えい、AI生成アプリ、偽メール、SQL・ランサムウェアを、ミニ演習と理解度チェックで予習する（目安20〜30分） |

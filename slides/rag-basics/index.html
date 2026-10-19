@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RAG　AIに資料を持ち込ませる仕組み</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+/* rag */
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps5{grid-template-columns:1fr}}
+.mails th{width:8.5em;white-space:nowrap}
+.docs{display:grid;gap:8px;margin-bottom:12px}
+.doc{display:grid;grid-template-columns:11em 1fr 7em 5.5em;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--bg)}
+.doc.hit{border-color:var(--indigo);background:var(--indigo-soft)}
+.doc.dim{opacity:.6}
+.doc b{font-size:.95em}
+.doc .dx{color:var(--sub);font-size:.9em}
+.doc .tr{height:12px;background:var(--line);border-radius:3px;overflow:hidden}
+.doc .tr i{display:block;height:100%;background:var(--indigo)}
+.doc .sc{text-align:right;font-size:.85em;font-variant-numeric:tabular-nums}
+@media (max-width:820px){.doc{grid-template-columns:1fr 7em 5em}.doc b,.doc .dx{grid-column:1/-1}}
+.ps{color:#F2C230}.pd{color:#9FB0FF}.pq{color:#7FD6B0}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="RAG　AIに資料を持ち込ませる仕組み">
+ <div class="inner">
+  <h1>RAG</h1>
+  <p class="sub">AIに「資料を持ち込ませる」仕組み</p>
+  <div class="rule"></div>
+  <p>社内の資料や最新の情報をもとにAIに答えさせる方法、RAG（検索拡張生成）。仕組み、必要になる理由、そして知っておきたいデメリットを、操作しながら確かめます。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="なぜRAGが必要なのか">
+ <div class="inner">
+  <span class="tag">必要性</span>
+  <h2>なぜRAGが必要なのか</h2>
+  <p class="def">LLMには、仕事で使うときに困りやすい点があります。同じ質問への答えを、RAGの有無で比べてみましょう（会社名・規程・数字はすべて架空です）。</p>
+  <div class="cards" style="margin-bottom:16px">
+   <div class="card"><span class="n">限界 1</span><h3>学習した時点で止まっている</h3><p>学習後に変わった情報や、最新の出来事は知らない。</p></div>
+   <div class="card"><span class="n">限界 2</span><h3>社内の情報は知らない</h3><p>社内規程・マニュアル・顧客対応の記録などは、学習に含まれていない。</p></div>
+   <div class="card"><span class="n">限界 3</span><h3>知らないことも答えてしまう</h3><p>根拠がなくても、もっともらしく答える（ハルシネーション）ことがある。</p></div>
+  </div>
+  <div class="seg" id="segNeed" role="group" aria-label="RAGの有無">
+   <button type="button" data-r="no" aria-pressed="true">RAGなし</button>
+   <button type="button" data-r="yes" aria-pressed="false">RAGあり</button>
+  </div>
+  <div class="panel">
+   <div class="bubble q"><small>質問</small>架空の会社「青葉電機」の、国内出張の宿泊費の上限は？</div>
+   <div class="bubble ai bad" id="needAns"></div>
+   <p id="needExp" style="margin:0"></p>
+  </div>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="RAGとは">
+ <div class="inner">
+  <span class="tag">RAGとは</span>
+  <h2>RAGとは：検索して、渡して、答えさせる</h2>
+  <p class="def">RAG（Retrieval-Augmented Generation）は、質問に関係する資料を先に検索で探し、質問と一緒にAIに渡して答えさせる方法です。</p>
+  <div class="cols">
+   <div class="panel">
+    <h3>たとえるなら「持ち込み可の試験」</h3>
+    <p>AIが自分の記憶だけで答える（持ち込み不可）のではなく、必要なページを手元に置いてから答える（持ち込み可）イメージです。</p>
+    <ul style="margin:0;padding-left:1.2em"><li>記憶にない情報でも、資料にあれば答えられる</li><li>どの資料を根拠にしたか、示しやすい</li></ul>
+   </div>
+   <div class="panel">
+    <h3>名前の意味</h3>
+    <ul style="margin:0;padding-left:1.2em">
+     <li><b>R</b>etrieval：検索（資料を探す）</li>
+     <li><b>A</b>ugmented：拡張された（資料で補う）</li>
+     <li><b>G</b>eneration：生成（AIが文章を作る）</li>
+    </ul>
+    <p class="note" style="margin-top:10px">2020年の研究論文で提案された考え方で、現在は企業のAI活用で広く使われています。</p>
+   </div>
+  </div>
+  <div class="msg">AIを作り直さずに、<mark>渡す情報を変える</mark>ことで、答えを変える。</div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="RAGの仕組み（全体の流れ）">
+ <div class="inner">
+  <span class="tag">仕組み 1</span>
+  <h2>RAGの仕組み：全体の流れ</h2>
+  <p class="def">事前準備（①②）と、質問のたびに行う処理（③〜⑤）に分かれます。段階をクリックして確認してください。</p>
+  <div class="steps steps5" id="steps" role="group" aria-label="RAGの流れ"></div>
+  <div class="panel" id="stepBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="「意味」で探す（ベクトル検索）">
+ <div class="inner">
+  <span class="tag">仕組み 2</span>
+  <h2>「意味」で探す（ベクトル検索）</h2>
+  <p class="def">資料と質問を、意味の近さを表す数の並び（ベクトル）に変えて、近いものを探します。言い換えがあっても見つけやすいのが特長です。</p>
+  <div class="seg" id="segSearch" role="group" aria-label="検索方法">
+   <button type="button" data-s="kw" aria-pressed="true">キーワード検索</button>
+   <button type="button" data-s="vec" aria-pressed="false">意味で探す検索</button>
+  </div>
+  <div class="panel">
+   <div class="bubble q"><small>質問</small>出張で泊まるホテル代は、いくらまで出る？</div>
+   <div class="docs" id="docs"></div>
+   <div class="result" id="searchRes"></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 資料は架空の社内規程です。近さの数値は説明用のイメージで、実際の値ではありません。</p>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="資料を分ける大きさ（チャンク）">
+ <div class="inner">
+  <span class="tag">仕組み 3</span>
+  <h2>資料を分ける大きさ（チャンク）</h2>
+  <p class="def">資料は、検索しやすいように小さな単位（チャンク）に分けて保存します。分ける大きさで、結果が変わります。</p>
+  <div class="seg" id="segChunk" role="group" aria-label="チャンクの大きさ">
+   <button type="button" data-c="s" aria-pressed="false">小さすぎる</button>
+   <button type="button" data-c="m" aria-pressed="true">ちょうどよい</button>
+   <button type="button" data-c="l" aria-pressed="false">大きすぎる</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>検索でAIに渡される資料</h3><div class="pre" id="chunkText"></div></div>
+   <div class="panel"><h3 id="chunkTitle"></h3><p id="chunkExp" style="margin:0"></p></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 資料は架空の社内規程です。最適な大きさは、資料の種類や目的によって変わります。</p>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="AIに渡す内容（プロンプトの中身）">
+ <div class="inner">
+  <span class="tag">仕組み 4</span>
+  <h2>AIに渡す内容（プロンプトの中身）</h2>
+  <p class="def">検索で見つけた資料は、ユーザーの質問と一緒に、プロンプトの一部としてAIに渡されます。</p>
+  <div class="pre" id="promptBox"></div>
+  <div class="cards" style="margin-top:14px">
+   <div class="card"><span class="n">指示</span><p>「資料の範囲で答える」「なければ『わからない』と答える」などを明記する。</p></div>
+   <div class="card"><span class="n">資料</span><p>検索で見つかった上位のチャンクと、出典の情報。</p></div>
+   <div class="card"><span class="n">質問</span><p>ユーザーが入力した内容そのもの。</p></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 資料は架空です。実際の形式は、使うシステムによって異なります。</p>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="他の方法との違い">
+ <div class="inner">
+  <span class="tag">位置づけ</span>
+  <h2>他の方法との違い</h2>
+  <p class="def">AIに情報を与える方法は、RAGだけではありません。傾向を比べてみましょう。</p>
+  <div class="seg" id="segCmp" role="group" aria-label="方法">
+   <button type="button" data-k="paste" aria-pressed="false">毎回資料を貼る</button>
+   <button type="button" data-k="rag" aria-pressed="true">RAG</button>
+   <button type="button" data-k="ft" aria-pressed="false">追加学習（ファインチューニング）</button>
+  </div>
+  <div class="panel"><table class="mails" id="cmpTable"></table></div>
+  <p class="note" style="margin-top:10px">※ 一般的な傾向の整理です。実際の向き不向きは、データ量・予算・要件で変わります。</p>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="デメリット 1：検索を外すと、答えも外れる">
+ <div class="inner">
+  <span class="tag">デメリット 1</span>
+  <h2>検索を外すと、答えも外れる</h2>
+  <p class="def">RAGの答えは、検索で見つかった資料に左右されます。古い資料や違う資料が見つかると、AIはそれをもとに、もっともらしく答えます（資料は架空の例です）。</p>
+  <div class="seg" id="segOld" role="group" aria-label="検索された資料">
+   <button type="button" data-o="new" aria-pressed="true">最新版が検索された</button>
+   <button type="button" data-o="old" aria-pressed="false">旧版が検索された</button>
+  </div>
+  <div class="panel">
+   <div class="bubble q"><small>質問</small>国内出張の宿泊費の上限は？</div>
+   <div class="bubble" id="oldDoc"></div>
+   <div class="bubble ai" id="oldAns"></div>
+   <p id="oldExp" style="margin:0"></p>
+  </div>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="デメリット 2：ほかの課題">
+ <div class="inner">
+  <span class="tag">デメリット 2</span>
+  <h2>ほかにも知っておきたい課題</h2>
+  <p class="def">RAGを使っても、ハルシネーションが完全になくなるわけではありません。運用面の課題もあります。</p>
+  <div class="cards">
+   <div class="card"><span class="n">課題 1</span><h3>資料を渡しても間違えることがある</h3><p>資料にないことを付け足したり、内容を取り違えたりすることがある。</p></div>
+   <div class="card"><span class="n">課題 2</span><h3>資料の整備に手間がかかる</h3><p>古い版・重複・表記ゆれを整理し、更新し続ける運用が必要になる。</p></div>
+   <div class="card"><span class="n">課題 3</span><h3>権限・機密の管理</h3><p>見せてはいけない資料が検索対象に混ざると、答えを通じて漏れる可能性がある。</p></div>
+   <div class="card"><span class="n">課題 4</span><h3>表・図・スキャンが苦手なことがある</h3><p>PDFの表や図、画像のままの資料は、文字として取り出す工夫が必要になる。</p></div>
+   <div class="card"><span class="n">課題 5</span><h3>費用と時間がかかる</h3><p>構築・運用の費用に加え、資料を渡す分だけ、処理時間や利用料金が増えることがある。</p></div>
+   <div class="card"><span class="n">課題 6</span><h3>精度の測り方が難しい</h3><p>検索と回答のどちらが原因か切り分けにくく、評価用の質問と正解の準備が必要。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="導入するときのポイント">
+ <div class="inner">
+  <span class="tag">使い方</span>
+  <h2>導入するときのポイント</h2>
+  <p class="def">デメリットを踏まえ、次の点を押さえておくと進めやすくなります。</p>
+  <ol class="checks">
+   <li><span>1</span><div><b>まず小さな範囲で試す</b><small class="note">対象の資料と質問を絞り、効果と課題を確かめてから広げる</small></div></li>
+   <li><span>2</span><div><b>資料を整える</b><small class="note">最新版だけを残し、重複や古い版を除く。更新の担当を決める</small></div></li>
+   <li><span>3</span><div><b>出典を表示させ、人が原文を確認する</b><small class="note">回答と一緒に、根拠にした資料の名前や箇所を示してもらう</small></div></li>
+   <li><span>4</span><div><b>権限に応じて、検索の対象を絞る</b><small class="note">利用者が見てよい資料だけを検索できるようにする</small></div></li>
+   <li><span>5</span><div><b>テスト用の質問と正解を用意して、精度を測る</b><small class="note">見つからないときは「わからない」と答えるかも、あわせて確認する</small></div></li>
+  </ol>
+ </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <div class="msg" style="margin-top:10px">RAGは、AIに<mark>必要な資料を渡してから答えさせる</mark>仕組み。<br>便利だが、渡す資料しだいで答えが決まる。</div>
+  <div class="cards" style="margin-top:20px">
+   <div class="card"><span class="n">必要性</span><h3>最新・社内の情報を使える</h3><p>学習に含まれない情報を、AIを作り直さずに使える。根拠も示しやすい。</p></div>
+   <div class="card"><span class="n">仕組み</span><h3>探して、渡して、答える</h3><p>資料を分けて保存し、質問に近いものを検索して、質問と一緒にAIに渡す。</p></div>
+   <div class="card"><span class="n">デメリット</span><h3>資料と検索の質に左右される</h3><p>誤りがゼロにはならず、整備・権限管理・評価に手間がかかる。人の確認が欠かせない。</p></div>
+  </div>
+  <div class="links">
+   <a href="../ai-history-llm/">AIの歴史　LLMの仕組みとハルシネーション →</a>
+   <a href="../ai-pitfalls/">AIを疑う力　30の知識 →</a>
+  </div>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function bubble(el,cls,label,text){el.className='bubble ai '+cls;el.innerHTML='<small></small><span></span>';el.querySelector('small').textContent=label;el.querySelector('span').textContent=text;}
+
+  /* 2 need */
+  const NEED={
+    no:{c:'bad',l:'AIの回答（RAGなし）',a:'一般的には、国内出張の宿泊費は1泊1万円前後の会社が多いようです。',e:'この会社の規程を知らないので、一般論で答えている。もっともらしいが、この会社の実際の上限とは限らない。'},
+    yes:{c:'good',l:'AIの回答（RAGあり）',a:'1泊あたり1万2千円が上限です（出典：出張規程の宿泊費の項）。',e:'検索で見つけた社内規程をもとに答え、出典も示せる。実際には、原文を人が確認することも大切。'}
+  };
+  function showNeed(k){const n=NEED[k];bubble($('needAns'),n.c,n.l,n.a);$('needExp').textContent=n.e;}
+  seg($('segNeed'),b=>showNeed(b.dataset.r));showNeed('no');
+
+  /* 4 steps */
+  const ST=[
+    {p:'事前準備',t:'資料を用意して分割',h:'資料を、検索しやすい大きさに分ける',b:['マニュアル・規程・FAQ・議事録などの資料を集め、文章として取り出す。','長い資料は、検索しやすい単位（チャンク）に分ける。','ここで資料が古い・重複していると、後の答えにも影響する。']},
+    {p:'事前準備',t:'数値に変えて保存',h:'意味を表す数の並び（ベクトル）にして保存',b:['各チャンクを、意味の近さを表す数の並び（ベクトル）に変換する。','ベクトルを、検索に向いたデータベース（ベクトルデータベースなど）に保存する。','資料が更新されたら、保存し直す必要がある。']},
+    {p:'質問のたび',t:'質問に近い資料を検索',h:'質問も数値に変えて、近いものを探す',b:['ユーザーの質問も同じ方法でベクトルに変換する。','保存してあるチャンクの中から、意味の近いものを上位いくつか取り出す。','キーワード検索と組み合わせる方法もある。']},
+    {p:'質問のたび',t:'質問と資料をAIに渡す',h:'指示・資料・質問を、プロンプトにまとめる',b:['見つかった資料を、質問と一緒にプロンプトに入れる。','「資料の範囲で答えて」「なければわからないと答えて」などの指示を加える。','渡せる量には上限があるため、入れる資料は絞る必要がある。']},
+    {p:'質問のたび',t:'AIが回答を作る',h:'資料をもとに回答し、出典を添える',b:['AIが、渡された資料を手がかりに回答を作る。','どの資料を根拠にしたか、出典を一緒に示す設計にしやすい。','回答が資料と合っているか、人が確認することも大切。']}
+  ];
+  const steps=$('steps'),sb=$('stepBody');
+  function showSt(i){
+    [...steps.children].forEach((b,k)=>b.setAttribute('aria-pressed',k===i));
+    const x=ST[i];sb.innerHTML='<span class="era"></span><h3></h3><ul style="margin:0;padding-left:1.2em"></ul>';
+    sb.querySelector('.era').textContent=x.p;sb.querySelector('h3').textContent=(i+1)+'. '+x.h;
+    x.b.forEach(t=>{const li=document.createElement('li');li.textContent=t;sb.querySelector('ul').appendChild(li);});
+  }
+  ST.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+    b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=(i+1)+'　'+x.p;b.querySelector('span').textContent=x.t;
+    b.onclick=()=>showSt(i);steps.appendChild(b);});
+  showSt(0);
+
+  /* 5 search */
+  const DOCS=[
+    {t:'出張規程：宿泊費',x:'国内出張の宿泊費は、1泊あたり1万2千円を上限に実費を精算する。',v:0.86},
+    {t:'出張規程：日当',x:'日帰り出張の日当は1,000円とする。',v:0.52},
+    {t:'経費精算の手順',x:'立替払いした費用は、帰任後5営業日以内に申請する。',v:0.47},
+    {t:'会食費の扱い',x:'社外との会食費は、事前に上長の承認を得る。',v:0.31},
+    {t:'在宅勤務手当',x:'在宅勤務手当は、月額3,000円を支給する。',v:0.18}
+  ];
+  let searchMode='kw';
+  function drawSearch(){
+    const box=$('docs');box.innerHTML='';
+    DOCS.forEach((d,i)=>{const r=document.createElement('div');
+      const hit=searchMode==='vec'&&i<2;
+      r.className='doc'+(hit?' hit':'')+(searchMode==='kw'?' dim':'');
+      r.innerHTML='<b></b><span class="dx"></span><span class="tr"><i></i></span><span class="sc"></span>';
+      r.querySelector('b').textContent=d.t;r.querySelector('.dx').textContent=d.x;
+      if(searchMode==='vec'){r.querySelector('i').style.width=Math.round(d.v*100)+'%';r.querySelector('.sc').textContent='近さ '+d.v.toFixed(2);}
+      else{r.querySelector('.tr').style.visibility='hidden';r.querySelector('.sc').textContent='一致なし';}
+      box.appendChild(r);});
+    const res=$('searchRes');
+    if(searchMode==='kw'){res.className='result bad';res.textContent='質問の「ホテル代」という言葉は、どの資料にも書かれていません（資料では「宿泊費」）。キーワードが一致せず、必要な資料が見つかりません。';}
+    else{res.className='result good';res.textContent='「ホテル代」と「宿泊費」の意味が近いことを手がかりに、1位に「出張規程：宿泊費」が見つかりました。上位の資料がAIに渡されます。';}
+  }
+  seg($('segSearch'),b=>{searchMode=b.dataset.s;drawSearch()});drawSearch();
+
+  /* 6 chunk */
+  const CH={
+    s:{x:'宿泊費は、1泊あたり1万2千円を上限とする。',t:'小さすぎる場合',e:'前後の文脈が切れてしまう。たとえば、次の文にある「ただし、東京23区内は1万5千円とする」という例外が、AIに渡されず、不完全な答えになることがある。'},
+    m:{x:'【出張規程：宿泊費】\n宿泊費は、1泊あたり1万2千円を上限とする。\nただし、東京23区内は1万5千円とする。',t:'ちょうどよい場合',e:'意味のまとまり（項目）ごとに分けてあるので、例外も含めて渡せる。見出しや出典も一緒に持たせると、根拠を示しやすい。'},
+    l:{x:'【出張規程（全文）】\n第1条 目的 …\n第2条 対象者 …\n第3条 宿泊費 …\n第4条 日当 …\n第5条 交通費 …\n（ほかの条文が続く）',t:'大きすぎる場合',e:'関係のない内容まで一緒に渡される。ノイズが増えて検索の精度や回答の質が下がったり、渡す量が増えて費用や処理時間がかさんだりすることがある。'}
+  };
+  function showChunk(k){const c=CH[k];$('chunkText').textContent=c.x;$('chunkTitle').textContent=c.t;$('chunkExp').textContent=c.e;}
+  seg($('segChunk'),b=>showChunk(b.dataset.c));showChunk('m');
+
+  /* 7 prompt */
+  $('promptBox').innerHTML='<span class="ps">【指示】</span>\n以下の資料の範囲だけを根拠に答えてください。\n資料に書かれていない場合は「わからない」と答えてください。\n\n<span class="pd">【資料】</span>\n[1] 出張規程：宿泊費\n宿泊費は、1泊あたり1万2千円を上限とする。\nただし、東京23区内は1万5千円とする。\n\n<span class="pq">【質問】</span>\n国内出張の宿泊費の上限は？';
+
+  /* 8 compare */
+  const CMP={
+    paste:[['向いているもの','少量の資料を、その場で使いたいとき'],['情報の更新','貼る資料を替えるだけで、すぐ反映できる'],['扱える量','1回に入れられる量に上限があり、大量の資料には向かない'],['根拠の提示','貼った資料を指して示しやすい'],['主な負担','毎回、人が資料を探して貼る手間']],
+    rag:[['向いているもの','社内文書やマニュアルなど、大量の資料をもとに答えさせたいとき'],['情報の更新','資料を入れ替えれば反映できる（AIの再学習は不要）'],['扱える量','大量の資料から、必要な部分だけを探して渡せる'],['根拠の提示','出典を添える設計にしやすい'],['主な負担','資料の整備、検索の仕組みの構築・評価・運用']],
+    ft:[['向いているもの','回答の口調・形式・専門分野の言い回しなど、振る舞いを整えたいとき'],['情報の更新','最新情報を入れるには、再び学習が必要で手間がかかる'],['扱える量','学習に使うデータを用意し、学習を行う'],['根拠の提示','どこから答えたか、示しにくい'],['主な負担','学習用データの準備、学習の費用と時間']]
+  };
+  function showCmp(k){const t=$('cmpTable');t.innerHTML='<tbody></tbody>';
+    CMP[k].forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];t.querySelector('tbody').appendChild(tr);});}
+  seg($('segCmp'),b=>showCmp(b.dataset.k));showCmp('rag');
+
+  /* 9 old doc */
+  const OLD={
+    new:{c:'good',d:'【検索された資料】出張規程（2025年改定版）：宿泊費の上限は、1泊1万2千円。',a:'1泊あたり1万2千円が上限です。',e:'最新版が検索されたので、正しい答えになった。'},
+    old:{c:'bad',d:'【検索された資料】出張規程（2023年版・廃止済み）：宿泊費の上限は、1泊1万円。',a:'1泊あたり1万円が上限です。',e:'古い版が検索され、AIはそれを根拠にもっともらしく答えてしまった。資料が古いことに、AI自身は気づけないことが多い。そのため、資料の整理と更新が欠かせない。'}
+  };
+  function showOld(k){const o=OLD[k];$('oldDoc').textContent=o.d;bubble($('oldAns'),o.c,'AIの回答',o.a);$('oldExp').textContent=o.e;}
+  seg($('segOld'),b=>showOld(b.dataset.o));showOld('new');
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
