@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>データ型　同じ見た目でも、中身は別物</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+/* data types */
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps5{grid-template-columns:1fr}}
+.mails th{width:8em;white-space:nowrap}
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 16px;font-weight:700;font-family:"JetBrains Mono","Zen Kaku Gothic New",monospace}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.vals,.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.inp{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 12px;font:inherit;font-family:"JetBrains Mono",monospace;width:11em}
+.jsonp{padding:8px 0;display:flex;flex-direction:column}
+.fl{display:block;width:100%;text-align:left;border:none;background:transparent;color:inherit;font-family:"JetBrains Mono","Zen Kaku Gothic New",monospace;font-size:inherit;padding:2px 14px;white-space:pre}
+.fl:hover{background:rgba(255,255,255,.1)}
+.fl.on{background:var(--indigo);color:var(--on-indigo)}
+@media (max-width:620px){.fl{font-size:.85em;padding:2px 8px}}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="データ型　同じ見た目でも、中身は別物">
+ <div class="inner">
+  <h1>データ型</h1>
+  <p class="sub">同じ見た目でも、中身は別物</p>
+  <div class="rule"></div>
+  <p>「10」は数字？ それとも文字？ 「0123」の先頭の0は、どこへ消えるのか。AIにデータを渡す前に知っておきたい、値の「種類」＝データ型を、実際に動かしながら確かめます。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="データ型とは">
+ <div class="inner">
+  <span class="tag">基本</span>
+  <h2>データ型とは：値につける「種類のラベル」</h2>
+  <p class="def">同じ「2」「10」「100」でも、数値として扱うか、文字として扱うかで、並べ替えや計算の結果が変わります。切り替えて確かめましょう。</p>
+  <div class="seg" id="segType" role="group" aria-label="型">
+   <button type="button" data-t="num" aria-pressed="true">数値として扱う</button>
+   <button type="button" data-t="str" aria-pressed="false">文字列として扱う</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>小さい順に並べ替え</h3><div class="pre" id="sortOut"></div></div>
+   <div class="panel"><h3>「2」と「3」をたす</h3><div class="pre" id="addOut"></div></div>
+  </div>
+  <div class="result" id="typeRes"></div>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="基本の型">
+ <div class="inner">
+  <span class="tag">基本</span>
+  <h2>基本の5つの型</h2>
+  <p class="def">まず押さえたいのは、次の5つです。クリックして、例と注意点を確認してください。</p>
+  <div class="steps steps5" id="basic" role="group" aria-label="基本の型"></div>
+  <div class="panel" id="basicBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="数値：計算できる、ただし落とし穴も">
+ <div class="inner">
+  <span class="tag">型 1　数値</span>
+  <h2>数値：計算できる。ただし落とし穴も</h2>
+  <p class="def">整数（1, 20）と小数（3.14）があり、たす・かけるなどの計算ができます。次の2つの例で、見落としやすい点を確認します。</p>
+  <div class="seg" id="segNum" role="group" aria-label="例">
+   <button type="button" data-n="float" aria-pressed="true">小数の誤差</button>
+   <button type="button" data-n="comma" aria-pressed="false">カンマ付きの数字</button>
+  </div>
+  <div class="panel">
+   <div class="pre" id="numCode"></div>
+   <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="numRun">計算してみる</button></div>
+   <div class="result" id="numRes"></div>
+  </div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="文字列：数字でも、文字として持つことがある">
+ <div class="inner">
+  <span class="tag">型 2　文字列</span>
+  <h2>文字列：数字でも、文字として持つことがある</h2>
+  <p class="def">文字列は、文字の並びです。電話番号、郵便番号、商品コードのように、数字でも「計算しない」ものは、文字列で持つのが基本です。</p>
+  <div class="row-btns" style="margin-bottom:10px"><label for="codeIn"><b>商品コード（架空）：</b></label><input id="codeIn" class="inp" value="00123" inputmode="numeric" maxlength="10"></div>
+  <div class="seg" id="segCode" role="group" aria-label="型">
+   <button type="button" data-c="str" aria-pressed="true">文字列として保存</button>
+   <button type="button" data-c="num" aria-pressed="false">数値として保存</button>
+  </div>
+  <div class="panel"><div class="pre" id="codeOut"></div><div class="result" id="codeRes"></div></div>
+  <p class="note" style="margin-top:10px">※ 表計算ソフトで先頭の0が消えるのも、数値として扱われているためです。</p>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="真偽値：はい／いいえ">
+ <div class="inner">
+  <span class="tag">型 3　真偽値</span>
+  <h2>真偽値：「はい／いいえ」を表す</h2>
+  <p class="def">true（真）か false（偽）の2つだけを持つ型です。「在庫あり？」「有効？」のような条件の判定に使います。ただし、見た目が似た値には要注意です。</p>
+  <div class="vals" id="boolVals" role="group" aria-label="値"></div>
+  <div class="panel"><div class="pre" id="boolOut"></div><div class="result" id="boolRes"></div></div>
+  <p class="note" style="margin-top:10px">※ 判定のルールは、プログラミング言語やツールによって異なります。ここでは、JavaScript で実際に判定しています。</p>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="日付・時刻：書き方のゆれに注意">
+ <div class="inner">
+  <span class="tag">型 4　日付・時刻</span>
+  <h2>日付・時刻：書き方のゆれに注意</h2>
+  <p class="def">日付は、国や場面によって書き方が違います。同じ「03/04/2026」でも、読み方で別の日になります。</p>
+  <div class="seg" id="segDate" role="group" aria-label="読み方">
+   <button type="button" data-d="us" aria-pressed="true">月/日/年（米国式）</button>
+   <button type="button" data-d="eu" aria-pressed="false">日/月/年（欧州式）</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>書かれた日付</h3><div class="pre">03/04/2026</div><div class="result" id="dateRes"></div></div>
+   <div class="panel"><h3>迷わない書き方</h3><div class="pre">2026-03-04</div><p style="margin:10px 0 0">「年-月-日」の形（ISO 8601）は、どこでも同じ日として読めるため、データのやりとりに向いています。時刻やタイムゾーンも、あわせて決めておくと安心です。</p></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 表計算ソフトの内部では、日付が数値（シリアル値）として保存されることがあります。</p>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="空（null）：0とは違う">
+ <div class="inner">
+  <span class="tag">型 5　空（null）</span>
+  <h2>空（null）：「ない」と「0」は違う</h2>
+  <p class="def">null（空）は「値がない・わからない」を表します。「0件だった」という意味の 0 とは別物です。平均の計算で比べてみましょう（数字は架空の例です）。</p>
+  <div class="seg" id="segNull" role="group" aria-label="3月の扱い">
+   <button type="button" data-z="null" aria-pressed="true">3月は未入力（空）</button>
+   <button type="button" data-z="zero" aria-pressed="false">3月は 0 を入力</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>店舗Aの月別売上（万円）</h3><table class="mails" id="nullTbl"></table></div>
+   <div class="panel"><h3>平均を計算すると</h3><div class="pre" id="nullOut"></div><div class="result" id="nullRes"></div></div>
+  </div>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="まとまりの型：配列とオブジェクト">
+ <div class="inner">
+  <span class="tag">まとまりの型</span>
+  <h2>まとまりの型：配列とオブジェクト</h2>
+  <p class="def">複数の値をまとめる型もあります。JSONの1件分のデータで、各項目の型を確認しましょう（会社名・数字は架空です）。行をクリックしてください。</p>
+  <div class="cols">
+   <div class="panel"><div class="pre jsonp" id="jsonBox"></div></div>
+   <div class="panel"><h3 id="jTitle">行をクリック</h3><p id="jExp" style="margin:0">左のデータの行をクリックすると、その項目の型と注意点が表示されます。</p></div>
+  </div>
+  <div class="cards" style="margin-top:14px">
+   <div class="card"><span class="n">配列（リスト）</span><p>順番のある値の並び。[ "製造", "東京" ] のように、角かっこで囲む。</p></div>
+   <div class="card"><span class="n">オブジェクト</span><p>「項目名: 値」の組の集まり。{ } で囲む。入れ子にもできる。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="AIで型が大切な理由">
+ <div class="inner">
+  <span class="tag">AIとの関係</span>
+  <h2>AIで、型が大切な理由</h2>
+  <p class="def">AIにデータを渡すときも、AIの出力を受け取るときも、型のずれは「見た目では気づきにくい間違い」になりやすい点です。</p>
+  <div class="cards">
+   <div class="card"><span class="n">渡すとき</span><h3>形式をそろえて渡す</h3><p>日付は「年-月-日」、コード類は文字列、金額は数字だけ（カンマなし）にそろえる。</p></div>
+   <div class="card"><span class="n">頼むとき</span><h3>出力の型を指定する</h3><p>項目ごとの型・形式・不明のときの扱いを、指示に書く。</p></div>
+   <div class="card"><span class="n">受け取るとき</span><h3>型と範囲を検査する</h3><p>数値が文字列で返る、日付の形式がゆれる、といったずれを、プログラムや目視で確認する。</p></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><h3>出力の型を指定する指示の例</h3><div class="pre">次の項目をJSONで出力してください。
+・company：文字列
+・amount：整数（円。カンマなし）
+・date：文字列（YYYY-MM-DD形式）
+・note：文字列。わからない場合は null</div></div>
+  <div class="links">
+   <a href="../ai-data-levels/">AIに情報を正しく渡す共通ルール →</a>
+   <a href="../ai-does-not-calculate/">生成AIは「計算」していない？ →</a>
+  </div>
+ </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="確認クイズ：これは何型？">
+ <div class="inner">
+  <span class="tag">確認</span>
+  <h2>確認クイズ：これは何型？</h2>
+  <p class="def">JSON（データの書き方の1つ）で書かれた値の型を答えてください。全6問です。</p>
+  <div class="panel">
+   <p class="note" id="qNo" style="margin:0 0 6px"></p>
+   <div class="pre" id="qVal" style="font-size:1.4em"></div>
+   <div class="opts" id="qOpts" role="group" aria-label="選択肢" style="margin-top:12px"></div>
+   <div class="result" id="qRes"></div>
+   <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="qNext" hidden>次の問題</button><button type="button" class="btn ghost" id="qRetry" hidden>もう一度</button></div>
+  </div>
+ </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <div class="msg" style="margin-top:10px">見た目が同じでも、型が違えば<mark>結果が変わる</mark>。<br>AIにデータを渡す前後で、型をそろえて、確かめる。</div>
+  <div class="cards" style="margin-top:20px">
+   <div class="card"><span class="n">数値</span><p>計算に使う。小数の誤差と、カンマ付きに注意。</p></div>
+   <div class="card"><span class="n">文字列</span><p>コード・番号類は文字列。先頭の0を守る。</p></div>
+   <div class="card"><span class="n">真偽値</span><p>true / false。"false" とは別物。</p></div>
+   <div class="card"><span class="n">日付</span><p>「年-月-日」にそろえる。</p></div>
+   <div class="card"><span class="n">空（null）</span><p>「ない」と「0」は別。</p></div>
+  </div>
+  <div class="links">
+   <a href="../ai-data-levels/">AIに情報を正しく渡す共通ルール →</a>
+   <a href="../ai-output-engineering/">よりよいAIの出力のために →</a>
+  </div>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn,start){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[start].click();
+  }
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+
+  /* 2 type matters */
+  function showType(t){
+    const vals=['2','10','100'];
+    const sorted=t==='num'?vals.map(Number).sort((a,b)=>a-b):vals.slice().sort();
+    $('sortOut').textContent=sorted.map(v=>t==='str'?'"'+v+'"':v).join('  ,  ');
+    $('addOut').textContent=t==='num'?'2 + 3  →  '+(2+3):'"2" + "3"  →  "'+('2'+'3')+'"';
+    res($('typeRes'),t==='num'?'good':'bad',t==='num'?'数値なら、大きさの順に並び、たし算は計算になります。':'文字列だと、文字を1文字ずつ比べるため「10」が「2」より前に来ます。たし算も、文字がつながるだけです。');
+  }
+  seg($('segType'),b=>showType(b.dataset.t));showType('num');
+
+  /* 3 basic types */
+  const BT=[
+    {t:'数値',s:'整数・小数',ex:'120　　3.14　　-5',can:'たす・ひく・かける・平均などの計算、大小の比較、並べ替え。',ng:'小数の誤差。カンマ付き（1,000）は数値にならない。'},
+    {t:'文字列',s:'文字の並び',ex:'"青葉商事"　　"00123"　　"2026-10-20"',can:'つなげる、検索する、置き換える。',ng:'数字でも、引用符で囲むと文字列。計算はできない。'},
+    {t:'真偽値',s:'true / false',ex:'true　　false',can:'条件の判定（在庫あり？ 有効？）、絞り込み。',ng:'"true" や "はい" は、真偽値ではなく文字列。表記のゆれにも注意。'},
+    {t:'日付・時刻',s:'いつか',ex:'2026-10-20　　2026-10-20T09:30:00+09:00',can:'日数の計算、期間での絞り込み、並べ替え。',ng:'書き方のゆれ、タイムゾーン。データ形式によっては、文字列として扱う。'},
+    {t:'空（null）',s:'値がない',ex:'null　　（未入力のセル）',can:'「わからない」「まだ無い」を表す。',ng:'0 や 空の文字（""）とは別。集計での扱いを決めておく。'}
+  ];
+  const bs=$('basic'),bb=$('basicBody');
+  btnList(bs,BT,(x,i)=>'型 '+(i+1),x=>x.t,x=>{bb.innerHTML='<h3></h3><table class="mails"><tbody></tbody></table>';
+    bb.querySelector('h3').textContent=x.t+'：'+x.s;
+    [['例',x.ex],['できること',x.can],['注意',x.ng]].forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];bb.querySelector('tbody').appendChild(tr);});},0);
+
+  /* 4 numbers */
+  let numMode='float',numDone=false;
+  function showNum(k){
+    numMode=k;
+    $('numCode').textContent=k==='float'?'0.1 + 0.2':'"1,000" + 500';
+    res($('numRes'),'','「計算してみる」を押してください。');
+  }
+  $('numRun').onclick=()=>{
+    if(numMode==='float'){const v=0.1+0.2;res($('numRes'),'bad','結果：'+v+'（0.3 と等しい？ → '+(v===0.3?'はい':'いいえ')+'）。コンピュータは小数を2進数で近似するため、ごく小さな誤差が出ることがあります。金額は「円」単位の整数で持つ、表示時に丸める、などで対処します。');}
+    else{const v='1,000'+500;res($('numRes'),'bad','結果："'+v+'"（文字がつながっただけ）。カンマ付きの数字は文字列です。計算の前に、カンマを取り除いて数値にする必要があります。');}
+  };
+  seg($('segNum'),b=>showNum(b.dataset.n));showNum('float');
+
+  /* 5 string codes */
+  function showCode(){
+    const raw=$('codeIn').value.replace(/[^0-9]/g,''),m=document.querySelector('#segCode [aria-pressed=true]').dataset.c;
+    const out=raw===''?'（数字を入力してください）':(m==='str'?'"'+raw+'"':String(Number(raw)));
+    $('codeOut').textContent=out;
+    const lost=raw!==''&&m==='num'&&String(Number(raw))!==raw;
+    res($('codeRes'),m==='str'?'good':(lost?'bad':''),m==='str'?'文字列なら、入力どおりに保たれます。':(lost?'数値にすると、先頭の0が消えました。別のコードとして扱われ、照合できなくなるおそれがあります。':'先頭に0がなければ変わりませんが、0で始まるコードがあると消えます。「00123」のように入力してみてください。'));
+  }
+  $('codeIn').addEventListener('input',showCode);seg($('segCode'),showCode);showCode();
+
+  /* 6 boolean */
+  const BV=[{l:'false',v:false,d:'真偽値の false'},{l:'"false"',v:'false',d:'文字列の「false」'},{l:'0',v:0,d:'数値の 0'},{l:'""',v:'',d:'空の文字列'}];
+  const bv=$('boolVals');
+  BV.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=x.l;
+    b.onclick=()=>{[...bv.children].forEach(c=>c.setAttribute('aria-pressed',c===b));
+      const t=!!x.v;$('boolOut').textContent='if ('+x.l+') { 実行する } else { 実行しない }\n→ '+(t?'実行する':'実行しない');
+      res($('boolRes'),(x.l==='"false"')?'bad':'', x.l==='"false"'?'文字列の「false」は、中身のある文字列なので「真」と判定されます。見た目は false でも、真偽値ではありません。':x.d+'は「'+(t?'真':'偽')+'」と判定されます。');};bv.appendChild(b);});
+  bv.children[1].click();
+
+  /* 7 date */
+  function showDate(k){res($('dateRes'),'',k==='us'?'3月4日（March 4）と読みます。':'4月3日（3 April）と読みます。');}
+  seg($('segDate'),b=>showDate(b.dataset.d));showDate('us');
+
+  /* 8 null */
+  function showNull(k){
+    const v=[100,120,k==='zero'?0:null,140];
+    const t=$('nullTbl');t.innerHTML='<tbody></tbody>';
+    ['1月','2月','3月','4月'].forEach((m,i)=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=m;tr.children[1].textContent=v[i]===null?'（空）':v[i];t.querySelector('tbody').appendChild(tr);});
+    const nums=v.filter(x=>x!==null),avg=nums.reduce((a,b)=>a+b,0)/nums.length;
+    $('nullOut').textContent=k==='null'?'空を除いた '+nums.length+'件の平均\n= '+avg:'0 も含めた '+nums.length+'件の平均\n= '+avg;
+    res($('nullRes'),k==='null'?'good':'bad',k==='null'?'空は「データがない」ので、集計から除かれ、平均は120です（ツールによって、扱いは異なります）。':'0 は「売上が0だった」という意味の値。集計に含まれ、平均が90に下がります。未入力を 0 で埋めると、結果が変わります。');
+  }
+  seg($('segNull'),b=>showNull(b.dataset.z));showNull('null');
+
+  /* 9 json */
+  const JL=[
+    {t:'{',k:'オブジェクト',e:'「項目名: 値」の組の集まり全体。1件分のデータを表す。{ } で囲む。'},
+    {t:'  "company": "架空商事",',k:'文字列',e:'引用符で囲んだ値は文字列。会社名などの文章。'},
+    {t:'  "employees": 120,',k:'数値',e:'引用符のない数字は数値。計算や比較ができる。'},
+    {t:'  "active": true,',k:'真偽値',e:'引用符のない true / false は真偽値。"true" と書くと文字列になる。'},
+    {t:'  "zip": "0123456",',k:'文字列',e:'数字だけでも、計算しないコード類は文字列。数値にすると、先頭の0が消える。'},
+    {t:'  "founded": "2010-04-01",',k:'文字列（日付）',e:'JSONには日付専用の型がなく、日付は文字列で表す。「年-月-日」の形にそろえる。'},
+    {t:'  "tags": ["製造", "東京"],',k:'配列',e:'順番のある値の並び。角かっこ [ ] で囲み、中の値は文字列などの型を持つ。'},
+    {t:'  "note": null',k:'空（null）',e:'「値がない」を表す。0 や空文字とは別。'},
+    {t:'}',k:'オブジェクト',e:'オブジェクトの終わり。'}
+  ];
+  const jb=$('jsonBox');
+  JL.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.className='fl';b.textContent=x.t;
+    b.onclick=()=>{[...jb.children].forEach(c=>c.classList.toggle('on',c===b));$('jTitle').textContent='型：'+x.k;$('jExp').textContent=x.e;};jb.appendChild(b);});
+
+  /* 11 quiz */
+  const QS=[
+    {v:'"0123"',a:'文字列',e:'引用符で囲んだ値は文字列です。先頭の0も保たれます。'},
+    {v:'3.14',a:'数値',e:'引用符のない数字は数値（小数）です。'},
+    {v:'true',a:'真偽値',e:'引用符のない true は真偽値です。'},
+    {v:'"true"',a:'文字列',e:'引用符で囲むと、true でも文字列になります。'},
+    {v:'null',a:'空（null）',e:'null は「値がない」を表します。0 や "" とは別です。'},
+    {v:'"2026-10-20"',a:'文字列',e:'JSONには日付専用の型がなく、日付は文字列で表します。形式を「年-月-日」にそろえるのが大切です。'}
+  ];
+  const OPT=['数値','文字列','真偽値','空（null）'];
+  let qi=0,score=0,answered=false;
+  function drawQ(){
+    answered=false;$('qNo').textContent='第 '+(qi+1)+' 問 / '+QS.length;$('qVal').textContent=QS[qi].v;
+    const o=$('qOpts');o.innerHTML='';OPT.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=t;
+      b.onclick=()=>{if(answered)return;answered=true;const ok=t===QS[qi].a;if(ok)score++;
+        [...o.children].forEach(c=>{c.disabled=true;if(c.textContent===QS[qi].a)c.setAttribute('aria-pressed','true')});
+        res($('qRes'),ok?'good':'bad',(ok?'正解です。':'正解は「'+QS[qi].a+'」です。')+QS[qi].e);
+        if(qi<QS.length-1){$('qNext').hidden=false}else{$('qRetry').hidden=false;$('qRes').textContent+='　結果：'+score+' / '+QS.length+' 問正解';}};o.appendChild(b);});
+    res($('qRes'),'','');$('qNext').hidden=true;$('qRetry').hidden=true;
+  }
+  $('qNext').onclick=()=>{qi++;drawQ()};
+  $('qRetry').onclick=()=>{qi=0;score=0;drawQ()};
+  drawQ();
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
