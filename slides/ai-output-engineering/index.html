@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>よりよいAIの出力のために　プロンプトからグラフまで</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+/* output engineering */
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps5{grid-template-columns:1fr}}
+.mails th{width:9em;white-space:nowrap}
+.lvls{display:grid;gap:8px;margin-bottom:14px}
+.lvls button{display:flex;gap:14px;align-items:baseline;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;margin-left:calc(var(--i,0)*4%)}
+.lvls button b{font-size:13px;color:var(--sub);min-width:4.5em}
+.lvls button span{font-weight:900;font-size:1.1em}
+.lvls button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.lvls button[aria-pressed="true"] b{color:inherit;opacity:.85}
+@media (max-width:620px){.lvls button{margin-left:calc(var(--i,0)*2%)}}
+.elems{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 16px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.gauge{height:14px;background:var(--line);border-radius:7px;overflow:hidden;margin:10px 0}
+.gauge i{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.gauge.over i{background:var(--ng)}
+.ctxlist{margin:0 0 6px;padding-left:1.2em}
+.runs{display:grid;gap:8px;margin-bottom:12px}
+.run{display:grid;grid-template-columns:4.5em 1fr 6em;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--bg)}
+.run em{font-style:normal;font-weight:700;text-align:right}
+.run.pass{border-color:var(--ok);background:var(--ok-soft)}
+.run.fail em{color:var(--ng)}
+.run.stop{border-color:var(--ng);background:var(--ng-soft)}
+.graph{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.gcol{display:flex;flex-direction:column;gap:8px;align-items:stretch;justify-content:center}
+.gnode{border:2px solid var(--ink);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:700}
+.gnode.on{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.garrow{color:var(--sub);font-weight:700}
+@media (max-width:820px){.graph{flex-direction:column;align-items:stretch}.garrow{text-align:center;transform:rotate(90deg)}}
+.syms{display:grid;gap:8px;margin-bottom:14px}
+.syms button{display:grid;grid-template-columns:6em 1fr;gap:10px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px}
+.syms button b{font-size:13px;color:var(--sub)}
+.syms button[aria-pressed="true"]{border-color:var(--indigo);background:var(--indigo-soft)}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="よりよいAIの出力のために　プロンプトからグラフまで">
+ <div class="inner">
+  <h1>よりよいAIの出力のために</h1>
+  <p class="sub">プロンプトから、グラフまで。5つの「設計する対象」</p>
+  <div class="rule"></div>
+  <p>AIの答えをよくするために、人が工夫できる範囲は、1回の指示の書き方から、仕組み全体の設計へと広がってきました。プロンプト → コンテキスト → ハーネス → ループ → グラフ。その順に、何が違うのかを操作しながら確かめます。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="全体像：5つの段階">
+ <div class="inner">
+  <span class="tag">全体像</span>
+  <h2>全体像：設計する対象が、広がっていく</h2>
+  <p class="def">段階をクリックすると、その段階で何を設計するのかが表示されます。下の段階は、上の段階の土台でもあります。</p>
+  <div class="lvls" id="lvls" role="group" aria-label="5つの段階"></div>
+  <div class="panel" id="lvBody" aria-live="polite"></div>
+  <p class="note" style="margin-top:10px">※ 「ハーネス」「ループ」「グラフ」エンジニアリングは、2026年ごろから使われ始めた新しい言葉で、定義は資料によって異なります。ここでは、一つの整理として紹介します。</p>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="なぜ段階が増えたのか">
+ <div class="inner">
+  <span class="tag">背景</span>
+  <h2>なぜ段階が増えたのか</h2>
+  <p class="def">AIに任せる仕事が「1回の質問」から「長い作業」へ広がるにつれ、うまくいかない原因が、指示の書き方だけではなくなってきたためです。</p>
+  <div class="cards">
+   <div class="card"><span class="n">1回の質問</span><h3>書き方で変わる</h3><p>文章の要約や下書きなら、頼み方（プロンプト）の工夫が効きやすい。</p></div>
+   <div class="card"><span class="n">資料を使う</span><h3>見せる情報で変わる</h3><p>社内資料や会話の履歴など、何をAIに見せるか（コンテキスト）が影響する。</p></div>
+   <div class="card"><span class="n">道具を使う</span><h3>周りの仕組みで変わる</h3><p>検索やファイル操作ができると、道具・権限・確認の仕組み（ハーネス）が重要になる。</p></div>
+   <div class="card"><span class="n">何度も試す</span><h3>進め方で変わる</h3><p>実行して確認し、直す。見直しと終わり方の設計（ループ）が必要になる。</p></div>
+   <div class="card"><span class="n">分担して進める</span><h3>つなぎ方で変わる</h3><p>複数のAIが分担・並列・検証するなら、全体のつながり（グラフ）を設計する。</p></div>
+  </div>
+  <div class="msg">答えがよくならないとき、<mark>どの段階に原因があるか</mark>を見分ける。</div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="段階1：プロンプトエッセンシャルズ（基本）">
+ <div class="inner">
+  <span class="tag">段階 1　プロンプト（基本）</span>
+  <h2>プロンプトエッセンシャルズ：基本の6要素</h2>
+  <p class="def">まずは、依頼の書き方の基本です。要素をクリックして加えると、プロンプトがどう変わるかを確認できます（会議や人名は架空の例です）。</p>
+  <div class="elems" id="elems" role="group" aria-label="プロンプトの要素"></div>
+  <div class="pre" id="elPrompt"></div>
+  <div class="gauge" aria-hidden="true"><i id="elGauge"></i></div>
+  <div class="result" id="elRes"></div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="段階1：プロンプトエンジニアリング（工夫）">
+ <div class="inner">
+  <span class="tag">段階 1　プロンプト（工夫）</span>
+  <h2>プロンプトエンジニアリング：頼み方の工夫</h2>
+  <p class="def">基本に加えて、答えの質を上げるための工夫を重ねます。1回のやりとりの中で完結する範囲の工夫です。</p>
+  <div class="cards">
+   <div class="card"><span class="n">工夫 1</span><h3>例を見せる</h3><p>望ましい出力の例を1〜数個添える。形式や口調がそろいやすい。</p></div>
+   <div class="card"><span class="n">工夫 2</span><h3>手順を示す</h3><p>「まず〜を整理し、次に〜」と考える順序を示す。複雑な依頼で効きやすい。</p></div>
+   <div class="card"><span class="n">工夫 3</span><h3>見直しを頼む</h3><p>「書いた後に、条件を満たしているか確認して直して」と自己点検を促す。</p></div>
+   <div class="card"><span class="n">工夫 4</span><h3>試して改善する</h3><p>同じ質問で複数回試し、よい書き方を残す。言い回しの違いで結果は変わりうる。</p></div>
+  </div>
+  <div class="msg">プロンプトは大切。ただし、<mark>AIが知らない情報は、書き方だけでは補えない</mark>。</div>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="段階2：コンテキストエンジニアリング">
+ <div class="inner">
+  <span class="tag">段階 2　コンテキスト</span>
+  <h2>コンテキストエンジニアリング：何を見せるか</h2>
+  <p class="def">コンテキストとは、AIが答えるときに見ている情報すべてです（指示・会話の履歴・資料・道具の結果など）。「何を見せ、何を見せないか」を設計します。</p>
+  <div class="seg" id="segCtx" role="group" aria-label="渡し方">
+   <button type="button" data-x="fit" aria-pressed="true">必要なものを選んで渡す</button>
+   <button type="button" data-x="all" aria-pressed="false">全部詰め込む</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>AIに見せる情報</h3><ul class="ctxlist" id="ctxList"></ul><div class="gauge"><i id="ctxGauge"></i></div><p class="note" style="margin:4px 0 0">AIが一度に見られる量の、使用量のイメージ</p></div>
+   <div class="panel"><h3 id="ctxTitle"></h3><p id="ctxExp" style="margin:0"></p></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 量はイメージです。コンテキストの工夫には、要約して圧縮する、メモに残す、必要なときに検索して取りにいく、などがあります。</p>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="段階3：ハーネスエンジニアリング">
+ <div class="inner">
+  <span class="tag">段階 3　ハーネス</span>
+  <h2>ハーネスエンジニアリング：周りの仕組みを整える</h2>
+  <p class="def">ハーネスは、AIモデルそのもの以外のすべて。AIが道具を使って作業するときの、道具・ルール・確認の仕組みです。クリックして確かめてください。</p>
+  <div class="steps steps5" id="harn" role="group" aria-label="ハーネスの部品"></div>
+  <div class="panel" id="harnBody" aria-live="polite"></div>
+  <div class="msg">AIがミスしたら、頼み直すだけでなく、<mark>同じミスが起きにくい仕組み</mark>にする。</div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="段階4：ループエンジニアリング">
+ <div class="inner">
+  <span class="tag">段階 4　ループ</span>
+  <h2>ループエンジニアリング：見直しと、止め方</h2>
+  <p class="def">「実行 → 確認 → 修正」を繰り返して、結果を磨く進め方です。いつ見直し、どこで止めるかの設計が欠かせません（作業と結果は架空の例です）。</p>
+  <div class="seg" id="segLoop" role="group" aria-label="止め方">
+   <button type="button" data-l="ok" aria-pressed="true">合格基準と上限あり</button>
+   <button type="button" data-l="cap" aria-pressed="false">上限が少なすぎる</button>
+   <button type="button" data-l="none" aria-pressed="false">基準も上限もなし</button>
+  </div>
+  <div class="panel">
+   <div class="runs" id="runs"></div>
+   <div class="result" id="loopRes"></div>
+  </div>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="段階5：グラフエンジニアリング">
+ <div class="inner">
+  <span class="tag">段階 5　グラフ</span>
+  <h2>グラフエンジニアリング：つなぎ方を設計する</h2>
+  <p class="def">複数のAIや工程を、「ノード（担当）」と「線（つながり）」で表し、全体を設計します。並列に進める、検証役を置く、といった組み立てができます。</p>
+  <div class="seg" id="segGraph" role="group" aria-label="形">
+   <button type="button" data-g="loop" aria-pressed="false">1本のループ</button>
+   <button type="button" data-g="graph" aria-pressed="true">グラフ</button>
+  </div>
+  <div class="panel">
+   <div class="graph" id="graph"></div>
+   <div class="result" id="graphRes"></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 図は説明用の例です。ループは、「前の工程に戻る」形を持つ、グラフの一種と見ることもできます。</p>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="どの段階から手をつけるか">
+ <div class="inner">
+  <span class="tag">使い分け</span>
+  <h2>どの段階から手をつけるか</h2>
+  <p class="def">困っている状況を選ぶと、まず見直したい段階の目安が表示されます。</p>
+  <div class="syms" id="syms" role="group" aria-label="困りごと"></div>
+  <div class="panel" id="symBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="気をつけたいこと">
+ <div class="inner">
+  <span class="tag">注意点</span>
+  <h2>気をつけたいこと</h2>
+  <div class="cards">
+   <div class="card"><span class="n">注意 1</span><h3>下の段階で解決できるなら、そこで</h3><p>段階が上がるほど、複雑さ・費用・運用の手間が増える。まずプロンプトとコンテキストを見直す。</p></div>
+   <div class="card"><span class="n">注意 2</span><h3>任せるほど、確認が大切になる</h3><p>仕組みが整っても、誤りがゼロになるとは限らない。重要な判断は、人が最終確認する。</p></div>
+   <div class="card"><span class="n">注意 3</span><h3>止め方と権限を決めておく</h3><p>繰り返しの上限、使える道具、承認が必要な操作を、あらかじめ決めておく。</p></div>
+   <div class="card"><span class="n">注意 4</span><h3>用語はまだ固まっていない</h3><p>新しい言葉ほど、人によって指す範囲が違う。社内で使うときは、意味を確認し合う。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <div class="msg" style="margin-top:10px">うまくいかない原因は、<mark>書き方だけとは限らない</mark>。<br>見せる情報、周りの仕組み、進め方、つなぎ方まで見る。</div>
+  <div class="cards" style="margin-top:20px">
+   <div class="card"><span class="n">1　プロンプト</span><p>何をどう頼むか。基本の6要素と、頼み方の工夫。</p></div>
+   <div class="card"><span class="n">2　コンテキスト</span><p>何を見せ、何を見せないか。</p></div>
+   <div class="card"><span class="n">3　ハーネス</span><p>道具・権限・確認の仕組み。</p></div>
+   <div class="card"><span class="n">4　ループ</span><p>見直しの回し方と、止め方。</p></div>
+   <div class="card"><span class="n">5　グラフ</span><p>複数のAI・工程のつなぎ方。</p></div>
+  </div>
+  <p class="note" style="margin-top:16px">参考（外部サイト）</p>
+  <div class="links">
+   <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Anthropic「Effective context engineering for AI agents」（2025年）</a>
+   <a href="https://arxiv.org/abs/2608.21156" target="_blank" rel="noopener">論文「Graph Engineering in the Era of LLM Agents」（2026年）</a>
+   <a href="../rag-basics/">RAG　AIに資料を持ち込ませる仕組み →</a>
+  </div>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn,start){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[start].click();
+  }
+  function ul(el,arr){el.innerHTML='';arr.forEach(t=>{const li=document.createElement('li');li.textContent=t;el.appendChild(li);});}
+
+  /* 2 levels */
+  const LV=[
+    {n:'段階 1',t:'プロンプト',what:'1回の指示の書き方',q:'何を、どう頼むか',ex:'目的・条件・出力形式・例を添えて頼む。',ng:'的外れな答え、形式や分量がばらばらになる。',mem:'モデルの力を引き出す'},
+    {n:'段階 2',t:'コンテキスト',what:'AIに見せる情報の全体',q:'何を見せ、何を見せないか',ex:'必要な資料や履歴だけを選んで渡す。長くなったら要約する。',ng:'社内情報を知らない。逆に、情報が多すぎて重要な点が埋もれる。',mem:'情報へのアクセスを管理する'},
+    {n:'段階 3',t:'ハーネス',what:'AIを取り巻く道具・権限・確認の仕組み',q:'何をさせ、何を許さないか',ex:'使える道具を絞る。重要な操作は承認制にする。自動テストで確認する。',ng:'意図しない操作をする。同じミスを繰り返す。',mem:'外部の道具や資源を組み立てる'},
+    {n:'段階 4',t:'ループ',what:'試行錯誤の進め方',q:'いつ見直し、いつ止めるか',ex:'実行 → 確認 → 修正を繰り返し、合格か上限回数で止める。',ng:'直しきれない。終わらない。',mem:'見直しと改善を続けさせる'},
+    {n:'段階 5',t:'グラフ',what:'複数のAI・工程のつながり',q:'誰が何を担当し、どうつなぐか',ex:'調査を並列に進め、別の検証役が確認してから出力する。',ng:'分担が崩れる。連携が複雑になり、どこで誤ったか追いにくい。',mem:'システム全体として調整する'}
+  ];
+  const lvls=$('lvls'),lvBody=$('lvBody');
+  btnList(lvls,LV,x=>x.n,x=>x.t,(x,i)=>{
+    lvBody.innerHTML='<h3></h3><table class="mails"><tbody></tbody></table>';
+    lvBody.querySelector('h3').textContent=x.n+'：'+x.t+'エンジニアリング';
+    [['設計する対象',x.what],['主な問い',x.q],['たとえば',x.ex],['うまくいかないとき',x.ng],['ひとことで',x.mem]].forEach(r=>{
+      const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];lvBody.querySelector('tbody').appendChild(tr);});
+  },0);
+  [...lvls.children].forEach((b,i)=>b.style.setProperty('--i',i));
+
+  /* 4 prompt elements */
+  const BASE='会議の議事録を要約してください。';
+  const EL=[
+    {k:'目的',t:'目的：参加できなかった上長が、決定事項と宿題を1分で把握できるようにする。'},
+    {k:'背景',t:'背景：新商品の発売前に開いた、営業企画部の定例会議（架空）。'},
+    {k:'役割',t:'あなたは、営業企画部の業務を支えるアシスタントです。'},
+    {k:'制約',t:'制約：議事録にあることだけを使い、推測は書かない。'},
+    {k:'出力形式',t:'出力形式：「決定事項」「宿題（担当と期限）」「保留」の3項目。各3行以内。'},
+    {k:'例',t:'例：宿題「見積書の再送（佐藤・10月25日）」のように書く。'}
+  ];
+  const on=new Set();
+  const elems=$('elems');
+  function drawEl(){
+    const lines=[];if(on.has(2))lines.push(EL[2].t);
+    lines.push(BASE);[0,1,3,4,5].forEach(i=>{if(on.has(i))lines.push(EL[i].t)});
+    $('elPrompt').textContent=lines.join('\n');
+    $('elGauge').style.width=(on.size/6*100)+'%';
+    const r=$('elRes'),n=on.size;
+    r.className='result'+(n>=4?' good':'');
+    r.textContent=n===0?'このままだと、長さ・観点・形式が、AIの推測に任されます。':n<4?n+'/6 要素。足りない部分は、まだAIが推測で補います。':n<6?n+'/6 要素。条件がそろうほど、AIが推測する部分は減ります。':'6/6 要素。ただし、要素が多いほどよいとは限りません。必要なものを選んで書きましょう。';
+  }
+  EL.forEach((e,i)=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=e.k;
+    b.onclick=()=>{if(on.has(i))on.delete(i);else on.add(i);b.setAttribute('aria-pressed',on.has(i));drawEl()};elems.appendChild(b);});
+  drawEl();
+
+  /* 6 context */
+  const CTX={
+    fit:{items:['指示（役割と条件）','今回の質問','関係する資料 2件','直近のやりとり'],pct:30,c:'good',t:'必要なものだけを渡した場合',e:'重要な情報が目立ち、AIが注目しやすい。足りない情報は、必要なときに検索して取りにいく設計にもできる。'},
+    all:{items:['指示（役割と条件）','今回の質問','関係する資料 2件','直近のやりとり','全社の資料 100件','過去の会話すべて','使わない道具の説明'],pct:96,c:'bad',t:'全部詰め込んだ場合',e:'情報が多すぎると、重要な点が埋もれて、答えの質が下がることがあると指摘されています（「コンテキストの劣化」と呼ばれることがあります）。量には上限もあります。'}
+  };
+  function showCtx(k){const c=CTX[k];ul($('ctxList'),c.items);const g=$('ctxGauge');g.style.width=c.pct+'%';g.parentNode.className='gauge'+(c.pct>85?' over':'');
+    $('ctxTitle').textContent=c.t;$('ctxExp').textContent=c.e;}
+  seg($('segCtx'),b=>showCtx(b.dataset.x));showCtx('fit');
+
+  /* 7 harness */
+  const HN=[
+    {t:'道具',s:'何を使えるか',d:'検索、ファイルの読み書き、計算、社内システムへの接続など、AIが使える道具を用意する。',e:'たとえば：道具を必要なものに絞ると、AIが迷いにくくなる。'},
+    {t:'権限・ガードレール',s:'何を許さないか',d:'読める範囲、書き換えられる範囲、危険な操作の禁止など、AIの行動に境界を設ける。',e:'たとえば：削除や送信など、元に戻せない操作は、人の承認が必要にする。'},
+    {t:'確認（フィードバック）',s:'結果を点検する',d:'自動テスト、形式チェック、別の目による確認など、出力の誤りを見つける仕組み。',e:'たとえば：作ったコードを自動テストにかけ、失敗を知らせる。'},
+    {t:'記憶・ルール',s:'決まりを残す',d:'守るべきルールや過去の失敗を、設定ファイルなどに書き残し、毎回読ませる。',e:'たとえば：ミスが起きたら、その対策をルールに追記して、再発を防ぐ。'},
+    {t:'監視・記録',s:'後から追える',d:'何を実行したかの記録を残し、問題が起きたとき、人が原因をたどれるようにする。',e:'たとえば：AIの操作履歴を残し、異常があれば通知する。'}
+  ];
+  const harn=$('harn'),hb=$('harnBody');
+  btnList(harn,HN,(x,i)=>(i+1)+'　部品',x=>x.t,(x)=>{hb.innerHTML='<h3></h3><p></p><p style="margin:0" class="note"></p>';
+    hb.querySelector('h3').textContent=x.t+'：'+x.s;hb.querySelectorAll('p')[0].textContent=x.d;hb.querySelectorAll('p')[1].textContent=x.e;},0);
+
+  /* 8 loop */
+  const LOOP={
+    ok:{runs:[['1周目','実行 → 確認','誤り3件','fail'],['2周目','修正 → 確認','誤り1件','fail'],['3周目','修正 → 確認','合格','pass']],c:'good',r:'合格基準を満たしたので停止。確認の結果をもとに、少しずつ直せた。'},
+    cap:{runs:[['1周目','実行 → 確認','誤り3件','fail'],['2周目','修正 → 確認','誤り1件','fail'],['上限','2回で停止','未完了','stop']],c:'bad',r:'上限が少なすぎて、合格前に止まった。未完了のまま、人に引き継ぐ設計が必要。上限は、作業の難しさとコストを見て決める。'},
+    none:{runs:[['1周目','実行 → 確認','誤り3件','fail'],['2周目','修正 → 確認','誤り3件','fail'],['3周目','修正 → 確認','誤り2件','fail'],['…','終わりが決まらない','継続中','stop']],c:'bad',r:'基準も上限もないと、同じ修正を繰り返したり、費用や時間がかさんだりすることがある。合格基準と上限回数が必要。'}
+  };
+  function showLoop(k){const L=LOOP[k],box=$('runs');box.innerHTML='';
+    L.runs.forEach(r=>{const d=document.createElement('div');d.className='run '+r[3];d.innerHTML='<b></b><span></span><em></em>';
+      d.querySelector('b').textContent=r[0];d.querySelector('span').textContent=r[1];d.querySelector('em').textContent=r[2];box.appendChild(d);});
+    const res=$('loopRes');res.className='result '+L.c;res.textContent=L.r;}
+  seg($('segLoop'),b=>showLoop(b.dataset.l));showLoop('ok');
+
+  /* 9 graph */
+  const GN={
+    req:{t:'依頼',d:'利用者からの依頼を受け取り、作業を分ける。'},
+    a:{t:'調査A',d:'社内資料から、関連する情報を集める担当。'},
+    b:{t:'調査B',d:'公開情報から、関連する情報を集める担当。調査Aと並列に進められる。'},
+    m:{t:'統合',d:'2つの調査結果をまとめて、下書きを作る担当。'},
+    v:{t:'検証',d:'下書きを、元の資料と照らして確認する、独立した担当。誤りが見つかれば、統合に戻す。'},
+    o:{t:'出力',d:'検証に通った内容を、利用者に返す。'},
+    w:{t:'作成',d:'1人の担当が、調べて下書きを作る。'},
+    c:{t:'確認',d:'同じ担当が、自分で確認する。合格しなければ、作成に戻る。'}
+  };
+  function node(k){return '<button type="button" class="gnode" data-n="'+k+'">'+GN[k].t+'</button>'}
+  function showGraph(g){
+    const box=$('graph');
+    if(g==='graph')box.innerHTML='<div class="gcol">'+node('req')+'</div><span class="garrow">→</span><div class="gcol">'+node('a')+node('b')+'</div><span class="garrow">→</span><div class="gcol">'+node('m')+'</div><span class="garrow">→</span><div class="gcol">'+node('v')+'<small class="note">不合格なら「統合」へ戻る</small></div><span class="garrow">→</span><div class="gcol">'+node('o')+'</div>';
+    else box.innerHTML='<div class="gcol">'+node('req')+'</div><span class="garrow">→</span><div class="gcol">'+node('w')+'</div><span class="garrow">→</span><div class="gcol">'+node('c')+'<small class="note">不合格なら「作成」へ戻る</small></div><span class="garrow">→</span><div class="gcol">'+node('o')+'</div>';
+    const res=$('graphRes');res.className='result';
+    res.textContent=g==='graph'?'ノードをクリックすると、役割が表示されます。調査を並列に進め、検証役が独立して確認するのが、グラフの組み立ての例です。':'1人の担当が、作成と確認を繰り返す形。単純で扱いやすい反面、自分の誤りには気づきにくいことがあります。';
+    box.querySelectorAll('.gnode').forEach(b=>b.onclick=()=>{box.querySelectorAll('.gnode').forEach(x=>x.classList.toggle('on',x===b));res.className='result good';res.textContent=GN[b.dataset.n].t+'：'+GN[b.dataset.n].d;});
+  }
+  seg($('segGraph'),b=>showGraph(b.dataset.g));showGraph('graph');
+
+  /* 10 symptoms */
+  const SY=[
+    {q:'答えが的外れ。形式や分量がばらばら',lv:'段階 1　プロンプト',d:'目的・出力形式・例を明記する。手順を示す。まずここから見直すのが、最も手軽です。'},
+    {q:'社内のことを知らない。長い作業で、前の内容を忘れる',lv:'段階 2　コンテキスト',d:'必要な資料を検索して渡す（RAG）。長い履歴は要約する。見せる情報を選び直す。'},
+    {q:'意図しない操作をする。同じミスを繰り返す',lv:'段階 3　ハーネス',d:'使える道具と権限を絞る。重要な操作は承認制にする。自動テストを置く。ミスの対策を、ルールに残す。'},
+    {q:'1回では直しきれない。いつ終わるかわからない',lv:'段階 4　ループ',d:'合格基準と上限回数を決め、「実行 → 確認 → 修正」を回す。上限に達したら人に引き継ぐ。'},
+    {q:'調査・作成・検証を分担したい。並列に進めたい',lv:'段階 5　グラフ',d:'担当と流れをグラフで設計し、並列に進める。検証役を独立させる。複雑になるため、必要性を見極める。'}
+  ];
+  const syms=$('syms'),sbody=$('symBody');
+  btnList(syms,SY,(x,i)=>'困りごと '+(i+1),x=>x.q,x=>{sbody.innerHTML='<span class="era"></span><h3></h3><p style="margin:0"></p>';
+    sbody.querySelector('.era').textContent='まず見直す段階';sbody.querySelector('h3').textContent=x.lv;sbody.querySelector('p').textContent=x.d;},0);
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
