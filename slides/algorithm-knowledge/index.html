@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>アルゴリズム知識　難題を解く3つの考え方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+/* algorithm knowledge */
+.steps4{grid-template-columns:repeat(4,1fr)}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps4,.steps5{grid-template-columns:1fr}}
+.mails th{width:8em;white-space:nowrap}
+#orderTbl th,#orderTbl td{white-space:normal}
+.btn:disabled{opacity:.4;cursor:default}
+.chain{margin-bottom:12px}
+.cstep{display:grid;grid-template-columns:4em 1fr;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;margin-bottom:8px}
+.cstep.now{border-color:var(--indigo);background:var(--indigo-soft)}
+.cstep b{color:var(--indigo)}
+.bars:not(.did){display:flex;align-items:flex-end;gap:6px;height:180px;border-bottom:2px solid var(--ink);padding:0 4px}
+.bcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:0}
+.bcol i{display:block;width:100%;background:var(--indigo);border-radius:3px 3px 0 0}
+.bcol.top i{background:var(--ng)}
+.bcol span{font-size:.75em;color:var(--sub);font-variant-numeric:tabular-nums;order:-1}
+.bars.did{display:grid;gap:8px}
+.hrow{display:grid;grid-template-columns:12em 1fr 4.5em;gap:10px;align-items:center}
+.hrow b{font-size:.9em}
+.htr{height:18px;background:var(--line);border-radius:4px;overflow:hidden}
+.htr i{display:block;height:100%;background:var(--indigo);transition:width .4s}
+.hrow.ct .htr i{background:var(--sub)}
+.hrow em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:620px){.hrow{grid-template-columns:8em 1fr 4em}}
+.checks.plain li{display:block}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="アルゴリズム知識　難題を解く3つの考え方">
+ <div class="inner">
+  <h1>アルゴリズム知識</h1>
+  <p class="sub">難題を解くための、3つの考え方</p>
+  <div class="rule"></div>
+  <p>複雑適応系、因果推論、メタヒューリスティクス。業務改善やAIエージェントの設計に役立つ、3つの考え方を、操作しながら理解します。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="全体像：3つの考え方">
+ <div class="inner">
+  <span class="tag">全体像</span>
+  <h2>3つは、別々の力を持っている</h2>
+  <p class="def">難しい問題には、「理解する」「見極める」「探す」の3つの力が必要です。クリックして、それぞれを確認してください。</p>
+  <div class="steps" id="three" role="group" aria-label="3つの考え方"></div>
+  <div class="panel" id="threeBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="複雑適応系：部分最適は、全体最適とは限らない">
+ <div class="inner">
+  <span class="tag">1　複雑適応系</span>
+  <h2>複雑適応系：部分最適は、全体最適とは限らない</h2>
+  <p class="def">多数の主体が、それぞれのルールで行動し、互いに影響し合うことで、全体として予想しにくい振る舞いが生まれるシステムです。企業の例で、連鎖をたどってみましょう（架空の例です）。</p>
+  <div class="chain" id="chain"></div>
+  <div class="row-btns"><button type="button" class="btn" id="chainNext">次の連鎖を見る</button><button type="button" class="btn ghost" id="chainReset">最初から</button></div>
+  <div class="result" id="chainRes"></div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="複雑適応系を理解する5つの概念">
+ <div class="inner">
+  <span class="tag">1　複雑適応系</span>
+  <h2>複雑適応系を理解する5つの概念</h2>
+  <p class="def">クリックして、概念と、企業での現れ方を確認してください。</p>
+  <div class="steps steps5" id="five" role="group" aria-label="5つの概念"></div>
+  <div class="panel" id="fiveBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="体験：「頼み方のルール」が仕事の集中を生む">
+ <div class="inner">
+  <span class="tag">1　複雑適応系</span>
+  <h2>体験：頼み方のルールが、仕事の集中を生む</h2>
+  <p class="def">15人の会社で、150件の依頼を、ルールに従って1件ずつ振り分けました。誰も「集中させよう」とは思っていません。ルールを切り替えて、結果を比べてください（簡易シミュレーションで、架空の例です）。</p>
+  <div class="seg" id="segRule" role="group" aria-label="頼み方のルール">
+   <button type="button" data-r="pa" aria-pressed="true">実績のある人に頼む</button>
+   <button type="button" data-r="free" aria-pressed="false">空いている人に頼む</button>
+  </div>
+  <div class="panel">
+   <div class="bars" id="loadBars" role="img" aria-label="15人の仕事の件数"></div>
+   <div class="result" id="loadRes"></div>
+   <div class="row-btns" style="margin-top:10px"><button type="button" class="btn ghost" id="loadAgain">別の試行で見る</button></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 「実績のある人」は、これまでに引き受けた件数が多い人。件数が多いほど、さらに頼まれやすくなる（フィードバック）という単純なルールです。</p>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="複雑適応系：実務での使い方">
+ <div class="inner">
+  <span class="tag">1　複雑適応系</span>
+  <h2>実務での使い方：「仕事が遅い」の原因を、構造から考える</h2>
+  <div class="cols">
+   <div class="panel"><h3>個人に注目した見方</h3><p>処理時間が長い人を特定し、教育や指導を強化する。</p><p class="note" style="margin:0">個人の能力が原因なら、有効。</p></div>
+   <div class="panel"><h3>構造に注目した見方（仮説の例）</h3>
+    <ul style="margin:0;padding-left:1.2em">
+     <li>依頼が、特定の人に集中している</li>
+     <li>承認できる人が、限られている</li>
+     <li>ベテランにしか判断できない仕事がある</li>
+     <li>手戻りで、他の人の仕事まで遅れている</li>
+    </ul></div>
+  </div>
+  <div class="cards" style="margin-top:14px">
+   <div class="card"><span class="n">応用</span><h3>業務改善</h3><p>ボトルネックや、仕事の集中が起きる構造を分析する。</p></div>
+   <div class="card"><span class="n">応用</span><h3>組織設計</h3><p>人員・権限・情報共有の変更が、全体に与える影響を考える。</p></div>
+   <div class="card"><span class="n">応用</span><h3>AIエージェント</h3><p>複数のAIが連携するときの、協調ルールを設計する。</p></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 複雑適応系は、答えを計算する最適化アルゴリズムではなく、現象を理解するための枠組みです。シミュレーション、ネットワーク分析、統計分析と組み合わせると、実用性が高まります。</p>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="因果推論：相関と因果は違う">
+ <div class="inner">
+  <span class="tag">2　因果推論</span>
+  <h2>因果推論：相関と因果は、違う</h2>
+  <p class="def">「残業が多い人ほど、ミスが多い」というデータがあります。残業がミスの原因でしょうか。仮に、本当は「仕事の複雑さ」が両方を増やしていたら、どう見えるでしょうか（架空のデータで作った例です）。</p>
+  <div class="seg" id="segCause" role="group" aria-label="見方">
+   <button type="button" data-v="all" aria-pressed="true">全体を見る</button>
+   <button type="button" data-v="strata" aria-pressed="false">仕事の複雑さで分けて見る</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><svg id="scatter" viewBox="0 0 320 220" style="width:100%;height:auto" role="img" aria-label="残業時間とミスの件数の散布図"></svg></div>
+   <div class="panel"><h3 id="cTitle"></h3><p id="cExp" style="margin:0"></p><div class="pre" style="margin-top:10px" id="cDag"></div></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ このデータは、「複雑さ → 残業」「複雑さ → ミス」だけが成り立つように作った架空のデータで、残業がミスに与える影響はありません。</p>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="因果推論の4つの考え方">
+ <div class="inner">
+  <span class="tag">2　因果推論</span>
+  <h2>因果推論の中心となる4つの考え方</h2>
+  <p class="def">クリックして、考え方と例を確認してください。</p>
+  <div class="steps steps4" id="four" role="group" aria-label="4つの考え方"></div>
+  <div class="panel" id="fourBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="体験：AI導入は、本当に業務を改善したのか？">
+ <div class="inner">
+  <span class="tag">2　因果推論</span>
+  <h2>体験：AI導入は、本当に業務を改善したのか？</h2>
+  <p class="def">AIを導入した業務で、月間作業時間が100時間から80時間に減りました。同じ時期に、AIを使わなかった業務の作業時間がどう変わったかで、見え方が変わります（仮の数値による例です）。</p>
+  <div class="seg" id="segDid" role="group" aria-label="比較対象の変化">
+   <button type="button" data-x="0" aria-pressed="true">比較対象：変化なし</button>
+   <button type="button" data-x="10" aria-pressed="false">比較対象：10時間減</button>
+   <button type="button" data-x="20" aria-pressed="false">比較対象：20時間減</button>
+  </div>
+  <div class="panel">
+   <div class="bars did" id="didBars" role="img" aria-label="導入前後の作業時間"></div>
+   <div class="result" id="didRes"></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 差の差分析（Difference-in-Differences）の考え方です。「施策がなければ、両者が似た傾向で変化した」という仮定が成り立つことが重要で、比較対象の選び方にも注意が必要です。</p>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="メタヒューリスティクス：選択肢が多すぎる問題">
+ <div class="inner">
+  <span class="tag">3　メタヒューリスティクス</span>
+  <h2>メタヒューリスティクス：選択肢が多すぎる問題</h2>
+  <p class="def">正解を一発で計算することが難しい問題に対して、探索の仕方を工夫し、実用的に良い解を見つけるための戦略の総称です。典型例は、巡回セールスマン問題です。</p>
+  <div class="panel">
+   <div class="row-btns"><label for="nCity"><b>訪問先の数：</b></label><input id="nCity" type="range" min="5" max="25" value="10" style="flex:1;min-width:140px"><output id="nOut" style="font-weight:900;min-width:2.5em;text-align:right"></output></div>
+   <div class="pre" id="nCalc" style="margin-top:10px"></div>
+   <div class="result" id="nRes"></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 訪問順序の数は、(n−1)!÷2 で計算しています（出発点と、向きの違いを除いた場合）。1秒に10億通りを調べられると仮定した、概算です。</p>
+ </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="仕事の割り当てを例に考える">
+ <div class="inner">
+  <span class="tag">3　メタヒューリスティクス</span>
+  <h2>10人に100件の仕事を割り当てる</h2>
+  <p class="def">空いている人へ順に割り当てるだけでは、全体として良い計画にならないことがあります。まず、評価基準と、守るべき条件を分けて決めます。</p>
+  <div class="cols">
+   <div class="panel"><h3>守るべき条件（制約）</h3>
+    <ul style="margin:0;padding-left:1.2em">
+     <li>必要なスキルが合っている</li>
+     <li>特定の人にしかできない仕事は、その人に割り当てる</li>
+     <li>仕事同士の依存関係を守る</li>
+     <li>稼働時間を超えない</li>
+    </ul>
+    <p class="note" style="margin:8px 0 0">絶対に守る条件は、点数ではなく「制約」として扱うのが適切な場合があります。</p></div>
+   <div class="panel"><h3>良さの評価基準（最小化したいもの）</h3>
+    <div class="pre">総遅延コスト
+＋ 負荷の偏り
+＋ 手戻りコスト</div>
+    <p class="note" style="margin:8px 0 0">アルゴリズムは、割当の候補を作り、評価し、変更して、より良い候補を探します。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="代表的な4つの探索戦略">
+ <div class="inner">
+  <span class="tag">3　メタヒューリスティクス</span>
+  <h2>代表的な4つの探索戦略</h2>
+  <p class="def">クリックして、考え方と、向いている問題を確認してください。</p>
+  <div class="steps steps4" id="meta" role="group" aria-label="探索戦略"></div>
+  <div class="panel" id="metaBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-title="体験：探索を工夫すると、経路が短くなる">
+ <div class="inner">
+  <span class="tag">3　メタヒューリスティクス</span>
+  <h2>体験：探索を工夫すると、経路が短くなる</h2>
+  <p class="def">14か所を回る経路を、単純な方法と、焼きなまし法（探索の工夫）で求めました。配置を変えて、結果を比べてください（説明用の簡易な実装で、配置は乱数で作った架空のものです）。</p>
+  <div class="cols">
+   <div class="panel"><h3>近い所から順に回る（単純な方法）</h3><svg id="routeA" viewBox="0 0 300 220" style="width:100%;height:auto" role="img" aria-label="単純な方法の経路"></svg><p class="note" style="margin:0" id="lenA"></p></div>
+   <div class="panel"><h3>焼きなまし法で探索</h3><svg id="routeB" viewBox="0 0 300 220" style="width:100%;height:auto" role="img" aria-label="焼きなまし法の経路"></svg><p class="note" style="margin:0" id="lenB"></p></div>
+  </div>
+  <div class="result" id="routeRes"></div>
+  <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="routeAgain">別の配置で試す</button></div>
+ </div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-title="メタヒューリスティクスを使うときの注意点">
+ <div class="inner">
+  <span class="tag">3　メタヒューリスティクス</span>
+  <h2>メタヒューリスティクスを使うときの注意点</h2>
+  <div class="cards">
+   <div class="card"><span class="n">注意 1</span><h3>最適解が得られるとは限らない</h3><p>実用的に良い解を探す方法で、最適性の保証がない手法も多い。</p></div>
+   <div class="card"><span class="n">注意 2</span><h3>評価関数の設計が重要</h3><p>何を「良い」と定義するかで、得られる解が変わる。</p></div>
+   <div class="card"><span class="n">注意 3</span><h3>制約違反への対処が必要</h3><p>期限やスキル要件を無視した、高得点の解は、実務では使えない。</p></div>
+   <div class="card"><span class="n">注意 4</span><h3>比較実験が必要</h3><p>単純なルールや既存のソルバーと比べて、本当に改善しているかを確認する。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-title="3つを組み合わせると、何ができるか">
+ <div class="inner">
+  <span class="tag">統合</span>
+  <h2>3つを組み合わせると、何ができるのか</h2>
+  <p class="def">3つを順番につなぐ、実務向けの設計案です。段階をクリックして確認してください。</p>
+  <div class="steps steps4" id="steps4" role="group" aria-label="4つの段階"></div>
+  <div class="panel" id="steps4Body" aria-live="polite"></div>
+  <p class="note" style="margin-top:10px">※ これは3つの考え方を組み合わせた設計案であり、確立された単一のアルゴリズムではありません。</p>
+ </div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-title="例：タスク管理アプリへの応用">
+ <div class="inner">
+  <span class="tag">応用</span>
+  <h2>例：作業時間と承認待ちを考えるタスク管理</h2>
+  <p class="def">各タスクに、担当者・所要時間・期限・依存関係・承認者を設定すると、単に期限順に並べるだけではなく、次のような目的を同時に考えられます。</p>
+  <ul class="checks plain">
+   <li>締切の遅延を、最小化する</li>
+   <li>特定の人に、仕事が集中しないようにする</li>
+   <li>承認待ちが、発生しにくい順序を選ぶ</li>
+   <li>スキルや稼働時間の制約を守る</li>
+   <li>急な依頼が入ったときに、計画を再調整する</li>
+  </ul>
+  <div class="msg">基本は、制約プログラミングや数理最適化。<br>必要に応じて、メタヒューリスティクスを組み合わせる。</div>
+  <p class="note">どの方法が最適かは、問題の規模、制約、必要な計算時間によって異なります。</p>
+ </div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-title="AIで、新しい解決アルゴリズムを生み出せるか">
+ <div class="inner">
+  <span class="tag">発展</span>
+  <h2>AIで、新しい解決アルゴリズムを生み出せるか？</h2>
+  <p class="def">可能性はあります。ただし、AIにアルゴリズムの名前を挙げさせるだけでは不十分です。たとえば、次のような流れが考えられます。</p>
+  <ol class="checks">
+   <li><span>1</span><div><b>問題を形式化する</b><small class="note">目的、制約、評価指標を明確にする</small></div></li>
+   <li><span>2</span><div><b>既存手法を調べる</b><small class="note">既知のアルゴリズムで解ける範囲を確認する</small></div></li>
+   <li><span>3</span><div><b>異分野の原理を組み合わせる</b><small class="note">生物の探索、物理的な安定化、学習、因果推論などを検討する</small></div></li>
+   <li><span>4</span><div><b>小さな実験を繰り返す</b><small class="note">既存手法を基準に、解の品質・計算時間・頑健性を比べる</small></div></li>
+   <li><span>5</span><div><b>新しい手法の価値を検証する</b><small class="note">既存手法より優れている条件と、劣る条件を特定する</small></div></li>
+  </ol>
+  <div class="msg">大切なのは、自然界の仕組みをまねることではなく、<mark>その原理を抽出して、別の問題に適用する</mark>こと。</div>
+  <p class="note">たとえばアントコロニー最適化の価値は、アリの動きの再現ではなく、「分散した探索・情報の蓄積・経路の強化」という原理を、組合せ最適化に応用した点にあります。</p>
+ </div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-title="学ぶ順番と、最初の実践課題">
+ <div class="inner">
+  <span class="tag">学び方</span>
+  <h2>学ぶ順番と、最初の実践課題</h2>
+  <div class="panel"><table class="mails" id="orderTbl"></table></div>
+  <div class="msg" style="margin-top:14px">最初の課題の案：<br>「タスクの作業時間と承認待ちを分析し、<mark>業務全体の完了時間を短縮する仕組み</mark>」</div>
+  <p class="note">現実の業務データを使いながら、3つの考え方の違いと、補い合う関係を学べます。数学の専門知識が十分でなくても、概念の理解から始められます。メタヒューリスティクスは、小さな問題をPythonなどで実装すると、探索の進み方を直感的に理解しやすくなります。</p>
+ </div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <div class="cards">
+   <div class="card"><span class="n">複雑適応系</span><h3>全体で何が起きるか</h3><p>主体・相互作用・創発・フィードバック・適応で、構造を理解する。</p></div>
+   <div class="card"><span class="n">因果推論</span><h3>何を変えれば結果が変わるか</h3><p>相関と因果を区別し、施策の効果を検証する。</p></div>
+   <div class="card"><span class="n">メタヒューリスティクス</span><h3>膨大な選択肢から良い解を探す</h3><p>評価基準と制約を決め、探索を設計する。</p></div>
+  </div>
+  <div class="msg">理解して、見極めて、探す。<br>そして<mark>実行の結果を、次の改善に戻す</mark>。</div>
+  <p class="note" style="margin-top:14px">参考書籍（因果推論の入門）：Aboozar Hadavand 『Cause, Effect, and Everything in Between: An Introduction to Causal Inference』（Oxford University Press、2025年）／ Hernán・Robins 『Causal Inference: What If』（著者サイトで公開されている教科書）</p>
+  <div class="links">
+   <a href="../ai-output-engineering/">よりよいAIの出力のために →</a>
+   <a href="../ai-pitfalls/">AIを疑う力　30の知識 →</a>
+  </div>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn,start){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[start].click();
+  }
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function rows(el,title,list){el.innerHTML='<h3></h3><table class="mails"><tbody></tbody></table>';el.querySelector('h3').textContent=title;
+    list.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];el.querySelector('tbody').appendChild(tr);});}
+  function rng(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  const SVGNS='http://www.w3.org/2000/svg';
+  function se(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e}
+
+  /* 2 three */
+  const TH=[
+    {n:'考え方 1',t:'複雑適応系',q:'全体で何が起きるか',d:'多数の主体の相互作用から、全体の振る舞いが生まれると考える。組織・顧客行動・市場・サプライチェーンなど、単純な因果では説明できない問題を理解する手がかりになる。',k:'理解する'},
+    {n:'考え方 2',t:'因果推論',q:'何を変えれば、結果が変わるか',d:'データに見られる相関だけでなく、施策によって本当に結果が変わるかを推定する。業務改善で大切なのは、問題の発生箇所を見つけるだけでなく、改善の効果を検証すること。',k:'見極める'},
+    {n:'考え方 3',t:'メタヒューリスティクス',q:'膨大な選択肢から、良い解をどう探すか',d:'個々の問題を解くアルゴリズムというより、難しい問題に対して探索を設計するための戦略の総称。必ずしも最適解を保証できなくても、実用的に良い解を見つけることを目指す。',k:'探す'}
+  ];
+  btnList($('three'),TH,x=>x.n,x=>x.t,x=>rows($('threeBody'),x.t+'（'+x.k+'）',[['問い',x.q],['どんな考え方か',x.d]]),0);
+
+  /* 3 chain */
+  const CH=[
+    ['営業','顧客の要望を、最優先で引き受ける','営業としては合理的な判断。'],
+    ['製造','予定外の依頼が入り、生産計画が崩れる','品質と生産効率を重視する製造にとっては、負担が増える。'],
+    ['経理','処理の依頼が遅れて届き、確認が間に合わない','正確性と内部統制を重視する経理にとっては、リスクが増える。'],
+    ['顧客','納期の遅れや処理の遅れで、満足度が下がる','最初に優先した顧客の満足度まで、下がってしまった。']
+  ];
+  let chainI=0;
+  function drawChain(){const box=$('chain');box.innerHTML='';
+    CH.slice(0,chainI+1).forEach((c,i)=>{const d=document.createElement('div');d.className='cstep'+(i===chainI?' now':'');
+      d.innerHTML='<b></b><span></span>';d.querySelector('b').textContent=c[0];d.querySelector('span').textContent=c[1];box.appendChild(d);});
+    const last=chainI===CH.length-1;
+    res($('chainRes'),last?'bad':'',last?'それぞれの判断は、個別には合理的でも、組み合わさると全社的な非効率が起きることがあります。部分最適の積み重ねが、全体最適を生むとは限りません。':CH[chainI][2]);
+    $('chainNext').disabled=last;}
+  $('chainNext').onclick=()=>{if(chainI<CH.length-1){chainI++;drawChain()}};
+  $('chainReset').onclick=()=>{chainI=0;drawChain()};drawChain();
+
+  /* 4 five */
+  const FV=[
+    {t:'エージェント（主体）',s:'誰が行動するのか',d:'人、部署、顧客、企業、AIエージェントなど。各主体は、限られた情報と、独自の目的を持つ。'},
+    {t:'相互作用',s:'主体同士がどう影響するか',d:'依頼、承認、情報共有、競争、協力など。業務フローは、相互作用を具体的に表したものと考えられる。'},
+    {t:'創発（Emergence）',s:'個々の行動から、全体の性質が生まれる',d:'誰も意図していないのに、慢性的な残業、承認待ち、顧客離れなどが発生する。'},
+    {t:'フィードバック',s:'結果が、次の行動に影響する',d:'良い結果が行動を強化する場合もあれば、遅延や負荷を増幅させる場合もある。'},
+    {t:'適応',s:'主体が、経験から行動を変える',d:'人がルールを学ぶ、顧客が購買先を変える、部署が新しい手順を採用する。これらが環境をさらに変化させる。'}
+  ];
+  btnList($('five'),FV,(x,i)=>'概念 '+(i+1),x=>x.t,x=>rows($('fiveBody'),x.t+'：'+x.s,[['説明',x.d]]),0);
+
+  /* 5 load simulation */
+  let loadSeed=7;
+  function simLoad(rule,seed){const R=rng(seed),N=15,T=150,c=new Array(N).fill(0);
+    for(let t=0;t<T;t++){
+      if(rule==='free'){let min=Math.min(...c);const cand=c.map((v,i)=>v===min?i:-1).filter(i=>i>=0);c[cand[Math.floor(R()*cand.length)]]++;}
+      else{const w=c.map(v=>1+v);const s=w.reduce((a,b)=>a+b,0);let r=R()*s,i=0;for(;i<N-1;i++){r-=w[i];if(r<=0)break}c[i]++;}
+    }return c;}
+  function drawLoad(){const rule=document.querySelector('#segRule [aria-pressed=true]').dataset.r,c=simLoad(rule,loadSeed);
+    const mx=Math.max(...c),avg=c.reduce((a,b)=>a+b,0)/c.length,box=$('loadBars');box.innerHTML='';
+    c.forEach((v,i)=>{const d=document.createElement('div');d.className='bcol'+(v===mx?' top':'');d.innerHTML='<i></i><span></span>';
+      d.querySelector('i').style.height=Math.max(2,v/Math.max(mx,12)*100)+'%';d.querySelector('span').textContent=v;d.title='社員'+(i+1)+'：'+v+'件';box.appendChild(d);});
+    const ratio=(mx/avg).toFixed(1);
+    res($('loadRes'),rule==='pa'?'bad':'good',rule==='pa'?'最も多い人は '+mx+' 件（平均 '+avg.toFixed(0)+' 件の約'+ratio+'倍）。仕事が特定の人に集中しました。誰も集中を狙っていないのに、「頼まれやすい人に、さらに頼む」というルールだけで生まれています。':'最も多い人でも '+mx+' 件（平均 '+avg.toFixed(0)+' 件）。仕事がほぼ均等に分かれました。個人の能力を変えなくても、頼み方のルールで、全体の様子は変わります。');}
+  seg($('segRule'),drawLoad);$('loadAgain').onclick=()=>{loadSeed=(loadSeed*7+13)%1000+1;drawLoad()};drawLoad();
+
+  /* 7 scatter */
+  const R2=rng(9);const DATA=[];for(let i=0;i<120;i++){const c=R2()<0.5?0:1,g=()=> (R2()+R2()+R2()-1.5)*2;DATA.push({c,o:25+25*c+g()*5,m:3+5*c+g()*1.0});}
+  function corr(a,b){const n=a.length,ma=a.reduce((x,y)=>x+y,0)/n,mb=b.reduce((x,y)=>x+y,0)/n;let sab=0,sa=0,sb=0;for(let i=0;i<n;i++){sab+=(a[i]-ma)*(b[i]-mb);sa+=(a[i]-ma)**2;sb+=(b[i]-mb)**2}return sab/Math.sqrt(sa*sb)}
+  function drawScatter(v){const s=$('scatter');s.innerHTML='';
+    s.appendChild(se('line',{x1:34,y1:190,x2:310,y2:190,stroke:'var(--sub)'}));s.appendChild(se('line',{x1:34,y1:10,x2:34,y2:190,stroke:'var(--sub)'}));
+    const tx=se('text',{x:172,y:214,'text-anchor':'middle',fill:'var(--sub)','font-size':12});tx.textContent='残業時間（月）→';s.appendChild(tx);
+    const ty=se('text',{x:10,y:100,fill:'var(--sub)','font-size':12,transform:'rotate(-90 10 100)','text-anchor':'middle'});ty.textContent='ミスの件数 →';s.appendChild(ty);
+    DATA.forEach(d=>{const x=34+(d.o-10)/(65-10)*270,y=190-(d.m-0)/(12-0)*175;
+      const col=v==='all'?'var(--indigo)':(d.c===0?'#2A9D8F':'#E07A1F');
+      s.appendChild(se('circle',{cx:x.toFixed(1),cy:y.toFixed(1),r:3,fill:col,opacity:.75}));});
+    const rAll=corr(DATA.map(d=>d.o),DATA.map(d=>d.m)),lo=DATA.filter(d=>d.c===0),hi=DATA.filter(d=>d.c===1);
+    const rLo=corr(lo.map(d=>d.o),lo.map(d=>d.m)),rHi=corr(hi.map(d=>d.o),hi.map(d=>d.m));
+    if(v==='all'){$('cTitle').textContent='全体では、強い相関がある（相関係数 '+rAll.toFixed(2)+'）';$('cExp').textContent='残業が多いほど、ミスが多く見えます。ここで「残業を減らせば、ミスが減る」と考えるのは、早計かもしれません。';}
+    else{$('cTitle').textContent='分けると、相関はほぼ消える（'+rLo.toFixed(2)+'／'+rHi.toFixed(2)+'）';$('cExp').textContent='緑は「複雑さが低い仕事」、橙は「高い仕事」。同じ複雑さの中で見ると、残業とミスの関係はほぼ見えません。複雑な仕事が、残業とミスの両方を増やしていたためです。';}
+    $('cDag').textContent=v==='all'?'残業 ─？─→ ミス':'仕事の複雑さ ─→ 残業\n仕事の複雑さ ─→ ミス\n（残業 → ミス は、ほぼ無い）';}
+  seg($('segCause'),b=>drawScatter(b.dataset.v));drawScatter('all');
+
+  /* 8 four */
+  const FO=[
+    {t:'因果グラフ（DAG）',s:'仮説を矢印で表す',d:'変数どうしの因果関係についての仮説を、矢印で描く。どの要因を調べるべきかを整理する道具になる。',e:'「仕事の複雑さ → 残業時間」「仕事の複雑さ → ミス」という関係があれば、残業とミスの関連を、単純に因果関係とはみなせない。'},
+    {t:'介入（Intervention）',s:'実際に変えて、結果を見る',d:'何かを実際に変えたときの結果を調べる。可能ならランダム化比較試験、難しければ準実験や観察データの分析を検討する。',e:'一部の業務にAIを導入し、導入前後や、比較対象の業務と、処理時間・品質を比べる。'},
+    {t:'反実仮想（Counterfactual）',s:'もし別の施策だったら',d:'「同じ条件で、もし別の施策を実施していたら、結果はどうなっていたか」を考える。同じ対象の両方の結果は同時に観測できないため、比較対象や統計的な仮定で推定する。',e:'AIを導入した業務について、導入しなかった場合と比べて、何時間削減できたのか。'},
+    {t:'効果の推定',s:'どの程度変わったか',d:'施策によって、結果がどの程度変わったかを定量化する。単なる導入前後の差ではなく、他の要因による変化を、できるだけ切り分ける。',e:'AI導入による、平均処理時間の短縮、手戻り率の低下、顧客継続率の変化などを評価する。'}
+  ];
+  btnList($('four'),FO,(x,i)=>'考え方 '+(i+1),x=>x.t,x=>rows($('fourBody'),x.t+'：'+x.s,[['説明',x.d],['例',x.e]]),0);
+
+  /* 9 DiD */
+  function drawDid(x){const box=$('didBars');box.innerHTML='';
+    const items=[['AI導入あり（導入前）',100,'ai'],['AI導入あり（導入後）',80,'ai'],['比較対象（前）',100,'ct'],['比較対象（後）',100-x,'ct']];
+    items.forEach(it=>{const d=document.createElement('div');d.className='hrow '+it[2];d.innerHTML='<b></b><div class="htr"><i></i></div><em></em>';
+      d.querySelector('b').textContent=it[0];d.querySelector('i').style.width=it[1]+'%';d.querySelector('em').textContent=it[1]+'時間';box.appendChild(d);});
+    const eff=20-x;
+    res($('didRes'),eff>=15?'good':(eff<=0?'bad':''),'単純な導入前後の差は 20 時間の削減。比較対象も '+x+' 時間減っているので、AIの効果は 20 − '+x+' ＝ '+eff+' 時間と見積もられます。'+(eff<=0?'この場合、削減のすべてが、他の要因（業務量の減少など）で説明できてしまいます。':(x>0?'削減の一部は、AIではなく、同じ時期の別の要因によるものです。':'比較対象に変化がないので、削減はAIの効果と考えやすくなります。')));}
+  seg($('segDid'),b=>drawDid(+b.dataset.x));drawDid(0);
+
+  /* 10 TSP count */
+  function fmtBig(b){const s=b.toString();if(s.length<=9)return Number(b).toLocaleString('ja-JP');return s[0]+'.'+s.slice(1,3)+' × 10^'+(s.length-1);}
+  function fmtTime(sec){if(sec<1)return '1秒未満';if(sec<60)return Math.round(sec)+'秒';if(sec<3600)return Math.round(sec/60)+'分';if(sec<86400)return Math.round(sec/3600)+'時間';if(sec<86400*365)return Math.round(sec/86400)+'日';const y=sec/(86400*365);return y<1000?'約'+y.toFixed(1)+'年':(y<1e8?'約'+Math.round(y).toLocaleString('ja-JP')+'年':'約 '+y.toExponential(1).replace('e+',' × 10^')+' 年');}
+  function drawN(){const n=+$('nCity').value;let f=1n;for(let i=2;i<=n-1;i++)f*=BigInt(i);const routes=f/2n;
+    $('nOut').textContent=n;$('nCalc').textContent='訪問先：'+n+' か所\n考えられる順序：'+fmtBig(routes)+' 通り\n1秒に10億通り調べると：'+fmtTime(Number(routes)/1e9);
+    res($('nRes'),n>=18?'bad':'','訪問先が増えるほど、順序の数は急激に増えます。すべてを調べ尽くすのが現実的でない場合に、探索を工夫して、短い経路を探します。');}
+  $('nCity').addEventListener('input',drawN);drawN();
+
+  /* 12 meta */
+  const ME=[
+    {t:'アントコロニー最適化（ACO）',s:'良い選択を、次に選びやすくする',d:'良い解に含まれる選択を、次の探索で選びやすくする。アリが、通った道に目印を残す様子から着想を得た手法。',f:'経路、順序、組合せ構築型の問題'},
+    {t:'遺伝的アルゴリズム（GA）',s:'候補を、世代を重ねて進化させる',d:'複数の候補を、選択・交叉・突然変異によって進化させる。',f:'人員配置、設計、複雑な組合せの探索'},
+    {t:'焼きなまし法（SA）',s:'ときには悪化も受け入れる',d:'良い解を優先しながら、ときには悪化する移動も受け入れ、局所最適から抜け出す可能性を作る。',f:'現在の計画を、少しずつ修正して改善できる問題'},
+    {t:'タブー探索（TS）',s:'行き戻りを避ける',d:'直近の変更履歴を記録し、同じ状態への行き戻りを抑えながら探索する。',f:'配置、スケジュール、ルートの反復改善'}
+  ];
+  btnList($('meta'),ME,(x,i)=>'戦略 '+(i+1),x=>x.t,x=>rows($('metaBody'),x.t+'：'+x.s,[['考え方',x.d],['向いている問題',x.f]]),0);
+
+  /* 13 route */
+  let routeSeed=11;
+  function makeCities(seed,n){const R=rng(seed),a=[];for(let i=0;i<n;i++)a.push({x:20+R()*260,y:15+R()*185});return a}
+  function pathLen(c,p){let s=0;for(let i=0;i<p.length;i++){const a=c[p[i]],b=c[p[(i+1)%p.length]];s+=Math.hypot(a.x-b.x,a.y-b.y)}return s}
+  function nearest(c){const n=c.length,u=new Set([...Array(n).keys()]),p=[0];u.delete(0);while(u.size){const l=p[p.length-1];let b=-1,bd=1e9;u.forEach(i=>{const d=Math.hypot(c[i].x-c[l].x,c[i].y-c[l].y);if(d<bd){bd=d;b=i}});p.push(b);u.delete(b)}return p}
+  function anneal(c,start,seed){const R=rng(seed),n=c.length;let p=start.slice(),L=pathLen(c,p),best=p.slice(),bL=L;const iters=40000,T0=L/n*0.5,T1=0.02;
+    for(let it=0;it<iters;it++){const T=T0*Math.pow(T1/T0,it/iters);let i=1+Math.floor(R()*(n-1)),j=1+Math.floor(R()*(n-1));if(i===j)continue;if(i>j){const t=i;i=j;j=t}
+      const q=p.slice(0,i).concat(p.slice(i,j+1).reverse(),p.slice(j+1));const nL=pathLen(c,q),d=nL-L;
+      if(d<0||R()<Math.exp(-d/T)){p=q;L=nL;if(L<bL){bL=L;best=p.slice()}}}return best}
+  function drawRoute(svg,c,p,color){svg.innerHTML='';const pts=p.map(i=>c[i].x.toFixed(1)+','+c[i].y.toFixed(1)).join(' ');
+    svg.appendChild(se('polygon',{points:pts,fill:'none',stroke:color,'stroke-width':2,'stroke-linejoin':'round'}));
+    c.forEach((q,i)=>svg.appendChild(se('circle',{cx:q.x,cy:q.y,r:i===0?6:4,fill:i===0?'var(--mark)':'var(--surface)',stroke:'var(--ink)','stroke-width':1.5})));}
+  function runRoute(){const c=makeCities(routeSeed,14),a=nearest(c),b=anneal(c,a,routeSeed+1),la=pathLen(c,a),lb=pathLen(c,b);
+    drawRoute($('routeA'),c,a,'var(--sub)');drawRoute($('routeB'),c,b,'var(--indigo)');
+    $('lenA').textContent='経路の長さ：'+la.toFixed(0);$('lenB').textContent='経路の長さ：'+lb.toFixed(0);
+    const g=(1-lb/la)*100;
+    res($('routeRes'),g>0.5?'good':'',g>0.5?'焼きなまし法の経路は、単純な方法より約 '+g.toFixed(0)+'% 短くなりました。ただし、これが最短とは限りません。結果は、配置や設定によって変わります。':'この配置では、単純な方法と、ほぼ同じ長さでした。探索の工夫が、いつも大きな差を生むとは限りません。');}
+  $('routeAgain').onclick=()=>{routeSeed=(routeSeed*13+5)%9973+1;runRoute()};runRoute();
+
+  /* 15 four steps */
+  const S4=[
+    {n:'STEP 1',t:'複雑適応系',h:'問題の構造を理解する',q:'誰が、何を目的に行動し、どこで相互作用しているのか？'},
+    {n:'STEP 2',t:'因果推論',h:'改善の原因と効果を見極める',q:'どこを変えれば、何がどの程度改善するのか？'},
+    {n:'STEP 3',t:'メタヒューリスティクス',h:'より良い解を探索する',q:'複数の制約を満たしながら、最も良い計画は何か？'},
+    {n:'STEP 4',t:'実行と学習',h:'現場で実行し、結果を次の改善に戻す',q:'予測と実績の差を分析し、構造やモデルを更新する。'}
+  ];
+  btnList($('steps4'),S4,x=>x.n,x=>x.t,x=>rows($('steps4Body'),x.n+'：'+x.t,[['役割',x.h],['問い',x.q]]),0);
+
+  /* 18 order */
+  const OD=[['1','複雑適応系','業務フローを、主体・相互作用・フィードバックで捉える'],['2','因果推論','施策と結果の関係を、因果グラフで整理する'],['3','メタヒューリスティクス','小さな配送問題やタスク割当を実装して、比較する'],['4','統合演習','業務の構造分析から、改善策の検証・最適化までつなげる']];
+  $('orderTbl').innerHTML='<thead><tr><th>順番</th><th>学ぶ内容</th><th>まず取り組むこと</th></tr></thead><tbody></tbody>';
+  OD.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<td></td><td></td><td></td>';r.forEach((v,i)=>tr.children[i].textContent=v);$('orderTbl').querySelector('tbody').appendChild(tr);});
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>

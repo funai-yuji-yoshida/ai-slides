@@ -14,6 +14,7 @@
 
 | スライド | 内容 |
 |---|---|
+| [アルゴリズム知識　難題を解く3つの考え方](https://funai-yuji-yoshida.github.io/ai-slides/slides/algorithm-knowledge/) | 複雑適応系・因果推論・メタヒューリスティクス。全体を理解し、効果を見極め、良い解を探す3つの考え方を、簡易シミュレーションで体験しながら学ぶ |
 | [データ型　同じ見た目でも、中身は別物](https://funai-yuji-yoshida.github.io/ai-slides/slides/data-types/) | 数値・文字列・真偽値・日付・空（null）の違いを、先頭の0が消える、日付の読み違い、平均が変わる例で体験し、AIにデータを渡すときの注意点を知る |
 | [よりよいAIの出力のために　プロンプトからグラフまで](https://funai-yuji-yoshida.github.io/ai-slides/slides/ai-output-engineering/) | プロンプト、コンテキスト、ハーネス、ループ、グラフ。AIの答えをよくするために設計する対象が広がる5つの段階を、操作しながら理解する |
 | [RAG　AIに資料を持ち込ませる仕組み](https://funai-yuji-yoshida.github.io/ai-slides/slides/rag-basics/) | 検索した資料をAIに渡して答えさせるRAG。仕組み、必要になる理由、デメリットを、社内規程の架空の例で操作しながら学ぶ |
