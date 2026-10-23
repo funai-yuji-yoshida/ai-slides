@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>機械学習の4つの学び方　教師あり・教師なし・強化学習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+/* machine learning types */
+.steps4{grid-template-columns:repeat(4,1fr)}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps4,.steps5{grid-template-columns:1fr}}
+.mails th{width:9em;white-space:nowrap}
+.btn:disabled{opacity:.4;cursor:default}
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 18px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.syms{display:grid;gap:8px;margin-bottom:14px}
+.syms button{display:grid;grid-template-columns:6em 1fr;gap:10px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px}
+.syms button b{font-size:13px;color:var(--sub)}
+.syms button[aria-pressed="true"]{border-color:var(--indigo);background:var(--indigo-soft)}
+.flow4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.fs{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 12px;display:grid;gap:4px}
+.fs b{color:var(--indigo)}
+@media (max-width:820px){.flow4{grid-template-columns:1fr}}
+.loop4{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ls{border:2px solid var(--ink);border-radius:10px;padding:10px 14px;background:var(--surface);display:grid}
+.ls span{font-size:.85em;color:var(--sub)}
+.la{color:var(--sub);font-weight:700;text-align:center;font-size:.9em}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:300px;margin:0 auto}
+.qc{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px;background:var(--bg);font-weight:900;font-size:1.3em}
+.qc.goal{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.qc.pit{background:var(--ng-soft);border-color:var(--ng);color:var(--ng)}
+.qc.start{font-size:1em}
+.qc.onpath{background:var(--indigo-soft);border-color:var(--indigo)}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="機械学習の4つの学び方">
+ <div class="inner">
+  <h1>機械学習の4つの学び方</h1>
+  <p class="sub">教師あり・教師なし・強化学習・深層強化学習</p>
+  <div class="rule"></div>
+  <p>AIは、何を手がかりに学ぶのか。「正解を教えてもらう」「正解なしで構造を見つける」「試行錯誤で学ぶ」。4つの違いを、実際に学習が進む様子を動かしながら確かめます。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="全体像：何を手がかりに学ぶか">
+ <div class="inner">
+  <span class="tag">全体像</span>
+  <h2>全体像：何を手がかりに学ぶか</h2>
+  <p class="def">4つの違いは、「AIに何を与えるか」にあります。クリックして、それぞれの特徴を確認してください。</p>
+  <div class="steps steps4" id="four" role="group" aria-label="4つの学び方"></div>
+  <div class="panel" id="fourBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="教師あり学習：正解つきの例から学ぶ">
+ <div class="inner">
+  <span class="tag">1　教師あり学習</span>
+  <h2>教師あり学習：正解つきの例から学ぶ</h2>
+  <p class="def">「入力」と「正解」のセットを大量に見せて、新しい入力の正解を予想できるようにします。架空の顧客データで、境界線を学ぶ様子を見てみましょう。</p>
+  <div class="cols">
+   <div class="panel">
+    <svg id="svmPlot" viewBox="0 0 320 240" style="width:100%;height:auto;cursor:crosshair" role="img" aria-label="顧客データの散布図"></svg>
+    <p class="note" style="margin:4px 0 0">○：継続した顧客　×：解約した顧客（架空）。グラフをクリックすると、「新しい顧客」を置けます。</p>
+   </div>
+   <div class="panel">
+    <h3 id="pTitle"></h3>
+    <p id="pExp" style="margin:0 0 10px"></p>
+    <div class="row-btns"><button type="button" class="btn" id="pStep">1回学習する</button><button type="button" class="btn ghost" id="pReset">リセット</button></div>
+    <div class="result" id="pRes"></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="教師あり学習の種類と、流れ">
+ <div class="inner">
+  <span class="tag">1　教師あり学習</span>
+  <h2>教師あり学習：2つの種類と、学習の流れ</h2>
+  <div class="cols">
+   <div class="panel"><h3>分類：カテゴリを当てる</h3><p>正解が「迷惑メール／通常メール」のような区分。</p><p class="note" style="margin:0">例：不正取引の判定、問い合わせの自動振り分け、画像の仕分け</p></div>
+   <div class="panel"><h3>回帰：数値を当てる</h3><p>正解が「売上」「価格」のような数値。</p><p class="note" style="margin:0">例：売上の予測、需要の予測、住宅価格の推定</p></div>
+  </div>
+  <div class="flow4" style="margin-top:14px">
+   <div class="fs"><b>1</b><span>正解つきデータを集める</span></div>
+   <div class="fs"><b>2</b><span>訓練用とテスト用に分ける</span></div>
+   <div class="fs"><b>3</b><span>訓練用で学習する</span></div>
+   <div class="fs"><b>4</b><span>テスト用で性能を確かめる</span></div>
+  </div>
+  <div class="msg">正解づくり（ラベル付け）に、<mark>人の手間とコスト</mark>がかかる。</div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="体験：覚えすぎると、新しいデータに弱い（過学習）">
+ <div class="inner">
+  <span class="tag">1　教師あり学習</span>
+  <h2>体験：覚えすぎると、新しいデータに弱い（過学習）</h2>
+  <p class="def">12個の点（訓練データ）に、曲線を当てはめて学習します。モデルの複雑さを変えて、「訓練データ」と「テストデータ」の誤差を比べてください（架空のデータです）。</p>
+  <div class="row-btns" style="margin-bottom:8px"><label for="deg"><b>モデルの複雑さ：</b></label><input id="deg" type="range" min="1" max="9" value="3" style="flex:1;min-width:140px"><output id="degOut" style="font-weight:900;min-width:5em"></output></div>
+  <div class="cols">
+   <div class="panel"><svg id="fitPlot" viewBox="0 0 320 210" style="width:100%;height:auto" role="img" aria-label="曲線の当てはめ"></svg>
+    <p class="note" style="margin:4px 0 0">● 訓練データ　○ テストデータ　破線：本来の姿　実線：学習した曲線</p></div>
+   <div class="panel"><h3>誤差（小さいほど良い）</h3><div class="pre" id="fitErr"></div><div class="result" id="fitRes"></div></div>
+  </div>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="教師なし学習：正解なしで、構造を見つける">
+ <div class="inner">
+  <span class="tag">2　教師なし学習</span>
+  <h2>教師なし学習：正解なしで、構造を見つける</h2>
+  <p class="def">正解のないデータから、似たものの集まり（グループ）などを見つけます。顧客データを、グループ数を変えながら分けてみましょう（架空のデータです）。</p>
+  <div class="row-btns" style="margin-bottom:8px"><label for="kk"><b>グループの数 k：</b></label><input id="kk" type="range" min="1" max="6" value="3" style="flex:1;min-width:140px"><output id="kOut" style="font-weight:900;min-width:2em"></output><button type="button" class="btn ghost" id="kAgain">別の初期値で</button></div>
+  <div class="cols">
+   <div class="panel"><svg id="kPlot" viewBox="0 0 320 240" style="width:100%;height:auto" role="img" aria-label="顧客のグループ分け"></svg>
+    <p class="note" style="margin:4px 0 0">横軸：購入頻度　縦軸：平均単価（架空）。◆はグループの中心。</p></div>
+   <div class="panel"><h3 id="kTitle"></h3><p id="kExp" style="margin:0 0 8px"></p><div class="pre" id="kInfo"></div></div>
+  </div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="教師なし学習：使い方と注意点">
+ <div class="inner">
+  <span class="tag">2　教師なし学習</span>
+  <h2>教師なし学習：使い方と注意点</h2>
+  <div class="cards">
+   <div class="card"><span class="n">使い方 1</span><h3>クラスタリング</h3><p>似た顧客・商品・文書をグループにまとめる。顧客のセグメント分けなど。</p></div>
+   <div class="card"><span class="n">使い方 2</span><h3>次元削減</h3><p>多数の項目を、少数の軸にまとめて、見やすくする。データの可視化など。</p></div>
+   <div class="card"><span class="n">使い方 3</span><h3>異常検知</h3><p>普段のデータの「形」を学び、外れたものを見つける。設備の異常の早期発見など。</p></div>
+  </div>
+  <div class="cards" style="margin-top:14px">
+   <div class="card"><span class="n">注意 1</span><h3>グループの数は、人が決める</h3><p>ばらつきの数値は、kを増やすほど小さくなっていく。数が多ければ良いわけではない。</p></div>
+   <div class="card"><span class="n">注意 2</span><h3>意味づけは、人が行う</h3><p>AIは「似ている」を見つけるだけ。そのグループが何を表すかは、人が解釈する。</p></div>
+   <div class="card"><span class="n">注意 3</span><h3>正解がないので、評価が難しい</h3><p>結果が業務に役立つかを、目的に照らして確かめる必要がある。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="強化学習：試行錯誤で、報酬を最大にする">
+ <div class="inner">
+  <span class="tag">3　強化学習</span>
+  <h2>強化学習：試行錯誤で、報酬を最大にする</h2>
+  <p class="def">AI（エージェント）が、環境の中で行動し、結果として得た「報酬」をもとに、より良い行動を学びます。正解は教えず、「良かった／悪かった」だけを伝えます。</p>
+  <div class="loop4">
+   <div class="ls"><b>エージェント</b><span>行動を選ぶ主体</span></div>
+   <div class="la">→ 行動 →</div>
+   <div class="ls"><b>環境</b><span>行動の結果が返ってくる世界</span></div>
+   <div class="la">→ 状態・報酬 →<br>（エージェントへ戻る）</div>
+  </div>
+  <div class="cards" style="margin-top:14px">
+   <div class="card"><span class="n">例 1</span><h3>倉庫ロボット</h3><p>荷物を最短で運べたら報酬。</p></div>
+   <div class="card"><span class="n">例 2</span><h3>在庫の発注</h3><p>欠品も過剰在庫も少ないほど報酬。</p></div>
+   <div class="card"><span class="n">例 3</span><h3>ゲーム</h3><p>勝てば報酬。囲碁やゲームで成果が知られる。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="体験：迷路を、試行錯誤で学ぶ">
+ <div class="inner">
+  <span class="tag">3　強化学習</span>
+  <h2>体験：迷路を、試行錯誤で学ぶ</h2>
+  <p class="def">左下（S）から、ゴール（G：報酬 +10）を目指します。穴（×：罰 −10）に落ちると終わり。1歩ごとに −1 の罰があります。試行回数を増やして、矢印（最も良いと学んだ向き）の変化を見てください。</p>
+  <div class="seg" id="segEp" role="group" aria-label="試行回数">
+   <button type="button" data-e="0" aria-pressed="true">0回</button>
+   <button type="button" data-e="10" aria-pressed="false">10回</button>
+   <button type="button" data-e="100" aria-pressed="false">100回</button>
+   <button type="button" data-e="1000" aria-pressed="false">1000回</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><div class="grid5" id="qGrid" role="img" aria-label="迷路と学習した向き"></div></div>
+   <div class="panel"><h3 id="qTitle"></h3><p id="qExp" style="margin:0"></p></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ Q学習という方法を使った簡易な実装です。結果は、乱数や設定によって変わります。</p>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="強化学習の用語と、探索と活用">
+ <div class="inner">
+  <span class="tag">3　強化学習</span>
+  <h2>強化学習の用語と、「探索」と「活用」</h2>
+  <p class="def">クリックして、基本の用語を在庫発注の例（架空）で確認してください。</p>
+  <div class="steps steps5" id="terms" role="group" aria-label="用語"></div>
+  <div class="panel" id="termBody" aria-live="polite"></div>
+  <div class="msg">うまくいった行動ばかり選ぶ（活用）と、<mark>もっと良い行動を見逃す</mark>。新しい行動を試す（探索）とのバランスが大切。</div>
+ </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="報酬の設計：思わぬ抜け道">
+ <div class="inner">
+  <span class="tag">3　強化学習</span>
+  <h2>報酬の設計：AIは、報酬を最大にする抜け道も探す</h2>
+  <p class="def">報酬の決め方によっては、意図と違う行動を学ぶことがあります。よく紹介される例え話で確認します（実在の事例ではなく、説明用の例です）。</p>
+  <div class="seg" id="segRew" role="group" aria-label="報酬の決め方">
+   <button type="button" data-w="a" aria-pressed="true">報酬：集めたゴミの量</button>
+   <button type="button" data-w="b" aria-pressed="false">報酬：掃除後の床のきれいさ</button>
+  </div>
+  <div class="panel">
+   <div class="bubble q"><small>目的</small>掃除ロボットに、床をきれいにさせたい。</div>
+   <div class="bubble ai" id="rewAct"></div>
+   <p id="rewExp" style="margin:0"></p>
+  </div>
+  <p class="note" style="margin-top:10px">※ 報酬の設計は、強化学習の難しい点の1つです。本当に望む結果を、測れる形で表す工夫が必要です。</p>
+ </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="深層強化学習：強化学習 × 深層学習">
+ <div class="inner">
+  <span class="tag">4　深層強化学習</span>
+  <h2>深層強化学習：強化学習 × 深層学習</h2>
+  <p class="def">強化学習の「どの行動が良いか」の判断に、深層学習（多層のニューラルネットワーク）を使います。画像のような複雑な入力からでも、行動を学べるようになりました。</p>
+  <div class="cols">
+   <div class="panel"><h3>従来の強化学習</h3><p>状態ごとの「良さ」を、表（Qテーブル）に書き込んで覚える。</p><p class="note" style="margin:0">状態が少ない問題（小さな迷路など）に向く。</p></div>
+   <div class="panel"><h3>深層強化学習</h3><p>状態から「良さ」を、ニューラルネットワークで見積もる。</p><p class="note" style="margin:0">画面の画像など、状態が膨大な問題でも、似た状態をまとめて扱える。</p></div>
+  </div>
+  <div class="cards" style="margin-top:14px">
+   <div class="card"><span class="n">2013〜2015年ごろ</span><h3>ゲームを画面から学ぶ</h3><p>DeepMind社が、ゲームの画面の画像だけから、多くのゲームの遊び方を学ぶ手法（DQN）を発表した。</p></div>
+   <div class="card"><span class="n">2016年</span><h3>囲碁で世界トップ棋士に勝つ</h3><p>AlphaGoは、深層学習・強化学習・探索を組み合わせた。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-title="なぜ「深層」が必要なのか：状態の数">
+ <div class="inner">
+  <span class="tag">4　深層強化学習</span>
+  <h2>なぜ「深層」が必要なのか：状態の数</h2>
+  <p class="def">表に書き込む方法は、状態が増えると成り立たなくなります。問題を選ぶと、状態の数が表示されます。</p>
+  <div class="steps" id="states" role="group" aria-label="問題"></div>
+  <div class="panel"><div class="pre" id="stCalc"></div><div class="result" id="stRes"></div></div>
+  <p class="note" style="margin-top:10px">※ 状態の数は、盤面や画像の並べ方の上限です（実際に起こりうる状態は、これより少なくなります）。宇宙の原子の数は、約10の80乗とよく推定されます。</p>
+ </div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-title="深層強化学習の難しさ">
+ <div class="inner">
+  <span class="tag">4　深層強化学習</span>
+  <h2>深層強化学習の難しさ</h2>
+  <div class="cards">
+   <div class="card"><span class="n">課題 1</span><h3>大量の試行が必要</h3><p>人が学ぶよりはるかに多い回数の試行が、必要になることがある。</p></div>
+   <div class="card"><span class="n">課題 2</span><h3>シミュレータが要る</h3><p>現実の工場や店舗で、何百万回も試すのは難しい。模擬の環境を作る必要がある。</p></div>
+   <div class="card"><span class="n">課題 3</span><h3>学習が不安定になりやすい</h3><p>設定や乱数で結果が変わり、再現しにくいことがある。</p></div>
+   <div class="card"><span class="n">課題 4</span><h3>理由を説明しにくい</h3><p>なぜその行動を選んだのかを、人が理解しにくい。</p></div>
+   <div class="card"><span class="n">課題 5</span><h3>報酬の設計と安全性</h3><p>抜け道の行動や、試行中の危険な行動を、防ぐ工夫が必要。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-title="どの手法を使うか">
+ <div class="inner">
+  <span class="tag">使い分け</span>
+  <h2>どの手法を使うか</h2>
+  <p class="def">状況を選ぶと、検討したい手法の目安が表示されます。</p>
+  <div class="syms" id="syms" role="group" aria-label="状況"></div>
+  <div class="panel" id="symBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-title="確認クイズ：どの学習？">
+ <div class="inner">
+  <span class="tag">確認</span>
+  <h2>確認クイズ：どの学習？</h2>
+  <p class="def">場面を読んで、最も近い学習方法を選んでください。全6問です。</p>
+  <div class="panel">
+   <p class="note" id="qNo" style="margin:0 0 6px"></p>
+   <p id="qText" style="font-size:1.1em;font-weight:700;margin:0 0 12px"></p>
+   <div class="opts" id="qOpts" role="group" aria-label="選択肢"></div>
+   <div class="result" id="qRes"></div>
+   <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="qNext" hidden>次の問題</button><button type="button" class="btn ghost" id="qRetry" hidden>もう一度</button></div>
+  </div>
+ </div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-title="生成AIとの関係">
+ <div class="inner">
+  <span class="tag">つながり</span>
+  <h2>生成AI（LLM）は、どの学び方を使っているか</h2>
+  <p class="def">多くのLLMは、複数の学び方を段階的に組み合わせて作られています。</p>
+  <div class="cards">
+   <div class="card"><span class="n">段階 1</span><h3>事前学習</h3><p>大量の文章で「次の言葉」を当てる練習をする。正解は文章そのものから作られるため、「自己教師あり学習」と呼ばれる。</p></div>
+   <div class="card"><span class="n">段階 2</span><h3>指示への調整</h3><p>人が書いた質問と望ましい回答の例で学ぶ。教師あり学習の考え方。</p></div>
+   <div class="card"><span class="n">段階 3</span><h3>人の評価による調整</h3><p>人が回答の良し悪しを評価し、それを報酬として学ぶ方法（人間のフィードバックによる強化学習）が使われることがある。</p></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 実際の手順や名称は、開発する会社やモデルによって異なります。</p>
+  <div class="links"><a href="../ai-history-llm/">AIの歴史　LLMの仕組みとハルシネーション →</a></div>
+ </div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <div class="cards">
+   <div class="card"><span class="n">教師あり</span><h3>正解つきの例から学ぶ</h3><p>分類と回帰。正解づくりのコストと、過学習に注意。</p></div>
+   <div class="card"><span class="n">教師なし</span><h3>正解なしで構造を見つける</h3><p>グループ分け・次元削減・異常検知。意味づけは人が行う。</p></div>
+   <div class="card"><span class="n">強化学習</span><h3>試行錯誤で報酬を最大にする</h3><p>探索と活用のバランス。報酬の設計が要。</p></div>
+   <div class="card"><span class="n">深層強化学習</span><h3>強化学習 × 深層学習</h3><p>画像のような複雑な入力から学べる。試行の量とシミュレータが課題。</p></div>
+  </div>
+  <div class="msg">何を手がかりに学ぶのかが、<mark>手法を選ぶ分かれ道</mark>。</div>
+  <div class="links">
+   <a href="../algorithm-knowledge/">アルゴリズム知識　難題を解く3つの考え方 →</a>
+   <a href="../ai-history-llm/">AIの歴史　LLMの仕組みとハルシネーション →</a>
+  </div>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open')&&!e.target.closest('svg,input'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn,start){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[start].click();
+  }
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function rows(el,title,list){el.innerHTML='<h3></h3><table class="mails"><tbody></tbody></table>';el.querySelector('h3').textContent=title;
+    list.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];el.querySelector('tbody').appendChild(tr);});}
+  function rng(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  function gauss(R){return (R()+R()+R()+R()+R()+R()-3)*Math.SQRT2}
+  const SVGNS='http://www.w3.org/2000/svg';
+  function se(tag,attrs,text){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!==undefined)e.textContent=text;return e}
+
+  /* 2 four */
+  const FO=[
+    {n:'学び方 1',t:'教師あり学習',give:'入力と「正解」のセット',learn:'入力から正解を予想する規則',ex:'迷惑メールの判定、売上の予測、画像の仕分け',need:'正解つきデータ（ラベル付けの手間）'},
+    {n:'学び方 2',t:'教師なし学習',give:'入力だけ（正解なし）',learn:'データの構造（グループ・外れ値など）',ex:'顧客のセグメント分け、設備の異常検知',need:'大量のデータ。結果の解釈は人が行う'},
+    {n:'学び方 3',t:'強化学習',give:'環境と「報酬」（良かった／悪かった）',learn:'報酬を最大にする行動の選び方',ex:'倉庫ロボット、在庫の発注、ゲーム',need:'試行できる環境と、報酬の設計'},
+    {n:'学び方 4',t:'深層強化学習',give:'強化学習と同じ。判断に深層学習を使う',learn:'画像など複雑な入力から、行動を選ぶ規則',ex:'ゲーム画面からの学習、囲碁、ロボットの制御',need:'大量の試行と、シミュレータ'}
+  ];
+  btnList($('four'),FO,x=>x.n,x=>x.t,x=>rows($('fourBody'),x.t,[['AIに与えるもの',x.give],['学ぶこと',x.learn],['例',x.ex],['必要なもの・課題',x.need]]),0);
+
+  /* 3 perceptron */
+  const P=(function(){const R=rng(31),pts=[];while(pts.length<44){const x=R(),y=R();const s=x+y-1.0;if(Math.abs(s)<0.09)continue;pts.push({x,y,l:s>0?1:-1});}return pts})();
+  let pw,pb,pEp;
+  function pReset(){pw=[0.9,-0.7];pb=0.1;pEp=0;pDraw()}
+  function pPred(x,y){return pw[0]*x+pw[1]*y+pb>0?1:-1}
+  function pAcc(){return P.filter(d=>pPred(d.x,d.y)===d.l).length/P.length}
+  const pNew=[];
+  function pDraw(){const s=$('svmPlot');s.innerHTML='';const X=x=>20+x*280,Y=y=>220-y*200;
+    s.appendChild(se('rect',{x:20,y:20,width:280,height:200,fill:'none',stroke:'var(--line)'}));
+    // boundary
+    const pts=[];for(const xx of [0,1]){if(Math.abs(pw[1])>1e-6){const yy=-(pw[0]*xx+pb)/pw[1];pts.push([xx,yy])}}
+    if(pts.length===2&&Math.abs(pw[1])>1e-6)s.appendChild(se('line',{x1:X(pts[0][0]),y1:Math.max(-40,Math.min(260,Y(pts[0][1]))),x2:X(pts[1][0]),y2:Math.max(-40,Math.min(260,Y(pts[1][1]))),stroke:'var(--indigo)','stroke-width':2.5,'clip-path':'inset(0)'}));
+    P.forEach(d=>{const ok=pPred(d.x,d.y)===d.l;if(d.l===1)s.appendChild(se('circle',{cx:X(d.x),cy:Y(d.y),r:5,fill:'none',stroke:ok?'var(--ok)':'var(--ng)','stroke-width':2.2}));
+      else{const x=X(d.x),y=Y(d.y);s.appendChild(se('path',{d:'M'+(x-4.5)+' '+(y-4.5)+'L'+(x+4.5)+' '+(y+4.5)+'M'+(x+4.5)+' '+(y-4.5)+'L'+(x-4.5)+' '+(y+4.5),stroke:ok?'var(--ok)':'var(--ng)','stroke-width':2.2,fill:'none'}));}});
+    pNew.forEach(d=>{const p=pPred(d.x,d.y);s.appendChild(se('rect',{x:X(d.x)-6,y:Y(d.y)-6,width:12,height:12,fill:'var(--mark)',stroke:'var(--ink)','stroke-width':1.5}));
+      s.appendChild(se('text',{x:X(d.x)+9,y:Y(d.y)+4,'font-size':11,fill:'var(--ink)'},p===1?'→継続と予想':'→解約と予想'));});
+    const lx=se('text',{x:160,y:236,'text-anchor':'middle','font-size':11,fill:'var(--sub)'},'購入頻度 →');s.appendChild(lx);
+    const ly=se('text',{x:8,y:120,'text-anchor':'middle','font-size':11,fill:'var(--sub)',transform:'rotate(-90 8 120)'},'平均単価 →');s.appendChild(ly);
+    const a=pAcc();
+    $('pTitle').textContent='学習 '+pEp+' 回目：正解率 '+Math.round(a*100)+'%';
+    $('pExp').textContent=pEp===0?'最初の境界線（青）は、でたらめです。緑は予想が当たった点、赤は外れた点です。「1回学習する」を押すと、外れた点をもとに、境界線が少しずつ直ります。':'外れた点を見て、境界線を直しています。正解つきのデータがあるから、「どれだけ当たったか」を数えて、学習できます。';
+    res($('pRes'),a===1?'good':'',a===1?'訓練データは、すべて当てられるようになりました。ただし、新しいデータで当たるかは、別に確かめる必要があります（次のスライド）。':'');
+  }
+  $('pStep').onclick=()=>{for(const d of P){if(pPred(d.x,d.y)!==d.l){pw[0]+=0.15*d.l*d.x;pw[1]+=0.15*d.l*d.y;pb+=0.15*d.l}}pEp++;pDraw()};
+  $('pReset').onclick=()=>{pNew.length=0;pReset()};
+  $('svmPlot').addEventListener('click',e=>{const r=$('svmPlot').getBoundingClientRect(),vx=(e.clientX-r.left)/r.width*320,vy=(e.clientY-r.top)/r.height*240;
+    const x=(vx-20)/280,y=(220-vy)/200;if(x<0||x>1||y<0||y>1)return;pNew.length=0;pNew.push({x,y});pDraw()});
+  pReset();
+
+  /* 5 polynomial fit */
+  const FR=rng(5),f0=x=>Math.sin(Math.PI*x);
+  const TR=[],TE=[];for(let i=0;i<12;i++){const x=-1+2*(i+0.5+ (FR()-0.5)*0.6)/12;TR.push({x,y:f0(x)+gauss(FR)*0.25})}
+  for(let i=0;i<60;i++){const x=-1+2*FR();TE.push({x,y:f0(x)+gauss(FR)*0.25})}
+  function polyFit(d){const n=d+1,A=Array.from({length:n},()=>new Array(n+1).fill(0));
+    TR.forEach(p=>{const pw=[1];for(let j=1;j<n;j++)pw.push(pw[j-1]*p.x);for(let j=0;j<n;j++){for(let k=0;k<n;k++)A[j][k]+=pw[j]*pw[k];A[j][n]+=pw[j]*p.y}});
+    for(let j=0;j<n;j++)A[j][j]+=1e-9;
+    for(let c=0;c<n;c++){let m=c;for(let r=c+1;r<n;r++)if(Math.abs(A[r][c])>Math.abs(A[m][c]))m=r;[A[c],A[m]]=[A[m],A[c]];
+      for(let r=c+1;r<n;r++){const f=A[r][c]/A[c][c];for(let k=c;k<=n;k++)A[r][k]-=f*A[c][k]}}
+    const w=new Array(n).fill(0);for(let r=n-1;r>=0;r--){let s=A[r][n];for(let k=r+1;k<n;k++)s-=A[r][k]*w[k];w[r]=s/A[r][r]}return w}
+  const pe=(w,x)=>{let s=0;for(let j=w.length-1;j>=0;j--)s=s*x+w[j];return s};
+  const mse=(w,D)=>D.reduce((a,p)=>a+(pe(w,p.x)-p.y)**2,0)/D.length;
+  function drawFit(){const d=+$('deg').value,w=polyFit(d),s=$('fitPlot');s.innerHTML='';
+    const X=x=>20+(x+1)/2*290,Y=y=>105-y/2.2*95,cl=y=>Math.max(5,Math.min(205,y));
+    s.appendChild(se('line',{x1:20,y1:105,x2:310,y2:105,stroke:'var(--line)'}));
+    let t='';for(let i=0;i<=120;i++){const x=-1+2*i/120;t+=(i?'L':'M')+X(x).toFixed(1)+' '+Y(f0(x)).toFixed(1)}
+    s.appendChild(se('path',{d:t,fill:'none',stroke:'var(--sub)','stroke-dasharray':'4 4'}));
+    let u='';for(let i=0;i<=160;i++){const x=-1+2*i/160;u+=(i?'L':'M')+X(x).toFixed(1)+' '+cl(Y(pe(w,x))).toFixed(1)}
+    s.appendChild(se('path',{d:u,fill:'none',stroke:'var(--indigo)','stroke-width':2.5}));
+    TE.forEach(p=>s.appendChild(se('circle',{cx:X(p.x),cy:cl(Y(p.y)),r:2.5,fill:'none',stroke:'var(--sub)','stroke-width':1})));
+    TR.forEach(p=>s.appendChild(se('circle',{cx:X(p.x),cy:cl(Y(p.y)),r:4.5,fill:'var(--ng)',stroke:'var(--surface)'})));
+    const a=mse(w,TR),b=mse(w,TE);$('degOut').textContent=d===1?'1（単純）':d===9?'9（複雑）':String(d);
+    $('fitErr').textContent='訓練データの誤差：'+a.toFixed(3)+'\nテストデータの誤差：'+b.toFixed(3);
+    const best=window.__bestDeg;
+    res($('fitRes'),d<=2?'bad':(b>a*3&&d>=7?'bad':(d===best?'good':'')),d<=2?'単純すぎて、本来の曲線の形を捉えられません（学習不足）。訓練でもテストでも、誤差が大きいままです。':(b>a*3&&d>=7?'訓練データには、ぴったり合っています（誤差が小さい）。しかし、テストデータの誤差は大きく、新しいデータには弱くなっています。これが過学習です。':(d===best?'訓練とテストの誤差が、ともに小さく、バランスが良い状態です。':'複雑さを変えて、テストデータの誤差が最も小さくなる所を探してみましょう。')));}
+  (function(){let bd=1,bv=1e9;for(let d=1;d<=9;d++){const v=mse(polyFit(d),TE);if(v<bv){bv=v;bd=d}}window.__bestDeg=bd})();
+  $('deg').addEventListener('input',drawFit);drawFit();
+
+  /* 6 kmeans */
+  const KP=(function(){const R=rng(77),c=[[0.22,0.27],[0.74,0.3],[0.5,0.78]],a=[];c.forEach(m=>{for(let i=0;i<30;i++)a.push({x:Math.min(.98,Math.max(.02,m[0]+gauss(R)*0.07)),y:Math.min(.98,Math.max(.02,m[1]+gauss(R)*0.07))})});return a})();
+  const COL=['#2B3A8C','#E07A1F','#2A9D8F','#C0392B','#8E44AD','#7F8C8D'];
+  function kmeans(k,seed){const R=rng(seed),C=[KP[Math.floor(R()*KP.length)]].map(p=>[p.x,p.y]);
+    while(C.length<k){const d=KP.map(p=>Math.min(...C.map(c=>(p.x-c[0])**2+(p.y-c[1])**2))),s=d.reduce((a,b)=>a+b,0);let r=R()*s,i=0;for(;i<d.length-1;i++){r-=d[i];if(r<=0)break}C.push([KP[i].x,KP[i].y])}
+    let lab=new Array(KP.length).fill(0);
+    for(let it=0;it<30;it++){lab=KP.map(p=>{let b=0,bd=1e9;C.forEach((c,i)=>{const d=(p.x-c[0])**2+(p.y-c[1])**2;if(d<bd){bd=d;b=i}});return b});
+      for(let i=0;i<k;i++){const m=KP.filter((_,j)=>lab[j]===i);if(m.length)C[i]=[m.reduce((a,p)=>a+p.x,0)/m.length,m.reduce((a,p)=>a+p.y,0)/m.length]}}
+    const sse=KP.reduce((a,p,j)=>a+(p.x-C[lab[j]][0])**2+(p.y-C[lab[j]][1])**2,0);return{C,lab,sse}}
+  let kSeed=3;
+  function drawK(){const k=+$('kk').value,r=kmeans(k,kSeed),s=$('kPlot');s.innerHTML='';const X=x=>20+x*280,Y=y=>220-y*200;
+    s.appendChild(se('rect',{x:20,y:20,width:280,height:200,fill:'none',stroke:'var(--line)'}));
+    KP.forEach((p,j)=>s.appendChild(se('circle',{cx:X(p.x),cy:Y(p.y),r:4,fill:COL[r.lab[j]],opacity:.85})));
+    r.C.forEach((c,i)=>s.appendChild(se('path',{d:'M'+X(c[0])+' '+(Y(c[1])-8)+'L'+(X(c[0])+8)+' '+Y(c[1])+'L'+X(c[0])+' '+(Y(c[1])+8)+'L'+(X(c[0])-8)+' '+Y(c[1])+'Z',fill:COL[i],stroke:'var(--ink)','stroke-width':1.5})));
+    s.appendChild(se('text',{x:160,y:236,'text-anchor':'middle','font-size':11,fill:'var(--sub)'},'購入頻度 →'));
+    s.appendChild(se('text',{x:8,y:120,'text-anchor':'middle','font-size':11,fill:'var(--sub)',transform:'rotate(-90 8 120)'},'平均単価 →'));
+    $('kOut').textContent=k;$('kTitle').textContent='k = '+k+' のグループ分け';
+    $('kInfo').textContent='グループ内のばらつき：'+r.sse.toFixed(2)+'\n各グループの人数：'+Array.from({length:k},(_,i)=>r.lab.filter(l=>l===i).length).join(' / ');
+    $('kExp').textContent=k===1?'全員が1つのグループ。分けていないのと同じです。':(k===3?'見た目の塊と、グループが、おおむね一致しています。ただし、「正解がk=3」と教えられたわけではありません。':(k<3?'本来は別の塊なのに、まとめられている部分があります。':'塊を、さらに細かく割っています。ばらつきの数値は小さくなりますが、グループを増やせば、小さくなっていくのは自然なことです。'));}
+  $('kk').addEventListener('input',drawK);$('kAgain').onclick=()=>{kSeed=(kSeed*17+5)%997+1;drawK()};drawK();
+
+  /* 9 q-learning */
+  const G={n:5,start:[4,0],goal:[0,4],pit:[2,2]};
+  const AC=[[-1,0,'↑'],[0,1,'→'],[1,0,'↓'],[0,-1,'←']];
+  function qlearn(eps,seed){const R=rng(seed),n=G.n,Q=Array.from({length:n*n},()=>[0,0,0,0]);
+    function step(r,c,a){let nr=r+AC[a][0],nc=c+AC[a][1];if(nr<0||nr>=n||nc<0||nc>=n){nr=r;nc=c}
+      if(nr===G.goal[0]&&nc===G.goal[1])return[nr,nc,10,true];if(nr===G.pit[0]&&nc===G.pit[1])return[nr,nc,-10,true];return[nr,nc,-1,false]}
+    for(let e=0;e<eps;e++){let r=G.start[0],c=G.start[1];for(let t=0;t<60;t++){const s=r*n+c;let a;
+      if(R()<0.25)a=Math.floor(R()*4);else{const q=Q[s],m=Math.max(...q),ids=q.map((v,i)=>v===m?i:-1).filter(i=>i>=0);a=ids[Math.floor(R()*ids.length)]}
+      const[nr,nc,rw,dn]=step(r,c,a),ns=nr*n+nc;Q[s][a]+=0.5*(rw+(dn?0:0.95*Math.max(...Q[ns]))-Q[s][a]);r=nr;c=nc;if(dn)break}}
+    // greedy rollout
+    let r=G.start[0],c=G.start[1],steps=0,ok=false,path=new Set();for(let t=0;t<30;t++){const s=r*n+c;path.add(s);const q=Q[s],m=Math.max(...q);if(m===0&&q.every(v=>v===0))break;const a=q.indexOf(m),[nr,nc,,dn]=step(r,c,a);r=nr;c=nc;steps++;if(nr===G.goal[0]&&nc===G.goal[1]){ok=true;path.add(r*n+c);break}if(dn)break}
+    return{Q,steps,ok,path}}
+  function drawQ(ep){const res0=qlearn(ep,5),n=G.n,box=$('qGrid');box.innerHTML='';
+    const mx=Math.max(1,...res0.Q.map(q=>Math.max(...q)));
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++){const d=document.createElement('div'),s=r*n+c;d.className='qc';
+      let t='';if(r===G.goal[0]&&c===G.goal[1]){d.classList.add('goal');t='G'}else if(r===G.pit[0]&&c===G.pit[1]){d.classList.add('pit');t='×'}
+      else{const q=res0.Q[s],m=Math.max(...q);if(!q.every(v=>v===0))t=AC[q.indexOf(m)][2];if(r===G.start[0]&&c===G.start[1]){d.classList.add('start');t='S '+t}if(res0.path.has(s)&&ep>0)d.classList.add('onpath')}
+      d.textContent=t;box.appendChild(d)}
+    $('qTitle').textContent='試行 '+ep+' 回後';
+    $('qExp').textContent=ep===0?'まだ何も学んでいません。矢印はありません。':(ep<50?'ごく少ない試行では、道のりの一部しか分かっていません。矢印はまだ不完全で、ゴールにたどり着けないこともあります。':(res0.ok?'ゴールまで '+res0.steps+' 歩の道（色つきのマス）を学びました。穴を避けています。正解の道を教えられたのではなく、報酬と罰から、自分で見つけた道です。':'まだゴールにたどり着けない向きの学習です。'));
+    if(ep>0&&ep<50&&res0.ok)$('qExp').textContent+='（この結果では、ゴールまで '+res0.steps+' 歩でした。）'}
+  seg($('segEp'),b=>drawQ(+b.dataset.e));drawQ(0);
+
+  /* 10 terms */
+  const TM=[
+    {t:'状態',s:'今どんな状況か',d:'エージェントが見ている、現在の状況。',e:'例：現在の在庫数、曜日、直近の売れ行き'},
+    {t:'行動',s:'何をするか',d:'エージェントが選べる選択肢。',e:'例：発注する数量（0個、10個、20個…）'},
+    {t:'報酬',s:'良かったか、悪かったか',d:'行動の結果として返ってくる、点数。罰（マイナス）の場合もある。',e:'例：売れた分の利益はプラス、欠品や廃棄はマイナス'},
+    {t:'方策',s:'状況に応じた行動の選び方',d:'「この状態では、この行動を選ぶ」という規則。強化学習で学びたいもの。',e:'例：在庫が少ないときは、多めに発注する'},
+    {t:'探索と活用',s:'試すか、使うか',d:'これまでで一番良い行動を選ぶ（活用）か、まだ試していない行動を試す（探索）か。',e:'例：いつもの発注量を続けるか、少し変えて試してみるか'}
+  ];
+  btnList($('terms'),TM,(x,i)=>'用語 '+(i+1),x=>x.t,x=>rows($('termBody'),x.t+'：'+x.s,[['意味',x.d],['在庫発注の例（架空）',x.e]]),0);
+
+  /* 11 reward */
+  const RW={
+    a:{c:'bad',l:'ロボットの行動（報酬：集めたゴミの量）',a:'ゴミを床にばらまき、それを集めなおして、報酬を増やし続ける。',e:'「集めたゴミの量」を報酬にしたため、床を汚してから集めるほうが、報酬が増えてしまいます。目的は「床をきれいにすること」だったのに、報酬の測り方が、ずれていました。'},
+    b:{c:'good',l:'ロボットの行動（報酬：掃除後の床のきれいさ）',a:'汚れを見つけて、取り除く。',e:'目的に近い量を測ると、意図に近い行動を学びやすくなります。ただし、きれいさの測り方にも抜け道がないか、確かめる必要があります。'}
+  };
+  function showRew(k){const r=RW[k],a=$('rewAct');a.className='bubble ai '+r.c;a.innerHTML='<small></small><span></span>';a.querySelector('small').textContent=r.l;a.querySelector('span').textContent=r.a;$('rewExp').textContent=r.e}
+  seg($('segRew'),b=>showRew(b.dataset.w));showRew('a');
+
+  /* 13 states */
+  function fmtBig(b){const s=b.toString();return s.length<=9?Number(b).toLocaleString('ja-JP'):s[0]+'.'+s.slice(1,3)+' × 10^'+(s.length-1)}
+  const ST=[
+    {t:'5×5マスの迷路',s:'位置は25通り',calc:()=>'状態：現在位置\n状態の数：25 通り\n表の行数：25 行（Qテーブル）',ok:true,r:'表に書き込んで、覚えられます。'},
+    {t:'囲碁の盤面（19×19）',s:'各点：黒・白・空',calc:()=>{const b=3n**361n;return '状態：盤面の石の並び\n並べ方の上限：3^361 ＝ '+fmtBig(b)+' 通り\n表の行数：'+fmtBig(b)+' 行'},ok:false,r:'表を作ることは、できません。似た盤面をまとめて扱う、ニューラルネットワークが必要になります。'},
+    {t:'ゲーム画面（84×84の白黒）',s:'各画素：256段階',calc:()=>{const d=Math.floor(84*84*Math.log10(256));return '状態：画面の画素の並び\n並べ方の上限：256^7056 ＝ 約 10^'+d.toLocaleString('ja-JP')+' 通り\n表の行数：約 10^'+d.toLocaleString('ja-JP')+' 行'},ok:false,r:'表は、とても作れません。画像の特徴を捉える、深層学習で状態を扱います。'}
+  ];
+  btnList($('states'),ST,(x,i)=>'問題 '+(i+1),x=>x.t,x=>{$('stCalc').textContent=x.calc();res($('stRes'),x.ok?'good':'bad',x.r)},0);
+
+  /* 15 chooser */
+  const SY=[
+    {q:'過去の取引に「不正／正常」の記録がある。新しい取引を判定したい',lv:'教師あり学習（分類）',d:'正解つきデータがあるので、教師あり学習が向きます。まず、ラベルの質と量を確認します。'},
+    {q:'顧客の購買データに、正解はない。似た顧客のグループを知りたい',lv:'教師なし学習（クラスタリング）',d:'正解がなく、構造を知りたいので、教師なし学習が向きます。グループの意味づけは、人が行います。'},
+    {q:'倉庫の動かし方を、試行錯誤で改善したい。模擬環境が作れる',lv:'強化学習',d:'行動の結果を報酬で表せて、試行できるなら、強化学習の候補です。報酬の設計が要になります。'},
+    {q:'ゲームの画面そのものから、操作を学ばせたい',lv:'深層強化学習',d:'入力が画像で、状態が膨大なので、深層学習を組み合わせた深層強化学習が使われてきました。大量の試行が必要です。'},
+    {q:'売上を予測したい。過去の売上データはあるが、件数が少ない',lv:'教師あり学習（回帰）。ただし、件数に注意',d:'回帰が向きますが、データが少ないと過学習しやすくなります。単純なモデルから試し、テストデータで確かめます。'}
+  ];
+  btnList($('syms'),SY,(x,i)=>'状況 '+(i+1),x=>x.q,x=>{const b=$('symBody');b.innerHTML='<span class="era"></span><h3></h3><p style="margin:0"></p>';b.querySelector('.era').textContent='検討したい手法';b.querySelector('h3').textContent=x.lv;b.querySelector('p').textContent=x.d},0);
+
+  /* 16 quiz */
+  const QS=[
+    {t:'過去の取引データには「不正」「正常」の印がついている。これをもとに、新しい取引が不正かを判定したい。',a:'教師あり学習',e:'正解（不正／正常）つきのデータから学ぶので、教師あり学習（分類）です。'},
+    {t:'購買履歴だけがある（正解なし）。似た購買傾向の顧客を、グループにまとめたい。',a:'教師なし学習',e:'正解がなく、データの構造（グループ）を見つけるので、教師なし学習（クラスタリング）です。'},
+    {t:'倉庫ロボットが、試行錯誤を繰り返し、荷物を早く運べる動き方を、自分で学ぶ。',a:'強化学習',e:'行動の結果として報酬を得て、報酬が最大になる行動を学ぶので、強化学習です。'},
+    {t:'ゲームの画面の画像だけを見て、高い得点が取れる操作を、試行錯誤で学ぶ。',a:'深層強化学習',e:'報酬で学ぶ強化学習に、画像を扱える深層学習を組み合わせているので、深層強化学習です。'},
+    {t:'過去の住宅の条件と、成約価格の記録から、新しい住宅の価格を予測したい。',a:'教師あり学習',e:'成約価格という正解（数値）があるので、教師あり学習（回帰）です。'},
+    {t:'ラベルのない大量の製造データから、「普段と違う状態」を見つけたい。',a:'教師なし学習',e:'正解がなくても、普段のデータの「形」を学んで外れを見つける異常検知は、教師なし学習の使い方の1つです（異常のラベルがあれば、教師あり学習も使えます）。'}
+  ];
+  const OPT=['教師あり学習','教師なし学習','強化学習','深層強化学習'];
+  let qi=0,score=0,answered=false;
+  function drawQ2(){answered=false;$('qNo').textContent='第 '+(qi+1)+' 問 / '+QS.length;$('qText').textContent=QS[qi].t;
+    const o=$('qOpts');o.innerHTML='';OPT.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=t;
+      b.onclick=()=>{if(answered)return;answered=true;const ok=t===QS[qi].a;if(ok)score++;
+        [...o.children].forEach(c=>{c.disabled=true;if(c.textContent===QS[qi].a)c.setAttribute('aria-pressed','true')});
+        res($('qRes'),ok?'good':'bad',(ok?'正解です。':'正解は「'+QS[qi].a+'」です。')+QS[qi].e);
+        if(qi<QS.length-1)$('qNext').hidden=false;else{$('qRetry').hidden=false;$('qRes').textContent+='　結果：'+score+' / '+QS.length+' 問正解'}};o.appendChild(b)});
+    res($('qRes'),'','');$('qNext').hidden=true;$('qRetry').hidden=true}
+  $('qNext').onclick=()=>{qi++;drawQ2()};$('qRetry').onclick=()=>{qi=0;score=0;drawQ2()};drawQ2();
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
