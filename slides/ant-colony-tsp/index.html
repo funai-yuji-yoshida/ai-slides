@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>組み合わせ爆発とアリの知恵　巡回セールスマン問題とACO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+/* ant colony */
+.steps4{grid-template-columns:repeat(4,1fr)}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps4,.steps5{grid-template-columns:1fr}}
+.mails th{width:9em;white-space:nowrap}
+.btn:disabled{opacity:.4;cursor:default}
+.flow4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.fs{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 12px;display:grid;gap:4px}
+.fs b{color:var(--indigo)}
+@media (max-width:820px){.flow4{grid-template-columns:1fr}}
+.routes{display:grid;gap:8px;margin-bottom:12px}
+.hrow{display:grid;grid-template-columns:11em 1fr 4em;gap:10px;align-items:center}
+.hrow b{font-size:.9em}
+.htr{height:18px;background:var(--line);border-radius:4px;overflow:hidden}
+.htr i{display:block;height:100%;background:var(--indigo);transition:width .4s}
+.hrow.ct .htr i{background:var(--sub)}
+.hrow em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:620px){.hrow{grid-template-columns:7.5em 1fr 3.5em}}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="組み合わせ爆発とアリの知恵">
+ <div class="inner">
+  <h1>組み合わせ爆発とアリの知恵</h1>
+  <p class="sub">巡回セールスマン問題を、アントコロニー最適化で解く</p>
+  <div class="rule"></div>
+  <p>全部を調べると、スーパーコンピュータでも何年もかかる問題があります。それでも、アルゴリズムの工夫しだいで、最適に近い答えを、短い時間で見つけられることがあります。アリの行動をヒントにした方法を、動かしながら確かめます。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="組み合わせ爆発：選択肢が、掛け算で増える">
+ <div class="inner">
+  <span class="tag">1　組み合わせ爆発</span>
+  <h2>組み合わせ爆発：選択肢が、掛け算で増える</h2>
+  <p class="def">N か所を1回ずつ回る順序は、「次にどこへ行くか」の選択が積み重なるため、(N−1)!÷2 通りに増えます。都市の数を動かして、全部調べるのにかかる時間を見てみましょう。</p>
+  <div class="panel">
+   <div class="row-btns"><label for="nCity"><b>訪問先の数：</b></label><input id="nCity" type="range" min="5" max="60" value="10" style="flex:1;min-width:140px"><output id="nOut" style="font-weight:900;min-width:3em;text-align:right"></output></div>
+   <div class="pre" id="nCalc" style="margin-top:10px"></div>
+   <div class="result" id="nRes"></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 順序の数は (N−1)!÷2（出発点と向きの違いを除く）で計算しています。「1秒に100京（10の18乗）通りを調べられる」という、非常に速いコンピュータを仮定した概算です。実際には、1つの順序の評価に多くの計算が必要です。</p>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="巡回セールスマン問題とは">
+ <div class="inner">
+  <span class="tag">2　巡回セールスマン問題</span>
+  <h2>巡回セールスマン問題（TSP）とは</h2>
+  <p class="def">「すべての訪問先を1回ずつ回って、出発点に戻る、最も短い経路は？」という問題です。条件はシンプルですが、都市が増えると、急に難しくなります。</p>
+  <div class="cards">
+   <div class="card"><span class="n">例 1</span><h3>配送ルート</h3><p>荷物を届ける順序で、走行距離と時間が変わる。</p></div>
+   <div class="card"><span class="n">例 2</span><h3>倉庫のピッキング</h3><p>商品を取りに行く順序で、歩く距離が変わる。</p></div>
+   <div class="card"><span class="n">例 3</span><h3>工場の加工順序</h3><p>基板に穴をあける順序で、機械の移動時間が変わる。</p></div>
+   <div class="card"><span class="n">例 4</span><h3>営業・巡回点検</h3><p>訪問先を回る順番で、1日にこなせる件数が変わる。</p></div>
+  </div>
+  <div class="msg">条件は単純でも、<mark>選択肢の数が爆発する</mark>から難しい。</div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="全部調べる方法の限界と、近似という考え方">
+ <div class="inner">
+  <span class="tag">2　巡回セールスマン問題</span>
+  <h2>全部調べる方法の限界と、「近似」という考え方</h2>
+  <div class="cols">
+   <div class="panel"><h3>厳密に解く方法</h3><p>全探索（全部の順序を調べる）。必ず最短が分かる。</p><p>工夫した厳密解法（分枝限定法など）は、問題の規模や性質によって、もっと大きな問題も解ける。</p><p class="note" style="margin:0">ただし、一般には、規模が大きくなると、時間が急増する（NP困難と呼ばれる種類の問題）。</p></div>
+   <div class="panel"><h3>近似して解く方法</h3><p>最短とは限らなくても、<b>最適に近い答え</b>を、短い時間で見つけることを目指す。</p><p>探索の工夫で、調べる数を大きく減らす。</p><p class="note" style="margin:0">例：最近傍法、焼きなまし法、遺伝的アルゴリズム、アントコロニー最適化</p></div>
+  </div>
+  <div class="msg">実務では、完璧な最短よりも、<mark>十分に良い答えを、使える時間で</mark>出すことが大切。</div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="アリは、どうやって近道を見つけるのか">
+ <div class="inner">
+  <span class="tag">3　アリの知恵</span>
+  <h2>アリは、どうやって近道を見つけるのか</h2>
+  <p class="def">アリは、歩いた道に「フェロモン」という目印を残し、濃い道を選びやすい性質があります。短い道と長い道がある場合、どちらに集まるでしょうか。簡易なシミュレーションで確かめます。</p>
+  <div class="row-btns"><button type="button" class="btn" id="aStep">1世代進める</button><button type="button" class="btn" id="aTen">20世代進める</button><button type="button" class="btn ghost" id="aReset">リセット</button></div>
+  <div class="panel" style="margin-top:10px">
+   <div class="routes" id="routes"></div>
+   <div class="result" id="aRes"></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 20匹のアリが、毎世代、フェロモンの濃さに比例した確率で道を選ぶ、簡易な模型です。アリを使った実験で、短い経路が選ばれやすくなることが報告されています。実際のアリの行動は、もっと複雑です。</p>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="アントコロニー最適化の4つの原理">
+ <div class="inner">
+  <span class="tag">3　アリの知恵</span>
+  <h2>アントコロニー最適化（ACO）の4つの原理</h2>
+  <p class="def">1990年代初めに、Marco Dorigo らが提案した方法です。大切なのは、アリの動きを再現することではなく、そこにある原理を、最適化に応用したことです。クリックして確認してください。</p>
+  <div class="steps steps4" id="prin" role="group" aria-label="4つの原理"></div>
+  <div class="panel" id="prinBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="ACOの手順">
+ <div class="inner">
+  <span class="tag">3　アリの知恵</span>
+  <h2>ACOで巡回セールスマン問題を解く手順</h2>
+  <p class="def">クリックして、各ステップで何をするかを確認してください。</p>
+  <div class="steps steps5" id="stp" role="group" aria-label="手順"></div>
+  <div class="panel" id="stpBody" aria-live="polite"></div>
+  <div class="pre" style="margin-top:14px">次の都市 j を選ぶ確率  ∝  （フェロモンの濃さ）× （近さ＝1／距離）の重み付き積
+→ 近くて、フェロモンが濃い都市ほど、選ばれやすい。ただし、確率なので、他の都市も選ばれる。</div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="体験：ACOで巡回セールスマン問題を解く">
+ <div class="inner">
+  <span class="tag">4　体験</span>
+  <h2>体験：ACOで、巡回セールスマン問題を解く</h2>
+  <p class="def">濃い青い線が、フェロモンの多い道です。世代を進めると、短い周回路の線が濃くなります。「厳密な最短」と比べてみましょう（都市の配置は乱数で作った架空のものです）。</p>
+  <div class="row-btns" style="margin-bottom:8px">
+   <span class="note" style="margin:0">都市の数：</span>
+   <div class="seg" id="segN" role="group" aria-label="都市の数" style="margin:0"><button type="button" data-n="10" aria-pressed="true">10</button><button type="button" data-n="13" aria-pressed="false">13</button><button type="button" data-n="25" aria-pressed="false">25</button></div>
+   <span class="note" style="margin:0 0 0 8px">蒸発の速さ：</span>
+   <div class="seg" id="segRho" role="group" aria-label="蒸発の速さ" style="margin:0"><button type="button" data-r="0.05" aria-pressed="false">遅い</button><button type="button" data-r="0.3" aria-pressed="true">ふつう</button><button type="button" data-r="0.7" aria-pressed="false">速い</button></div>
+  </div>
+  <div class="row-btns" style="margin-bottom:8px"><button type="button" class="btn" id="acoStep">1世代進める</button><button type="button" class="btn" id="acoTen">20世代進める</button><button type="button" class="btn ghost" id="acoReset">最初から</button><button type="button" class="btn ghost" id="acoNew">別の配置</button></div>
+  <div class="cols">
+   <div class="panel"><svg id="acoPlot" viewBox="0 0 320 240" style="width:100%;height:auto" role="img" aria-label="ACOの経路"></svg>
+    <p class="note" style="margin:4px 0 0">青い線：フェロモン（濃さ＝太さ）　橙の線：これまでの最短の経路</p></div>
+   <div class="panel"><h3 id="acoTitle"></h3><div class="pre" id="acoInfo"></div><svg id="acoChart" viewBox="0 0 300 110" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="世代ごとの最短経路の長さ"></svg><div class="result" id="acoRes"></div></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ 簡易な実装です（アリの数＝都市の数、最良の経路にも追加でフェロモンを足す工夫あり）。結果は、乱数や設定で変わります。厳密な最短は、都市が少ない場合に、別の厳密な方法（動的計画法）で計算しています。</p>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="計算量の違い：年単位 と 一瞬">
+ <div class="inner">
+  <span class="tag">4　体験</span>
+  <h2>計算量の違い：「年単位」と「一瞬」</h2>
+  <p class="def">全部調べる方法と、ACO（近似）の計算量を、都市の数を動かして比べます。</p>
+  <div class="panel">
+   <div class="row-btns"><label for="nCity2"><b>訪問先の数：</b></label><input id="nCity2" type="range" min="10" max="60" value="30" style="flex:1;min-width:140px"><output id="nOut2" style="font-weight:900;min-width:3em;text-align:right"></output></div>
+   <div class="cols" style="margin-top:10px">
+    <div class="panel"><h3>全部調べる</h3><div class="pre" id="cmpA"></div></div>
+    <div class="panel"><h3>ACO（近似）</h3><div class="pre" id="cmpB"></div></div>
+   </div>
+   <div class="result" id="cmpRes"></div>
+  </div>
+  <p class="note" style="margin-top:10px">※ ACOは「世代数100 × アリ N 匹 × 各アリの計算 N²」で概算（約 100 × N³ 回）。普通のパソコンが1秒に10億回の計算をすると仮定しています。ACOの結果は近似解で、最短とは限りません。</p>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="業務への応用">
+ <div class="inner">
+  <span class="tag">5　応用</span>
+  <h2>業務への応用：ACOが活きる問題</h2>
+  <p class="def">「順序」や「経路」を決める問題は、巡回セールスマン問題と似た構造を持っています。ACOなどの方法が、研究・応用されている分野の例です。</p>
+  <div class="cards">
+   <div class="card"><span class="n">応用 1</span><h3>配送・訪問のルート</h3><p>複数の車両、時間指定、積載量などの条件が加わる、配送計画問題。</p></div>
+   <div class="card"><span class="n">応用 2</span><h3>作業・工程の順序</h3><p>機械の段取り替えや、作業の依存関係を考えた、スケジューリング。</p></div>
+   <div class="card"><span class="n">応用 3</span><h3>ネットワークの経路</h3><p>通信や物流の網で、混雑や障害を避けて経路を選ぶ。</p></div>
+   <div class="card"><span class="n">応用 4</span><h3>配置・割り当て</h3><p>人や設備の配置など、組合せ構築型の問題。</p></div>
+  </div>
+  <p class="note" style="margin-top:12px">実務では、期限・スキル・積載量などの<b>制約</b>を守ることが必須です。制約付きの問題では、専用の数理最適化ソルバー、他の探索手法と比べて、方法を選びます。</p>
+ </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="ACOの注意点">
+ <div class="inner">
+  <span class="tag">5　応用</span>
+  <h2>ACOを使うときの注意点</h2>
+  <div class="cards">
+   <div class="card"><span class="n">注意 1</span><h3>最短とは限らない</h3><p>近似解を求める方法で、最適性の保証はない。「十分に良いか」を、目的に照らして判断する。</p></div>
+   <div class="card"><span class="n">注意 2</span><h3>設定の調整が必要</h3><p>アリの数、蒸発の速さ、近さへの重みなどの設定で、結果が変わる。</p></div>
+   <div class="card"><span class="n">注意 3</span><h3>早く固まりすぎることがある</h3><p>フェロモンが偏ると、他の道を試さなくなり、良い道を見逃すことがある。蒸発は、その対策にもなる。</p></div>
+   <div class="card"><span class="n">注意 4</span><h3>比較実験が必要</h3><p>最近傍法や、専用のソルバーなどと比べて、本当に効果があるかを確かめる。</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <div class="flow4">
+   <div class="fs"><b>1</b><span>組み合わせ爆発：選択肢は掛け算で増え、全部は調べられなくなる</span></div>
+   <div class="fs"><b>2</b><span>巡回セールスマン問題：条件は単純でも、急に難しくなる代表例</span></div>
+   <div class="fs"><b>3</b><span>アリの原理：分散した探索・情報の蓄積・良い道の強化・蒸発</span></div>
+   <div class="fs"><b>4</b><span>ACO：最適に近い答えを、現実的な時間で見つける</span></div>
+  </div>
+  <div class="msg">全部調べれば何年もかかる問題でも、<mark>アルゴリズムの工夫しだいで</mark>、最適に近い答えが得られることがある。</div>
+  <p class="note">大切なのは、自然界の仕組みをまねることではなく、その原理を取り出して、別の問題に適用すること。</p>
+  <div class="links">
+   <a href="../algorithm-knowledge/">アルゴリズム知識　難題を解く3つの考え方 →</a>
+   <a href="../machine-learning-types/">機械学習の4つの学び方 →</a>
+  </div>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open')&&!e.target.closest('input'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn,start){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[start].click();
+  }
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function rows(el,title,list){el.innerHTML='<h3></h3><table class="mails"><tbody></tbody></table>';el.querySelector('h3').textContent=title;
+    list.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];el.querySelector('tbody').appendChild(tr);});}
+  function rng(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  const SVGNS='http://www.w3.org/2000/svg';
+  function se(tag,attrs,text){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!==undefined)e.textContent=text;return e}
+  function fmtBig(b){const s=b.toString();return s.length<=9?Number(b).toLocaleString('ja-JP'):s[0]+'.'+s.slice(1,3)+' × 10^'+(s.length-1)}
+  function fmtTime(sec){if(sec<1)return '1秒未満';if(sec<60)return Math.round(sec)+'秒';if(sec<3600)return Math.round(sec/60)+'分';if(sec<86400)return Math.round(sec/3600)+'時間';if(sec<86400*365)return Math.round(sec/86400)+'日';const y=sec/(86400*365);if(y<1e6)return '約'+Math.round(y).toLocaleString('ja-JP')+'年';return '約 '+y.toExponential(1).replace('e+',' × 10^')+' 年'}
+  function bigFact(n){let f=1n;for(let i=2;i<=n;i++)f*=BigInt(i);return f}
+
+  /* 2 explosion */
+  function drawN(){const n=+$('nCity').value,routes=bigFact(n-1)/2n,sec=Number(routes)/1e18;
+    $('nOut').textContent=n;
+    $('nCalc').textContent='訪問先：'+n+' か所\n考えられる順序：'+fmtBig(routes)+' 通り\n1秒に100京通り調べると：'+fmtTime(sec)+(sec>4.35e17?'\n（宇宙の年齢 約138億年 の '+(sec/(86400*365)/1.38e10>=1e6?(sec/(86400*365)/1.38e10).toExponential(1).replace('e+',' × 10^'):Math.round(sec/(86400*365)/1.38e10).toLocaleString('ja-JP'))+' 倍）':'');
+    res($('nRes'),sec>86400*365?'bad':'',sec<1?'この規模なら、全部調べても一瞬です。':(sec<86400*365?'時間がかかり始めます。':'非常に速いコンピュータでも、全部を調べるのは現実的ではありません。これが「組み合わせ爆発」です。'));}
+  $('nCity').addEventListener('input',drawN);drawN();
+
+  /* 5 double bridge */
+  const AS={ts:1,tl:1,gen:0,R:rng(1),hist:[]};
+  function aReset(){AS.ts=1;AS.tl=1;AS.gen=0;AS.R=rng(1+Math.floor(Math.random()*1000));drawA()}
+  function aGen(){let ns=0;const p=AS.ts/(AS.ts+AS.tl);for(let i=0;i<20;i++)if(AS.R()<p)ns++;const nl=20-ns;
+    AS.ts*=0.9;AS.tl*=0.9;AS.ts+=ns*(1/1);AS.tl+=nl*(1/2);AS.gen++;AS.last=ns;drawA()}
+  function drawA(){const tot=AS.ts+AS.tl,ps=AS.ts/tot*100,box=$('routes');box.innerHTML='';
+    [['短い道（長さ 1）',AS.ts,ps,'ok'],['長い道（長さ 2）',AS.tl,100-ps,'ng']].forEach(r=>{const d=document.createElement('div');d.className='hrow '+(r[3]==='ok'?'ai':'ct');d.innerHTML='<b></b><div class="htr"><i></i></div><em></em>';
+      d.querySelector('b').textContent=r[0];d.querySelector('i').style.width=r[2]+'%';d.querySelector('em').textContent=Math.round(r[2])+'%';box.appendChild(d);});
+    const t=AS.gen===0?'まだ何も分かっていません。2つの道のフェロモンは同じ濃さで、半々の確率で選びます。「1世代進める」を押してください。':
+      '第 '+AS.gen+' 世代：フェロモンの比率は、短い道 '+Math.round(ps)+'％ ／ 長い道 '+Math.round(100-ps)+'％。直近の世代では、20匹のうち '+AS.last+' 匹が短い道を選びました。'+(ps>85?'短い道に、ほぼ集まりました。誰も「短い道はこっち」と教えていません。':'');
+    res($('aRes'),ps>85?'good':'',t);}
+  $('aStep').onclick=aGen;$('aTen').onclick=()=>{for(let i=0;i<20;i++)aGen()};$('aReset').onclick=aReset;aReset();
+
+  /* 6 principles */
+  const PR=[
+    {t:'分散した探索',s:'たくさんのアリが、同時に探す',d:'多数のアリが、それぞれ別々の経路を試す。1匹の力は小さいが、全体で広く探せる。',a:'1回に、アリの数だけ、経路の候補ができる。'},
+    {t:'情報の蓄積',s:'フェロモンに記録する',d:'通った経路に目印（フェロモン）を残し、過去の探索の成果を、次のアリに伝える。',a:'各道（都市と都市の間）に、「良さ」の数値を持たせる。'},
+    {t:'良い経路の強化',s:'短い周回ほど、濃く',d:'短い経路を通ったアリほど、多くのフェロモンを残す。良い道が、さらに選ばれやすくなる。',a:'周回の長さの逆数に比例した量を、通った道に足す。'},
+    {t:'蒸発（忘却）',s:'古い情報を、少しずつ薄める',d:'フェロモンは時間とともに薄れる。早く固まりすぎるのを防ぎ、新しい道を試す余地を残す。',a:'毎世代、すべての道のフェロモンに、1より小さな数をかける。'}
+  ];
+  btnList($('prin'),PR,(x,i)=>'原理 '+(i+1),x=>x.t,x=>rows($('prinBody'),x.t+'：'+x.s,[['自然界のアリ',x.d],['アルゴリズムでは',x.a]]),0);
+
+  /* 7 steps */
+  const SP=[
+    {t:'準備',h:'フェロモンを、均等に置く',d:'すべての道（都市と都市の間）に、同じ量のフェロモンを置く。最初は、どの道が良いか分かっていない。'},
+    {t:'探索',h:'アリが、確率で次の都市を選び、1周する',d:'近くて、フェロモンが濃い都市ほど選ばれやすい。ただし確率なので、他の都市が選ばれることもあり、新しい道が試される。'},
+    {t:'評価',h:'各アリの周回の長さを測る',d:'全アリの周回が終わったら、長さを計算する。これまでで最短のものを、記録しておく。'},
+    {t:'更新',h:'蒸発させ、短い周回の道に足す',d:'まず、全部の道のフェロモンを少し薄める。次に、各アリが通った道に、周回が短いほど多くのフェロモンを足す。'},
+    {t:'繰り返し',h:'世代を重ねて、収束させる',d:'探索〜更新を繰り返す。短い周回に含まれる道が、徐々に濃くなり、アリが同じ良い経路に集まっていく。'}
+  ];
+  btnList($('stp'),SP,(x,i)=>'STEP '+(i+1),x=>x.t,x=>rows($('stpBody'),x.h,[['やること',x.d]]),0);
+
+  /* 8 ACO */
+  let acoN=10,acoSeed=21,rho=0.3,S=null;
+  function makeCities(seed,n){const R=rng(seed),a=[];for(let i=0;i<n;i++)a.push({x:25+R()*270,y:20+R()*180});return a}
+  function dmat(c){const n=c.length;return c.map(a=>c.map(b=>Math.hypot(a.x-b.x,a.y-b.y)))}
+  function tourLen(D,t){let s=0;for(let i=0;i<t.length;i++)s+=D[t[i]][t[(i+1)%t.length]];return s}
+  function nnTour(D){const n=D.length,u=new Set([...Array(n).keys()]),t=[0];u.delete(0);while(u.size){const l=t[t.length-1];let b=-1,bd=1e9;u.forEach(i=>{if(D[l][i]<bd){bd=D[l][i];b=i}});t.push(b);u.delete(b)}return t}
+  function heldKarp(D){const n=D.length,m=n-1,F=1<<m,INF=1e18,dp=new Float64Array(F*m).fill(INF);
+    for(let j=0;j<m;j++)dp[(1<<j)*m+j]=D[0][j+1];
+    for(let mask=1;mask<F;mask++)for(let j=0;j<m;j++){if(!(mask&(1<<j)))continue;const cur=dp[mask*m+j];if(cur>=INF)continue;
+      for(let k=0;k<m;k++){if(mask&(1<<k))continue;const nm=mask|(1<<k),v=cur+D[j+1][k+1];if(v<dp[nm*m+k])dp[nm*m+k]=v}}
+    let best=INF;for(let j=0;j<m;j++){const v=dp[(F-1)*m+j]+D[j+1][0];if(v<best)best=v}return best}
+  function acoInit(){const c=makeCities(acoSeed,acoN),D=dmat(c),n=c.length,nn=nnTour(D);
+    S={c,D,n,tau:Array.from({length:n},()=>new Array(n).fill(1)),best:null,bestL:1e18,hist:[],gen:0,R:rng(acoSeed*3+7),nnL:tourLen(D,nn),opt:n<=13?heldKarp(D):null};}
+  function acoGen(){const{n,D,R}=S,m=n,tours=[];
+    for(let a=0;a<m;a++){const t=[Math.floor(R()*n)],vis=new Set(t);
+      while(t.length<n){const i=t[t.length-1],w=[],cand=[];let sum=0;for(let j=0;j<n;j++){if(vis.has(j))continue;const x=S.tau[i][j]*Math.pow(1/D[i][j],3);cand.push(j);w.push(x);sum+=x}
+        let r=R()*sum,k=0;for(;k<cand.length-1;k++){r-=w[k];if(r<=0)break}t.push(cand[k]);vis.add(cand[k])}
+      const L=tourLen(D,t);tours.push([t,L]);if(L<S.bestL){S.bestL=L;S.best=t.slice()}}
+    for(let i=0;i<n;i++)for(let j=0;j<n;j++)S.tau[i][j]=Math.max(0.01,S.tau[i][j]*(1-rho));
+    const Q=S.nnL;const dep=(t,L,mult)=>{for(let i=0;i<n;i++){const a=t[i],b=t[(i+1)%n];S.tau[a][b]+=mult*Q/L;S.tau[b][a]+=mult*Q/L}};
+    tours.forEach(([t,L])=>dep(t,L,1));dep(S.best,S.bestL,3);
+    S.gen++;S.hist.push(S.bestL)}
+  function acoDraw(){const s=$('acoPlot');s.innerHTML='';const{c,n,tau}=S;let mx=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)mx=Math.max(mx,tau[i][j]);
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const r=tau[i][j]/mx;if(r<0.06)continue;
+      s.appendChild(se('line',{x1:c[i].x,y1:c[i].y,x2:c[j].x,y2:c[j].y,stroke:'var(--indigo)','stroke-width':(0.4+4.5*r*r).toFixed(2),opacity:(0.12+0.7*r).toFixed(2),'stroke-linecap':'round'}))}
+    if(S.best){const pts=S.best.map(i=>c[i].x.toFixed(1)+','+c[i].y.toFixed(1)).join(' ');s.appendChild(se('polygon',{points:pts,fill:'none',stroke:'#E07A1F','stroke-width':1.8,'stroke-dasharray':'5 3','stroke-linejoin':'round'}))}
+    c.forEach((q,i)=>s.appendChild(se('circle',{cx:q.x,cy:q.y,r:i===0?6:4.5,fill:i===0?'var(--mark)':'var(--surface)',stroke:'var(--ink)','stroke-width':1.5})));
+    // chart
+    const ch=$('acoChart');ch.innerHTML='';const H=S.hist,lo=Math.min(S.opt||1e9,...(H.length?H:[S.nnL]))*0.95,hi=S.nnL*1.08,X=i=>30+i/Math.max(1,Math.max(H.length-1,19))*260,Y=v=>100-(v-lo)/(hi-lo)*90;
+    ch.appendChild(se('line',{x1:30,y1:100,x2:290,y2:100,stroke:'var(--line)'}));
+    ch.appendChild(se('line',{x1:30,y1:Y(S.nnL),x2:290,y2:Y(S.nnL),stroke:'var(--sub)','stroke-dasharray':'3 3'}));ch.appendChild(se('text',{x:292,y:Y(S.nnL)+3,'font-size':9,fill:'var(--sub)'},'最近傍'));
+    if(S.opt){ch.appendChild(se('line',{x1:30,y1:Y(S.opt),x2:290,y2:Y(S.opt),stroke:'var(--ok)','stroke-dasharray':'3 3'}));ch.appendChild(se('text',{x:292,y:Y(S.opt)+3,'font-size':9,fill:'var(--ok)'},'最短'))}
+    if(H.length)ch.appendChild(se('polyline',{points:H.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' '),fill:'none',stroke:'var(--indigo)','stroke-width':2}));
+    ch.appendChild(se('text',{x:30,y:109,'font-size':9,fill:'var(--sub)'},'世代 →'));
+    $('acoTitle').textContent='第 '+S.gen+' 世代';
+    $('acoInfo').textContent='ACOの最良：'+(S.best?S.bestL.toFixed(0):'―')+'\n最近傍法（単純な方法）：'+S.nnL.toFixed(0)+'\n厳密な最短：'+(S.opt?S.opt.toFixed(0):'（この規模では求めない）');
+    if(!S.best)res($('acoRes'),'','「1世代進める」を押してください。');
+    else if(S.opt){const g=(S.bestL/S.opt-1)*100;res($('acoRes'),g<0.5?'good':'',g<0.5?'厳密な最短とほぼ同じ長さの経路が見つかりました。':'厳密な最短より '+g.toFixed(1)+'% 長い経路です。世代を進めると、短くなることがあります。')}
+    else{const g=(1-S.bestL/S.nnL)*100;res($('acoRes'),g>1?'good':'','最近傍法より '+g.toFixed(0)+'% 短い経路です。最短かどうかは、この規模では確かめていません。')}}
+  function acoReset(){acoInit();acoDraw()}
+  $('acoStep').onclick=()=>{acoGen();acoDraw()};$('acoTen').onclick=()=>{for(let i=0;i<20;i++)acoGen();acoDraw()};
+  $('acoReset').onclick=acoReset;$('acoNew').onclick=()=>{acoSeed=(acoSeed*13+5)%9973+1;acoReset()};
+  seg($('segN'),b=>{acoN=+b.dataset.n;acoReset()});seg($('segRho'),b=>{rho=+b.dataset.r;acoReset()});acoReset();
+
+  /* 9 compare */
+  function drawCmp(){const n=+$('nCity2').value,routes=bigFact(n-1)/2n,secA=Number(routes)/1e18,ops=100*n*n*n,secB=ops/1e9;
+    $('nOut2').textContent=n;
+    $('cmpA').textContent='順序の数：'+fmtBig(routes)+' 通り\n超高速な計算機（1秒に100京通り）：\n'+fmtTime(secA);
+    $('cmpB').textContent='計算回数：約 '+ops.toLocaleString('ja-JP')+' 回\n普通のパソコン（1秒に10億回）：\n'+fmtTime(secB);
+    res($('cmpRes'),secA>86400*365?'good':'',secA>86400*365?'全部調べる方法は、スーパーコンピュータ級でも、現実的ではありません。ACOは、近似解（最短とは限らない答え）ですが、普通のパソコンで、ほぼ一瞬です。':'この規模なら、全部調べても、現実的な時間で終わります。都市を増やしてみてください。')}
+  $('nCity2').addEventListener('input',drawCmp);drawCmp();
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
