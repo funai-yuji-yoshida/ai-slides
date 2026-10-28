@@ -106,9 +106,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 #help kbd{display:inline-block;min-width:34px;text-align:center;background:#fff;color:var(--ink);border-radius:6px;padding:0 8px;font:800 15px/1.7 var(--en);margin-right:10px}
 
 /* ===== COVER ===== */
-#s00 .cv-event{position:absolute;left:128px;top:120px;font:700 30px/1.4 var(--jp);color:var(--ink)}
-#s00 .cv-event em{display:block;font-style:normal;font:900 34px/1.4 var(--jp);color:var(--signal);margin:14px 0 0 2px}
-#s00 .cv-event span{display:inline-block;background:var(--ink);color:var(--white);padding:8px 18px;border-radius:999px;font-size:24px;margin-right:16px}
 #s00 h1{position:absolute;left:128px;top:300px;margin:0;font:900 132px/1.22 var(--jp);letter-spacing:-.01em}
 #s00 h1 .mask .in{animation:none}
 #s00.enter h1 .in{animation:rise 1s var(--ease) both}
@@ -119,80 +116,58 @@ button{font:inherit;color:inherit;cursor:pointer}
 #s00 .cv-tag{position:absolute;right:128px;bottom:96px;font:900 26px/1.5 var(--jp);text-align:right;color:var(--signal)}
 
 /* ===== S01 ===== */
-#s01 .ttl.mega{top:190px;font-size:148px;line-height:1.16}
-#s01 .lead{position:absolute;left:132px;top:720px;font-size:38px}
-#s01 .orbit{position:absolute;left:1060px;top:130px;width:740px;height:740px}
-#s01 .ring{position:absolute;inset:70px;border:3px dashed var(--avg);border-radius:50%;animation:spin 60s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#s01 .core{position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;background:var(--ink);color:var(--white);display:grid;place-items:center;text-align:center;padding:30px}
-#s01 .core b{font:900 110px/1 var(--en)}
-#s01 .core p{margin:0;font:700 30px/1.5 var(--jp)}
-#s01 .core p small{display:block;font:500 22px/1.5 var(--jp);opacity:.75;margin-top:6px}
-#s01 .node{position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:3px solid var(--ink);background:var(--white);font:900 36px/1 var(--jp);transform:rotate(var(--a)) translate(300px) rotate(calc(var(--a) * -1));transition:background .3s,color .3s,box-shadow .3s}
-#s01 .node:hover,#s01 .node.sel{background:var(--signal);color:var(--white);border-color:var(--signal)}
-#s01 .nodes{opacity:0;transition:opacity .6s .3s}
-#s01.active .nodes{opacity:1}
-#s01[data-step="1"] .node.gen{background:var(--mark);border-color:var(--ink);color:var(--ink);box-shadow:0 0 0 14px rgba(255,216,74,.35)}
-#s01[data-step="1"] .node:not(.gen){animation:ping 1.2s var(--ease) 1}
-@keyframes ping{40%{background:var(--signal);color:#fff;border-color:var(--signal)}}
-#s01 .gen-tag{position:absolute;font:700 22px/1.3 var(--jp);background:var(--ink);color:#fff;padding:8px 14px;border-radius:10px;white-space:nowrap}
-#s01 .kmsg{bottom:110px;font-size:52px}
 
 /* ===== S02 ===== */
-#s02 .track{position:absolute;left:128px;right:128px;top:560px;height:6px;background:var(--avg);transform-origin:0 50%;transform:scaleX(0)}
-#s02.enter .track{animation:grow 1.6s var(--ease) .3s both}
-@keyframes grow{to{transform:scaleX(1)}}
-#s02 .track::after{content:"";position:absolute;right:0;top:0;height:6px;width:16%;background:repeating-linear-gradient(90deg,var(--signal) 0 18px,transparent 18px 30px)}
-#s02 .st{position:absolute;top:470px;width:260px;margin-left:-130px;text-align:center}
-#s02 .st .yr{font:800 28px/1 var(--en);color:var(--mute);height:44px}
-#s02 .st .dot{width:40px;height:40px;border-radius:50%;background:var(--ink);margin:12px auto 30px;border:6px solid var(--paper);box-sizing:content-box}
-#s02 .st .nm{font:900 34px/1.35 var(--jp)}
-#s02 .st.agent .dot{background:var(--signal);width:54px;height:54px;margin:5px auto 23px;position:relative}
-#s02 .st.agent .dot::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:4px solid var(--signal);animation:pulse 1.8s ease-out infinite}
-@keyframes pulse{from{transform:scale(1);opacity:.9}to{transform:scale(2.4);opacity:0}}
-#s02 .st.agent .nm,#s02 .st.agent .yr{color:var(--signal)}
-#s02[data-step="1"] .st.agent .nm{background:var(--mark);color:var(--ink);border-radius:8px}
 
 /* ===== S03 ===== */
-#s03 .frame{position:absolute;left:128px;right:128px;top:290px;height:560px;border:3px solid var(--ink);border-radius:36px;padding:56px 48px 40px}
+#s03 .frame{position:absolute;left:128px;right:128px;top:250px;height:470px;border:3px solid var(--ink);border-radius:36px;padding:56px 48px 40px}
 #s03 .frame>.lbl{position:absolute;left:44px;top:-30px;background:var(--paper);padding:0 18px;font:900 46px/1 var(--en)}
-#s03 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;height:100%}
-#s03 .tile{position:relative;background:var(--white);border-radius:22px;padding:30px 34px;transition:opacity .5s,background .5s,color .5s,transform .5s var(--ease)}
-#s03 .tile h4{margin:0;font:900 52px/1.1 var(--jp)}
-#s03 .tile p{margin:14px 0 0;font:500 26px/1.5 var(--jp);color:var(--mute)}
-#s03 .tile .ord{position:absolute;right:24px;top:24px;width:54px;height:54px;border-radius:50%;background:var(--mark);font:900 28px/54px var(--en);text-align:center;opacity:0;transform:scale(.4);transition:all .4s cubic-bezier(.3,1.6,.5,1)}
+#s03 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;height:100%}
+#s03 .tile{position:relative;background:var(--white);border-radius:22px;padding:22px 30px;transition:opacity .5s,background .5s,color .5s,transform .5s var(--ease)}
+#s03 .tile h4{margin:0;font:900 46px/1.1 var(--jp)}
+#s03 .tile p{margin:12px 0 0;font:500 24px/1.5 var(--jp);color:var(--mute)}
+#s03 .tile .ord{position:absolute;right:20px;top:20px;width:54px;height:54px;border-radius:50%;background:var(--mark);font:900 28px/54px var(--en);text-align:center;opacity:0;transform:scale(.4);transition:all .4s cubic-bezier(.3,1.6,.5,1)}
 #s03[data-step="1"] .tile:not(.gen){opacity:.28}
 #s03[data-step="1"] .tile.gen,#s03[data-step="2"] .tile.route{background:var(--signal);color:#fff}
 #s03[data-step="1"] .tile.gen p,#s03[data-step="2"] .tile.route p{color:rgba(255,255,255,.8)}
 #s03[data-step="2"] .tile:not(.route){opacity:.4}
 #s03[data-step="2"] .tile.route .ord{opacity:1;transform:none}
 #s03[data-step="2"] .tile.route:nth-child(3) .ord{transition-delay:.1s}
+#s03 .tband{position:absolute;left:128px;right:128px;top:758px}
+#s03 .tcap{font:700 22px/1 var(--jp);color:var(--mute);margin-bottom:10px}
+#s03 .tl2{position:relative;display:flex;justify-content:space-between}
+#s03 .tl2::before{content:"";position:absolute;left:0;right:0;top:43px;height:4px;background:var(--avg)}
+#s03 .ts{position:relative;width:260px;text-align:center}
+#s03 .ts .yr{display:block;font:800 22px/1 var(--en);color:var(--mute);height:28px}
+#s03 .ts i{display:block;width:20px;height:20px;border-radius:50%;background:var(--ink);margin:3px auto 6px;border:4px solid var(--paper);box-sizing:content-box}
+#s03 .ts .nm{font:900 24px/1.3 var(--jp)}
+#s03 .ts.agent i{background:var(--signal)}
+#s03 .ts.agent .nm,#s03 .ts.agent .yr{color:var(--signal)}
 #s03 .k1,#s03 .k2{bottom:80px;font-size:50px}
 #s03 .k2 small{font:500 28px/1.4 var(--jp);color:var(--mute);display:block}
 
 /* ===== S04 ===== */
-#s04 .row{position:absolute;left:128px;right:128px;display:flex;align-items:center;gap:0}
-#s04 .row .lbl{width:170px;flex:none;font:900 34px/1.2 var(--jp)}
-#s04 .r1{top:320px}#s04 .r2{top:530px}
-#s04 .chip{flex:none;padding:26px 22px;border-radius:16px;background:var(--white);border:3px solid var(--line);font:700 30px/1.2 var(--jp);white-space:nowrap}
-#s04 .arr{flex:none;width:34px;text-align:center;font:900 26px/1 var(--en);color:var(--avg)}
-#s04 .r1 .chip{color:var(--mute);font-size:34px;padding:26px 30px}
-#s04 .r2 .chip{border-color:var(--ink)}
-#s04 .r2.on .chip{animation:lit 3.6s ease-in-out calc(var(--i) * .32s + .4s) infinite}
 @keyframes lit{0%,8%{background:var(--white);color:var(--ink)}14%,40%{background:var(--signal);color:#fff;border-color:var(--signal)}55%,100%{background:var(--white);color:var(--ink)}}
-#s04 .r2 .chip.human{background:var(--mark)!important;color:var(--ink)!important;border-color:var(--ink)!important}
-#s04 .r2 .lbl{color:var(--signal)}
-#s04 .kmsg{font-size:60px;bottom:110px}
 
 /* ===== S05 ===== */
-#s05 .meter{position:absolute;left:128px;top:330px;width:560px}
+#s05 .strip{position:absolute;left:128px;right:128px;top:232px}
+#s05 .row{display:flex;align-items:center;margin-bottom:12px}
+#s05 .row .lbl{width:130px;flex:none;font:900 26px/1.2 var(--jp)}
+#s05 .chip{flex:none;padding:12px 16px;border-radius:12px;background:var(--white);border:3px solid var(--line);font:700 24px/1.2 var(--jp);white-space:nowrap}
+#s05 .arr{flex:none;width:26px;text-align:center;font:900 22px/1 var(--en);color:var(--avg)}
+#s05 .r1 .chip{color:var(--mute)}
+#s05 .r2 .chip{border-color:var(--ink)}
+#s05 .r2.on .chip{animation:lit 3.6s ease-in-out calc(var(--i) * .32s + .4s) infinite}
+#s05 .r2 .chip.human{background:var(--mark)!important;color:var(--ink)!important;border-color:var(--ink)!important}
+#s05 .r2 .lbl{color:var(--signal)}
+#s05 .meter{position:absolute;left:128px;top:480px;width:560px}
 #s05 .meter .t{font:700 26px/1.4 var(--jp);color:var(--mute)}
-#s05 .meter .v{font:900 120px/1 var(--en);margin:10px 0 6px}
+#s05 .meter .v{font:900 100px/1 var(--en);margin:8px 0 6px}
 #s05 .meter .v small{font-size:48px;color:var(--mute)}
 #s05 .meter .bar{height:16px;background:var(--line);border-radius:8px;overflow:hidden}
 #s05 .meter .bar i{display:block;height:100%;width:0;background:var(--signal);transition:width .5s var(--ease)}
 #s05 .meter .state{margin-top:18px;font:900 36px/1.4 var(--jp)}
-#s05 .hexwrap{position:absolute;left:1240px;top:590px;width:0;height:0}
+#s05 .hexwrap{position:absolute;left:1240px;top:700px;width:0;height:0;transform:scale(.74)}
 #s05 .center{position:absolute;left:-170px;top:-170px;width:340px;height:340px;border-radius:50%;border:3px dashed var(--ink);display:grid;place-items:center;text-align:center;font:900 36px/1.45 var(--jp);transition:background .5s,color .5s,border .5s}
 #s05 .center small{display:block;font:700 24px/1.4 var(--jp);color:var(--mute);margin-top:6px}
 #s05.full .center{background:var(--signal);color:#fff;border:3px solid var(--signal)}
@@ -202,16 +177,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 #s05 .kmsg{font-size:46px;bottom:96px;left:128px;max-width:900px}
 
 /* ===== S06 ===== */
-#s06 .sub{position:absolute;left:128px;top:222px;font:700 36px/1.4 var(--jp);color:var(--signal)}
-#s06 .cards{position:absolute;left:128px;right:128px;top:330px;display:grid;grid-template-columns:repeat(3,1fr);gap:36px}
-#s06 .card{background:var(--white);border-radius:28px;padding:44px 44px 36px;height:540px;display:flex;flex-direction:column;border-top:10px solid var(--ink)}
-#s06 .card .no{font:800 22px/1 var(--en);color:var(--mute)}
-#s06 .card h4{margin:26px 0 22px;font:900 60px/1.15 var(--jp)}
-#s06 .card p{margin:0;font:500 32px/1.6 var(--jp);flex:1}
-#s06 .card a{font:600 18px/1.4 var(--jp);color:var(--signal);text-decoration:none;border-top:2px solid var(--line);padding-top:18px}
-#s06 .card a:hover{text-decoration:underline}
-#s06 .card:nth-child(2){border-top-color:var(--signal)}
-#s06 .card:nth-child(3){border-top-color:var(--mark)}
 
 /* ===== S07 ===== */
 #s07 .veil{position:absolute;inset:0;background:linear-gradient(90deg,var(--paper) 0,var(--paper) 52%,rgba(243,244,247,.0) 78%)}
@@ -281,21 +246,21 @@ button{font:inherit;color:inherit;cursor:pointer}
 #s10[data-step="1"] .over small{opacity:1}
 
 /* ===== S11 ===== */
-#s11 .left{position:absolute;left:128px;top:300px;width:820px}
-#s11 .left .lead{font-size:36px}
-#s11 .stamp{position:absolute;left:128px;top:560px;padding:34px 54px;border:8px solid var(--ink);border-radius:20px;background:var(--mark);font:900 96px/1 var(--jp);transform:rotate(-5deg) scale(2.2);opacity:0;transition:none}
-#s11 .stamp.on{animation:stamp .45s cubic-bezier(.5,0,.4,1.4) forwards}
+#s10 .left{position:absolute;left:128px;top:300px;width:820px}
+#s10 .left .lead{font-size:36px}
+#s10 .stamp{position:absolute;left:128px;top:560px;padding:34px 54px;border:8px solid var(--ink);border-radius:20px;background:var(--mark);font:900 96px/1 var(--jp);transform:rotate(-5deg) scale(2.2);opacity:0;transition:none}
+#s10 .stamp.on{animation:stamp .45s cubic-bezier(.5,0,.4,1.4) forwards}
 @keyframes stamp{0%{opacity:0;transform:rotate(-5deg) scale(2.2)}100%{opacity:1;transform:rotate(-5deg) scale(1)}}
-#s11 .stamp small{display:block;font:700 28px/1.4 var(--jp);margin-top:18px}
-#s11 .flow{position:absolute;left:1120px;top:258px;width:560px}
-#s11 .say{font:900 42px/1 var(--jp);text-align:center;background:var(--white);border:3px solid var(--ink);border-radius:30px;padding:22px;height:92px;margin-bottom:22px;position:relative}
-#s11 .fn{display:block;text-align:center;font:900 30px/1 var(--jp);padding:16px;height:66px;border-radius:16px;background:var(--white);border:3px solid var(--line)}
-#s11 .fa{display:block;text-align:center;color:var(--mute);font:900 22px/26px var(--en)}
-#s11 .fn.ai{border-color:var(--signal);color:var(--signal)}
-#s11 .fn.me{background:var(--ink);color:#fff;border-color:var(--ink)}
-#s11 .loop{position:absolute;left:1690px;top:499px;width:100px;height:280px}
-#s11 .loop svg{overflow:visible}
-#s11 .loop span{position:absolute;left:84px;top:66px;writing-mode:vertical-rl;font:700 22px/1 var(--jp);color:var(--signal);white-space:nowrap}
+#s10 .stamp small{display:block;font:700 28px/1.4 var(--jp);margin-top:18px}
+#s10 .flow{position:absolute;left:1120px;top:258px;width:560px}
+#s10 .say{font:900 42px/1 var(--jp);text-align:center;background:var(--white);border:3px solid var(--ink);border-radius:30px;padding:22px;height:92px;margin-bottom:22px;position:relative}
+#s10 .fn{display:block;text-align:center;font:900 30px/1 var(--jp);padding:16px;height:66px;border-radius:16px;background:var(--white);border:3px solid var(--line)}
+#s10 .fa{display:block;text-align:center;color:var(--mute);font:900 22px/26px var(--en)}
+#s10 .fn.ai{border-color:var(--signal);color:var(--signal)}
+#s10 .fn.me{background:var(--ink);color:#fff;border-color:var(--ink)}
+#s10 .loop{position:absolute;left:1690px;top:499px;width:100px;height:280px}
+#s10 .loop svg{overflow:visible}
+#s10 .loop span{position:absolute;left:84px;top:66px;writing-mode:vertical-rl;font:700 22px/1 var(--jp);color:var(--signal);white-space:nowrap}
 
 /* ===== S12 ===== */
 #s12 .grid{position:absolute;left:128px;right:128px;top:290px;bottom:96px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:32px}
@@ -344,18 +309,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 #s14 .hint{position:absolute;left:720px;top:820px;font:500 22px/1 var(--jp);color:var(--mute)}
 
 /* ===== S15 ===== */
-#s15 .pyr{position:absolute;left:128px;top:300px;width:880px;height:690px}
-#s15 .blk{position:absolute;height:104px;border-radius:12px;background:var(--white);border:3px solid var(--ink);display:grid;place-items:center;font:900 30px/1.2 var(--jp);text-align:center;opacity:0}
-#s15 .blk.k{background:var(--ink);color:#fff}
-#s15 .blk.s{background:var(--signal);color:#fff;border-color:var(--signal)}
-#s15.enter .blk{animation:fall .75s cubic-bezier(.45,0,.55,1.25) both;animation-delay:calc(var(--i) * .16s + .3s)}
-@keyframes fall{0%{opacity:0;transform:translateY(-700px)}60%{opacity:1}100%{opacity:1;transform:none}}
-#s15 .me{position:absolute;left:390px;top:-26px;width:100px;text-align:center;opacity:0}
-#s15.enter .me{animation:land .8s cubic-bezier(.3,1.5,.5,1) 1.9s both}
-@keyframes land{from{opacity:0;transform:translateY(-200px)}to{opacity:1;transform:none}}
-#s15 .me span{display:block;font:900 22px/1 var(--jp);background:var(--mark);border-radius:8px;padding:6px 0;margin-top:4px}
-#s15 .q{position:absolute;left:1080px;top:300px;width:720px;font:900 96px/1.25 var(--jp)}
-#s15 .q small{display:block;font:700 34px/1.6 var(--jp);color:var(--mute);margin-bottom:20px}
 
 /* ===== S16 ===== */
 #s16 .asks{position:absolute;left:128px;top:290px;width:740px}
@@ -487,32 +440,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 #s23 .kmsg{font-size:44px;bottom:84px}
 
 /* ===== S24 ===== */
-#s24 .axis{position:absolute;left:128px;right:128px;top:598px;height:8px;background:var(--line);border-radius:4px}
-#s24 .axis i{display:block;height:100%;width:0;background:var(--signal);border-radius:4px;transition:width .6s var(--ease)}
-#s24 .stn{position:absolute;top:602px;width:0;height:0}
-#s24 .stn .dot{position:absolute;left:-22px;top:-22px;width:44px;height:44px;border-radius:50%;background:var(--white);border:5px solid var(--avg);transition:all .4s cubic-bezier(.3,1.5,.5,1)}
-#s24 .stn .lab{position:absolute;width:420px;left:-210px;text-align:center;background:transparent;border:0;padding:0;color:var(--mute);transition:color .4s,transform .4s var(--ease)}
-#s24 .stn.up .lab{bottom:46px}
-#s24 .stn.dn .lab{top:46px}
-#s24 .stn.first .lab{left:-40px;text-align:left}
-#s24 .stn.last .lab{left:auto;right:-40px;text-align:right}
-#s24 .lab b{display:block;font:900 52px/1.05 var(--en);letter-spacing:-.01em}
-#s24 .lab span{display:block;font:700 26px/1.45 var(--jp);margin-top:12px}
-#s24 .stn.done .dot{border-color:var(--signal);background:var(--signal)}
-#s24 .stn.done .lab{color:var(--ink)}
-#s24 .stn.cur .dot{transform:scale(1.5);border-color:var(--ink);background:var(--mark)}
-#s24 .stn.cur .lab b{color:var(--signal)}
-#s24 .stn.last.cur .lab b{font-size:72px}
-#s24 .creator{position:absolute;left:128px;top:880px;font:900 34px/1.4 var(--jp);background:var(--mark);padding:14px 26px;border-radius:14px;opacity:0;transform:translateY(20px);transition:all .5s var(--ease)}
-#s24[data-step="7"] .creator{opacity:1;transform:none}
-#s24 .goal{position:absolute;left:128px;top:250px;font:700 30px/1.5 var(--jp);color:var(--mute)}
 
 /* ===== S25 ===== */
 #s25{background:#fff}
 #s25 .g1{position:absolute;left:180px;top:200px}
 #s25 .g1 p{margin:0 0 30px;font:900 76px/1.35 var(--jp)}
-#s25 .g1 p.fin{font-size:66px;margin-top:60px}
-#s25 .komatta{color:var(--mute)}
 #s25 .swapw>span{grid-area:1/1;transition:opacity .5s,transform .6s var(--ease)}
 #s25 .swapw .b{opacity:0;transform:translateY(60%);color:var(--signal)}
 #s25 .fin.on .swapw .a{animation:out .6s var(--ease) 1.4s forwards}
@@ -521,9 +453,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 @keyframes in{to{opacity:1;transform:none}}
 #s25 .g2{position:absolute;left:180px;top:300px}
 #s25 .g2 p{margin:0 0 34px;font:900 84px/1.3 var(--jp)}
-#s25 .g3{position:absolute;inset:0;display:grid;place-items:center}
-#s25 .g3 p{margin:0;font:900 132px/1.25 var(--jp);letter-spacing:.02em;text-align:center}
-#s25 .g3 small.ev{margin:0 0 40px;color:var(--signal);font-size:30px}
 #s25 .g4{position:absolute;left:128px;right:128px;top:200px}
 #s25 .g4 .h{margin:0 0 44px;font:700 32px/1.4 var(--jp);color:var(--mute)}
 #s25 .g4 .h b{display:block;font:900 76px/1.3 var(--jp);color:var(--ink);margin-top:8px}
@@ -540,13 +469,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 #s25 .g5 .jp{margin:0;font:900 100px/1.3 var(--jp)}
 #s25 .g5 .enq{margin:36px 0 0;font:600 40px/1.4 var(--en);color:var(--mute);font-style:italic}
 #s25 .g5 .by{margin:40px 0 0;font:700 32px/1 var(--jp)}
-#s25 .g3 small{display:block;text-align:center;margin-top:44px;font:700 28px/1 var(--jp);color:var(--mute)}
 
 /* ===== SOURCES ===== */
-#s26 .refs{position:absolute;left:128px;right:128px;top:300px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,auto);grid-auto-flow:column;column-gap:80px;row-gap:56px}
-#s26 .ref{min-width:0}
-#s26 .ref b{display:block;font:900 32px/1.4 var(--jp);margin-bottom:8px}
-#s26 .ref a{font:500 22px/1.5 var(--en);color:var(--signal);word-break:break-all}
 
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important;transition-delay:0ms!important}
@@ -560,48 +484,13 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 <!-- ========== COVER ========== -->
 <section class="slide" id="s00" data-title="表紙" data-field="mouse" data-ch="0">
-  <div class="cv-event"><span>事前講座</span>AI経営支援エージェント開発ハッカソン<em>ー未来の経営をアップデートせよー</em></div>
   <h1><span class="mask"><span class="in">AIを使える人から、</span></span><br><span class="mask"><span class="in">AIで価値を増幅する人へ。</span></span></h1>
   <p class="cv-sub" data-s="0" style="--d:8">普通のことは、AIでどんどん簡単になる。<br>では、あなたにしかつくれない価値は？</p>
   <div class="cv-foot" data-s="0" style="--d:12">画面にカーソルを置いてみてください。<br>操作：<kbd>→</kbd><kbd>Space</kbd> 進む　<kbd>←</kbd> 戻る　<kbd>?</kbd> ヘルプ</div>
 </section>
 
-<!-- ========== 01 ========== -->
-<section class="slide" id="s01" data-title="AIって、結局なんなん？" data-ch="1" data-field="calm" data-field-o=".5" data-oji="AIってChatGPTのことやと思ってません？">
-  <header class="hd"><b>01</b>AIで何が変わる？</header>
-  <h2 class="ttl mega">AIって、<br>結局<br>なんなん？</h2>
-  <p class="lead" data-s="0" style="--d:5">人間の知的な仕事を、<br>機械にやってもらう。</p>
-  <div class="orbit">
-    <div class="ring"></div>
-    <div class="core" id="s01core"><b>AI</b></div>
-    <div class="nodes">
-      <button class="node" style="--a:-90deg" data-k="認識" data-v="画像や音声を見分ける">認識</button>
-      <button class="node" style="--a:-30deg" data-k="予測" data-v="需要やリスクを見積もる">予測</button>
-      <button class="node" style="--a:30deg" data-k="分類" data-v="問い合わせや文書を振り分ける">分類</button>
-      <button class="node" style="--a:90deg" data-k="検索" data-v="社内の知識を探し出す">検索</button>
-      <button class="node gen" style="--a:150deg" data-k="生成" data-v="文章・画像・コードをつくる">生成</button>
-      <button class="node" style="--a:210deg" data-k="実行" data-v="手順を踏んで作業を進める">実行</button>
-    </div>
-  </div>
-  <p class="kmsg" data-s="1">でも、AIは<span class="hl">「生成AI」だけじゃない。</span></p>
-</section>
-
-<!-- ========== 02 ========== -->
-<section class="slide" id="s02" data-title="AIは突然現れたわけではない" data-ch="1" data-oji="実はAI、けっこう長生きです。">
-  <header class="hd"><b>02</b>AIで何が変わる？</header>
-  <h2 class="ttl">AIは突然現れたわけではない</h2>
-  <div class="track"></div>
-  <div class="st" data-s="0" style="left:240px;--d:3"><div class="yr">1950s</div><div class="dot"></div><div class="nm">AI研究</div></div>
-  <div class="st" data-s="0" style="left:528px;--d:5"><div class="yr">1980s</div><div class="dot"></div><div class="nm">エキスパート<br>システム</div></div>
-  <div class="st" data-s="0" style="left:816px;--d:7"><div class="yr">1990–2000s</div><div class="dot"></div><div class="nm">機械学習<br>検索・推薦</div></div>
-  <div class="st" data-s="0" style="left:1104px;--d:9"><div class="yr">2010s</div><div class="dot"></div><div class="nm">ディープ<br>ラーニング</div></div>
-  <div class="st" data-s="0" style="left:1392px;--d:11"><div class="yr">2020s</div><div class="dot"></div><div class="nm">生成AI</div></div>
-  <div class="st agent" data-s="0" style="left:1680px;--d:14"><div class="yr">これから</div><div class="dot"></div><div class="nm">AI<br>エージェント</div></div>
-  <p class="kmsg" data-s="1">AIは<span class="hl">「突然生まれた技術」ではない。</span></p>
-</section>
-
 <!-- ========== 03 ========== -->
-<section class="slide" id="s03" data-title="AIは「生成」だけじゃない" data-ch="1" data-oji="今回つくるものも、『ChatGPTっぽい何か』とは限りません。">
+<section class="slide" id="s03" data-title="AIは「生成」だけじゃない" data-ch="1">
   <header class="hd"><b>03</b>AIで何が変わる？</header>
   <h2 class="ttl">AIは「生成」だけじゃない</h2>
   <div class="frame">
@@ -615,29 +504,35 @@ button{font:inherit;color:inherit;cursor:pointer}
       <div class="tile route" data-s="0" style="--d:7"><h4>実行する</h4><p>手順を踏んで作業を進める</p><span class="ord">4</span></div>
     </div>
   </div>
-  <p class="kmsg k1" data-s="1" data-until="1"><span class="hl">生成AIは、AIの一部。</span></p>
+  <div class="tband" data-s="0" style="--d:9">
+    <div class="tcap">AIは、突然生まれた技術ではない</div>
+    <div class="tl2">
+      <div class="ts"><span class="yr">1950s</span><i></i><span class="nm">AI研究</span></div>
+      <div class="ts"><span class="yr">1980s</span><i></i><span class="nm">エキスパートシステム</span></div>
+      <div class="ts"><span class="yr">1990–2000s</span><i></i><span class="nm">機械学習・検索・推薦</span></div>
+      <div class="ts"><span class="yr">2010s</span><i></i><span class="nm">ディープラーニング</span></div>
+      <div class="ts"><span class="yr">2020s</span><i></i><span class="nm">生成AI</span></div>
+      <div class="ts agent"><span class="yr">これから</span><i></i><span class="nm">AIエージェント</span></div>
+    </div>
+  </div>
+  <p class="kmsg k1" data-s="1" data-until="1">AIは長い歴史を持つ多機能な道具。<span class="hl">生成AIは、その一部。</span></p>
   <p class="kmsg k2" data-s="2">組み合わせると、「仕事をするアプリ」になる。<small>例：問い合わせを分類 → 過去事例を探す → 回答案をつくる → 担当者へ送る</small></p>
 </section>
 
-<!-- ========== 04 ========== -->
-<section class="slide" id="s04" data-title="AIとの付き合い方が変わっている" data-ch="1" data-oji="AIに全部任せる、ではありません。最後は人間が確認・判断します。">
-  <header class="hd"><b>04</b>AIで何が変わる？</header>
-  <h2 class="ttl">AIとの付き合い方が変わっている</h2>
-  <div class="row r1" data-s="0" style="--d:3">
+<!-- ========== 05 ========== -->
+<section class="slide" id="s05" data-title="「質問する」から「仕事を任せる」へ" data-ch="1" data-oji="優秀な新人に『よろしく！』だけでは仕事できませんよね。">
+  <header class="hd"><b>05</b>AIで何が変わる？</header>
+  <h2 class="ttl">「質問する」から「仕事を任せる」へ</h2>
+  <div class="strip">
+    <div class="row r1" data-s="0" style="--d:2">
     <span class="lbl">これまで</span>
     <span class="chip">人間</span><span class="arr">→</span><span class="chip">AIに質問</span><span class="arr">→</span><span class="chip">AIが回答</span><span class="arr">→</span><span class="chip">人間が仕事</span>
   </div>
-  <div class="row r2" data-s="1">
+    <div class="row r2" data-s="0" style="--d:5">
     <span class="lbl">これから</span>
     <span class="chip" style="--i:0">人間</span><span class="arr">→</span><span class="chip" style="--i:1">目的を伝える</span><span class="arr">→</span><span class="chip" style="--i:2">AIが考える</span><span class="arr">→</span><span class="chip" style="--i:3">調べる</span><span class="arr">→</span><span class="chip" style="--i:4">つくる</span><span class="arr">→</span><span class="chip" style="--i:5">実行する</span><span class="arr">→</span><span class="chip human">人間が確認・判断</span>
   </div>
-  <p class="kmsg" data-s="2">「AIに質問する」から<br><span class="hl">「AIに仕事を任せる」へ。</span></p>
-</section>
-
-<!-- ========== 05 ========== -->
-<section class="slide" id="s05" data-title="AIが仕事をするには何が必要？" data-ch="1" data-oji="優秀な新人に『よろしく！』だけでは仕事できませんよね。">
-  <header class="hd"><b>05</b>AIで何が変わる？</header>
-  <h2 class="ttl">AIが仕事をするには何が必要？</h2>
+  </div>
   <div class="meter" data-s="0" style="--d:3">
     <div class="t">そろっている要素</div>
     <div class="v"><span id="s05n">0</span><small> / 6</small></div>
@@ -653,25 +548,13 @@ button{font:inherit;color:inherit;cursor:pointer}
     <button class="el" style="--x:-250px;--y:134px">評価</button>
     <button class="el" style="--x:-250px;--y:-134px">人間の判断</button>
   </div>
-  <p class="kmsg" data-s="2">AIに能力があるだけでは、<br><span class="hl">仕事にはならない。</span></p>
-</section>
-
-<!-- ========== 06 ========== -->
-<section class="slide" id="s06" data-title="世界では、もう始まっている" data-ch="1" data-oji="AIを使える人を増やすだけじゃなく、仕事そのものを変え始めています。">
-  <header class="hd"><b>06</b>AIで何が変わる？</header>
-  <h2 class="ttl">世界では、もう始まっている</h2>
-  <p class="sub" data-s="0" style="--d:4">AIは「便利なツール」から「仕事の仕組み」へ</p>
-  <div class="cards">
-    <article class="card" data-s="1"><span class="no">CASE 01</span><h4>Weathernews</h4><p>非エンジニアも、AIを使った業務改善ツールを開発</p><a href="https://global.weathernews.com/blog/article-2025071101/" target="_blank" rel="noopener">出典：Weathernews 生成AIハッカソン</a></article>
-    <article class="card" data-s="2"><span class="no">CASE 02</span><h4>Telstra</h4><p>顧客情報をAIが整理し、営業・顧客対応を効率化</p><a href="https://www.microsoft.com/en/customers/story/1740058425924206437-telstra-telecommunications-azure-openai-service" target="_blank" rel="noopener">出典：Microsoft Customer Story｜Telstra</a></article>
-    <article class="card" data-s="3"><span class="no">CASE 03</span><h4>京都府</h4><p>行政業務に、AI・AIエージェントを活用</p><a href="https://www.microsoft.com/ja-jp/customers/story/27235-kyoto-prefecture-microsoft-365-copilot" target="_blank" rel="noopener">出典：Microsoft Customer Story｜京都府</a></article>
-  </div>
+  <p class="kmsg" data-s="2">AIに仕事を任せるには、<br><span class="hl">目的・データ・ルール・判断が要る。</span></p>
 </section>
 
 <!-- ========== 07 ========== -->
 <section class="slide" id="s07" data-title="AIを使えるだけでは、差別化にならない" data-ch="2" data-field="diverse,average,average" data-oji="AIが賢くなるほど、『普通』は簡単になります。" data-oji-at="2">
   <div class="veil"></div>
-  <header class="hd" style="top:60px"><b>07</b>では、人間には何が残る？</header>
+  <header class="hd" style="top:60px"><b>07</b>差は「強み」から生まれる</header>
   <div class="flowlbl" data-s="0" style="--d:2"><span>一般解</span><i>→</i><span>高速化</span><i>→</i><span class="end">平均化</span></div>
   <p class="l0" data-s="0" style="--d:4">AIは、一般的な知識・文章・アイデア・業務を<br>高速に処理できる。</p>
   <p class="l1" data-s="1"><small>つまり、</small>「普通のこと」は<br>AIでどんどん簡単になる。</p>
@@ -685,23 +568,9 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </section>
 
-<!-- ========== 08 ========== -->
-<section class="slide" id="s08" data-title="AI活用は、5段階で考える" data-ch="2" data-oji="プロンプトが上手いだけで、会社の価値は変わるでしょうか？">
-  <header class="hd"><b>08</b>では、人間には何が残る？</header>
-  <h2 class="ttl">AI活用は、5段階で考える</h2>
-  <div class="stairs">
-    <div class="stp"><div class="n">①</div><h4>操作</h4><p>AIを使う</p></div>
-    <div class="stp"><div class="n">②</div><h4>指示</h4><p>AIに<br>上手く頼む</p></div>
-    <div class="stp hi"><div class="n">③</div><h4>評価</h4><p>AIを疑う</p></div>
-    <div class="stp hi"><div class="n">④</div><h4>設計</h4><p>AIを業務に<br>組み込む</p></div>
-    <div class="stp hi"><div class="n">⑤</div><h4>価値創造</h4><p>AIで事業を<br>変える</p></div>
-  </div>
-  <p class="kmsg" data-s="1">差別化が<br>生まれるのは、<br><span class="hl">③～⑤。</span></p>
-</section>
-
 <!-- ========== 09 ========== -->
 <section class="slide" id="s09" data-title="AIでは平均化されにくいものは何か？" data-ch="2" data-field="unique" data-field-o=".55" data-oji="差別化は、AIに勝つことではありません。">
-  <header class="hd"><b>09</b>では、人間には何が残る？</header>
+  <header class="hd"><b>09</b>差は「強み」から生まれる</header>
   <h2 class="ttl">AIでは平均化されにくいものは何か？</h2>
   <div class="col c1" data-s="0" style="--d:3">
     <h4>AIで平均化されやすいもの</h4>
@@ -721,50 +590,9 @@ button{font:inherit;color:inherit;cursor:pointer}
   <p class="kmsg" data-s="2">平均化されにくいものを見つけ、<span class="hl">AIで増幅する。</span></p>
 </section>
 
-<!-- ========== 10 ========== -->
-<section class="slide" id="s10" data-steps="1" data-title="AIの答えに、「……本当に？」" data-ch="3" data-oji="それっぽいですよね。でも、そこで終わっていいでしょうか？" data-oji-at="0">
-  <header class="hd"><b>10</b>AIの答えを信じていい？</header>
-  <h2 class="ttl">AIに聞く。</h2>
-  <div class="chat">
-    <div class="msg me" data-s="0" style="--d:4"><div class="bub">売上を上げる方法を教えて</div><div class="av">私</div></div>
-    <div class="msg ai" data-s="0" style="--d:9"><div class="av">AI</div><div class="bub" id="s10ai"></div></div>
-  </div>
-  <div class="over"><h3><span>…</span><span>…</span><span style="animation-delay:.5s">本</span><span style="animation-delay:.62s">当</span><span style="animation-delay:.74s">に</span><span style="animation-delay:1s">？</span></h3><small>もっともらしい答えほど、一度止まる。</small></div>
-</section>
-
-<!-- ========== 11 ========== -->
-<section class="slide" id="s11" data-title="「違和感」は、思考を止めるためではない" data-ch="3" data-oji="違和感を正解にしない。『もう一度考えよう』の合図にする。">
-  <header class="hd"><b>11</b>AIの答えを信じていい？</header>
-  <h2 class="ttl">「違和感」は、思考を止めるためではない</h2>
-  <div class="left" data-s="0" style="--d:3"><p class="lead">「なんか違う」は、<br>仮説の入口になる。</p></div>
-  <div class="stamp" data-s="1">違和感 ≠ 正解<small>もう一度考えるための合図</small></div>
-  <div class="flow">
-    <div class="say" data-s="0" style="--d:2">「なんか違う」</div>
-    <span class="fn" data-s="0" style="--d:4">違和感</span><span class="fa" data-s="0" style="--d:4">↓</span>
-    <span class="fn" data-s="0" style="--d:5">仮説</span><span class="fa" data-s="0" style="--d:5">↓</span>
-    <span class="fn" data-s="0" style="--d:6">データ・経験で確認</span><span class="fa" data-s="0" style="--d:6">↓</span>
-    <span class="fn ai" data-s="0" style="--d:7">AIに反証させる</span><span class="fa" data-s="0" style="--d:7">↓</span>
-    <span class="fn" data-s="0" style="--d:8">新しい仮説</span><span class="fa" data-s="0" style="--d:8">↓</span>
-    <span class="fn me" data-s="0" style="--d:9">人間が判断</span>
-  </div>
-  <div class="loop" data-s="0" style="--d:10"><svg width="100" height="280" viewBox="0 0 100 280"><path d="M0 276 C60 276 70 266 70 220 L70 56 C70 10 60 0 0 0" fill="none" stroke="#2C3FE6" stroke-width="4" stroke-dasharray="10 9"/><path d="M14 -10 L0 0 L14 10" fill="none" stroke="#2C3FE6" stroke-width="4"/></svg><span>もう一度考える</span></div>
-</section>
-
-<!-- ========== 12 ========== -->
-<section class="slide" id="s12" data-title="なぜ、人はAIの答えを信じてしまうのか？" data-ch="3" data-oji="人間も、実はけっこう間違えます。">
-  <header class="hd"><b>12</b>AIの答えを信じていい？</header>
-  <h2 class="ttl">なぜ、人はAIの答えを信じてしまうのか？</h2>
-  <div class="grid">
-    <button class="fc" data-s="0" style="--d:3"><div class="inner"><div class="f"><h4>メタ認知</h4><p>自分の思考を、一段上から見る</p></div><div class="b"><small>AIの答えに当てはめると</small><p>「なぜ自分は、この答えに納得したのか？」と一歩引く</p></div></div></button>
-    <button class="fc" data-s="0" style="--d:4"><div class="inner"><div class="f"><h4>限定合理性</h4><p>人間は、情報・時間・能力に限界がある</p></div><div class="b"><small>AIの答えに当てはめると</small><p>忙しいときほど、最初の答えで手を打ちたくなる</p></div></div></button>
-    <button class="fc" data-s="0" style="--d:5"><div class="inner"><div class="f"><h4>認知バイアス</h4><p>もっともらしい答えや、最初の答えに引っ張られる</p></div><div class="b"><small>AIの答えに当てはめると</small><p>流暢で整った文章ほど、正しく見えてしまう</p></div></div></button>
-    <button class="fc" data-s="0" style="--d:6"><div class="inner"><div class="f"><h4>ソマティックマーカー</h4><p>「なんか違う」という感覚を、再検討のシグナルにする</p></div><div class="b"><small>AIの答えに当てはめると</small><p>違和感は正解ではなく、もう一度調べる合図</p></div></div></button>
-  </div>
-</section>
-
 <!-- ========== 13 ========== -->
-<section class="slide" id="s13" data-title="問いを一段深くする" data-ch="4" data-steps="4" data-oji="答えを深くする前に、問いを深くする。" data-oji-at="4">
-  <header class="hd"><b>13</b>違和感を問いに変える</header>
+<section class="slide" id="s13" data-title="問いを一段深くする" data-ch="3" data-steps="4" data-oji="答えを深くする前に、問いを深くする。" data-oji-at="4">
+  <header class="hd"><b>13</b>強みを見つける問い</header>
   <h2 class="ttl">問いを一段深くする</h2>
   <div class="depth"><i></i></div>
   <div class="q" data-s="0" style="left:128px;top:280px;--d:3"><span class="tag">WHAT</span><p>「売上を上げる方法を教えて」</p></div>
@@ -775,8 +603,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 </section>
 
 <!-- ========== 14 ========== -->
-<section class="slide" id="s14" data-title="「営業が忙しい」は、まだ問題の表面" data-ch="4" data-oji="『営業をAIで楽にしましょう』は、まだ早い。">
-  <header class="hd"><b>14</b>違和感を問いに変える</header>
+<section class="slide" id="s14" data-title="「営業が忙しい」は、まだ問題の表面" data-ch="3" data-oji="『営業をAIで楽にしましょう』は、まだ早い。">
+  <header class="hd"><b>14</b>強みを見つける問い</header>
   <h2 class="ttl">「営業が忙しい」は、まだ問題の表面</h2>
   <svg class="lines" viewBox="0 0 1920 1080">
     <path class="b" d="M528 540 C624 540 624 332 720 332"/><path class="b" d="M528 540 C624 540 624 436 720 436"/><path class="b" d="M528 540 L720 540"/><path class="b" d="M528 540 C624 540 624 644 720 644"/><path class="b" d="M528 540 C624 540 624 748 720 748"/>
@@ -792,27 +620,62 @@ button{font:inherit;color:inherit;cursor:pointer}
   <div class="deep" data-s="2" data-fx="pop">そもそも<br>営業プロセスに無駄？</div>
 </section>
 
-<!-- ========== 15 ========== -->
-<section class="slide" id="s15" data-title="ゼロから考えない。巨人の肩に乗る。" data-ch="5" data-oji="過去の英知を利用しましょう。">
-  <header class="hd"><b>15</b>ゼロから考えない</header>
-  <h2 class="ttl">ゼロから考えない。巨人の肩に乗る。</h2>
-  <div class="pyr">
-    <div class="me"><svg width="64" height="96" viewBox="0 0 64 96"><circle cx="32" cy="16" r="13" fill="#151A30"/><path d="M32 30 L32 64 M32 40 L12 54 M32 40 L52 28 M32 64 L18 94 M32 64 L46 94" stroke="#151A30" stroke-width="7" stroke-linecap="round" fill="none"/></svg><span>あなた</span></div>
-    <div class="blk s" style="left:290px;top:110px;width:300px;--i:6">先人が考えたこと</div>
-    <div class="blk" style="left:140px;top:224px;width:295px;--i:4">先人が試したこと</div>
-    <div class="blk k" style="left:445px;top:224px;width:295px;--i:5">成功したこと</div>
-    <div class="blk" style="left:0;top:338px;width:286px;--i:2">失敗したこと</div>
-    <div class="blk s" style="left:296px;top:338px;width:288px;--i:3">フレームワーク</div>
-    <div class="blk k" style="left:594px;top:338px;width:286px;--i:1">研究</div>
-    <div class="blk" style="left:0;top:452px;width:880px;--i:0">事例</div>
+<!-- ========== 17 ========== -->
+<section class="slide" id="s17" data-title="「なんとなく」に、価値がある" data-ch="3" data-oji="『なんとなく』を、掘ってみる。">
+  <header class="hd"><b>17</b>強みを見つける問い</header>
+  <h2 class="ttl">「なんとなく」に、価値がある</h2>
+  <div class="dlg">
+    <div class="d" data-s="0" style="--d:3"><div class="who">新人</div><div class="bb">なぜ、このお客様にはこの商品なんですか？</div></div>
+    <div class="d vet" data-s="0" style="--d:12"><div class="who">ベテラン</div><div class="bb">いや、なんとなく。</div></div>
   </div>
-  <p class="q" data-s="1"><small>こんなにあるのに、</small>ゼロから<br>考える必要、<br><span class="hl">あります？</span></p>
+  <p class="stop" data-s="1"><span class="hl">ここで終わらない。</span></p>
+  <div class="drill">
+    <span class="dq q1" data-s="2" style="--d:0">なぜ？</span><span class="ar" data-s="2" style="--d:1">→</span>
+    <span class="dq q2" data-s="2" style="--d:2">どんな経験から？</span><span class="ar" data-s="2" style="--d:3">→</span>
+    <span class="dq q3" data-s="2" style="--d:4">逆に、どんな場合は選ばない？</span><span class="ar" data-s="2" style="--d:5">→</span>
+    <span class="dq q4" data-s="2" style="--d:6">何を見て判断している？</span>
+  </div>
+</section>
+
+<!-- ========== 10 ========== -->
+<section class="slide" id="s10" data-steps="3" data-title="もっともらしい答えほど、一度止まる" data-ch="4" data-oji="それっぽいですよね。でも、そこで終わっていいでしょうか？" data-oji-at="0">
+  <header class="hd"><b>10</b>AIを疑い、巨人の肩に乗る</header>
+  <h2 class="ttl">AIに聞く。</h2>
+  <div class="chat">
+    <div class="msg me" data-s="0" data-until="1" style="--d:4"><div class="bub">売上を上げる方法を教えて</div><div class="av">私</div></div>
+    <div class="msg ai" data-s="0" data-until="1" style="--d:9"><div class="av">AI</div><div class="bub" id="s10ai"></div></div>
+  </div>
+  <div class="over"><h3><span>…</span><span>…</span><span style="animation-delay:.5s">本</span><span style="animation-delay:.62s">当</span><span style="animation-delay:.74s">に</span><span style="animation-delay:1s">？</span></h3><small>もっともらしい答えほど、一度止まる。</small></div>
+  <div class="left" data-s="2" style="--d:3"><p class="lead">「なんか違う」は、<br>仮説の入口になる。</p></div>
+  <div class="stamp" data-s="3">違和感 ≠ 正解<small>もう一度考えるための合図</small></div>
+  <div class="flow">
+    <div class="say" data-s="2" style="--d:2">「なんか違う」</div>
+    <span class="fn" data-s="2" style="--d:4">違和感</span><span class="fa" data-s="2" style="--d:4">↓</span>
+    <span class="fn" data-s="2" style="--d:5">仮説</span><span class="fa" data-s="2" style="--d:5">↓</span>
+    <span class="fn" data-s="2" style="--d:6">データ・経験で確認</span><span class="fa" data-s="2" style="--d:6">↓</span>
+    <span class="fn ai" data-s="2" style="--d:7">AIに反証させる</span><span class="fa" data-s="2" style="--d:7">↓</span>
+    <span class="fn" data-s="2" style="--d:8">新しい仮説</span><span class="fa" data-s="2" style="--d:8">↓</span>
+    <span class="fn me" data-s="2" style="--d:9">人間が判断</span>
+  </div>
+  <div class="loop" data-s="2" style="--d:10"><svg width="100" height="280" viewBox="0 0 100 280"><path d="M0 276 C60 276 70 266 70 220 L70 56 C70 10 60 0 0 0" fill="none" stroke="#2C3FE6" stroke-width="4" stroke-dasharray="10 9"/><path d="M14 -10 L0 0 L14 10" fill="none" stroke="#2C3FE6" stroke-width="4"/></svg><span>もう一度考える</span></div>
+</section>
+
+<!-- ========== 12 ========== -->
+<section class="slide" id="s12" data-title="なぜ、人はAIの答えを信じてしまうのか？" data-ch="4" data-oji="人間も、実はけっこう間違えます。">
+  <header class="hd"><b>12</b>AIを疑い、巨人の肩に乗る</header>
+  <h2 class="ttl">なぜ、人はAIの答えを信じてしまうのか？</h2>
+  <div class="grid">
+    <button class="fc" data-s="0" style="--d:3"><div class="inner"><div class="f"><h4>メタ認知</h4><p>自分の思考を、一段上から見る</p></div><div class="b"><small>AIの答えに当てはめると</small><p>「なぜ自分は、この答えに納得したのか？」と一歩引く</p></div></div></button>
+    <button class="fc" data-s="0" style="--d:4"><div class="inner"><div class="f"><h4>限定合理性</h4><p>人間は、情報・時間・能力に限界がある</p></div><div class="b"><small>AIの答えに当てはめると</small><p>忙しいときほど、最初の答えで手を打ちたくなる</p></div></div></button>
+    <button class="fc" data-s="0" style="--d:5"><div class="inner"><div class="f"><h4>認知バイアス</h4><p>もっともらしい答えや、最初の答えに引っ張られる</p></div><div class="b"><small>AIの答えに当てはめると</small><p>流暢で整った文章ほど、正しく見えてしまう</p></div></div></button>
+    <button class="fc" data-s="0" style="--d:6"><div class="inner"><div class="f"><h4>ソマティックマーカー</h4><p>「なんか違う」という感覚を、再検討のシグナルにする</p></div><div class="b"><small>AIの答えに当てはめると</small><p>違和感は正解ではなく、もう一度調べる合図</p></div></div></button>
+  </div>
 </section>
 
 <!-- ========== 16 ========== -->
-<section class="slide" id="s16" data-title="AIに「巨人」を連れてきてもらう" data-ch="5" data-oji="AIを答え製造機にするより、知恵の探索役にしてみましょう。">
-  <header class="hd"><b>16</b>ゼロから考えない</header>
-  <h2 class="ttl">AIに「巨人」を連れてきてもらう</h2>
+<section class="slide" id="s16" data-title="ゼロから考えない。巨人の肩に乗る。" data-ch="4" data-oji="AIを答え製造機にするより、知恵の探索役にしてみましょう。">
+  <header class="hd"><b>16</b>AIを疑い、巨人の肩に乗る</header>
+  <h2 class="ttl">ゼロから考えない。巨人の肩に乗る。</h2>
   <div class="asks">
     <h4>AIにこう聞く</h4>
     <div class="ask" data-s="0" style="--d:3"><b>1</b>この問題に使えそうなフレームワークは？</div>
@@ -829,29 +692,30 @@ button{font:inherit;color:inherit;cursor:pointer}
     <button class="gc" data-s="1" style="--d:4"><b>4</b><span>「AI化より先に、業務を減らすべき」</span><em>この肩に乗る</em></button>
     <button class="gc" data-s="1" style="--d:5"><b>5</b><span>現場が使わず、定着しないパターン</span><em>この肩に乗る</em></button>
   </div>
-  <p class="kmsg" data-s="2">AIは「巨人」を連れてくる。<br><span class="hl">どの肩に乗るかを決めるのは人間。</span></p>
+  <p class="kmsg" data-s="2">AIに知恵を連れてこさせる。<br><span class="hl">どの肩に乗るかは、人が決める。</span></p>
 </section>
 
-<!-- ========== 17 ========== -->
-<section class="slide" id="s17" data-title="「なんとなく」に、価値がある" data-ch="6" data-oji="『なんとなく』を、掘ってみる。">
-  <header class="hd"><b>17</b>企業固有の価値</header>
-  <h2 class="ttl">「なんとなく」に、価値がある</h2>
-  <div class="dlg">
-    <div class="d" data-s="0" style="--d:3"><div class="who">新人</div><div class="bb">なぜ、このお客様にはこの商品なんですか？</div></div>
-    <div class="d vet" data-s="0" style="--d:12"><div class="who">ベテラン</div><div class="bb">いや、なんとなく。</div></div>
+<!-- ========== 21 ========== -->
+<section class="slide" id="s21" data-title="AIを「回答装置」にしない" data-ch="4" data-oji="AIには、反対役もやってもらいましょう。">
+  <header class="hd"><b>21</b>AIを疑い、巨人の肩に乗る</header>
+  <h2 class="ttl">AIを「回答装置」にしない</h2>
+  <div class="aiside" data-s="0" style="--d:3">
+    <div class="aib" id="s21ai">AI：「この施策が<br>おすすめです。」</div>
+    <div class="conf"><div class="t"><span>見えていない前提</span><span id="s21p">多い</span></div><div class="bar"><i id="s21bar"></i></div><div class="st" id="s21st">一回の回答で、終わらせない</div></div>
   </div>
-  <p class="stop" data-s="1"><span class="hl">ここで終わらない。</span></p>
-  <div class="drill">
-    <span class="dq q1" data-s="2" style="--d:0">なぜ？</span><span class="ar" data-s="2" style="--d:1">→</span>
-    <span class="dq q2" data-s="2" style="--d:2">どんな経験から？</span><span class="ar" data-s="2" style="--d:3">→</span>
-    <span class="dq q3" data-s="2" style="--d:4">逆に、どんな場合は選ばない？</span><span class="ar" data-s="2" style="--d:5">→</span>
-    <span class="dq q4" data-s="2" style="--d:6">何を見て判断している？</span>
+  <div class="hq">
+    <div data-s="1" style="--d:0">「なぜ？」</div>
+    <div data-s="1" style="--d:7">「それは一般論では？」</div>
+    <div data-s="1" style="--d:14">「この会社で成立しない条件は？」</div>
+    <div data-s="1" style="--d:21">「現場社員なら何に反発する？」</div>
+    <div data-s="1" style="--d:28">「失敗するとしたら？」</div>
   </div>
+  <p class="kmsg" data-s="2"><span class="hl">AIを、思考の壁打ち相手にする。</span></p>
 </section>
 
 <!-- ========== 18 ========== -->
-<section class="slide" id="s18" data-steps="1" data-title="暗黙知を、企業の資産に変える" data-ch="6" data-oji="ベテランの頭の中だけにある知恵を、会社の資産にできないか？">
-  <header class="hd"><b>18</b>企業固有の価値</header>
+<section class="slide" id="s18" data-steps="1" data-title="暗黙知を、企業の資産に変える" data-ch="5" data-oji="ベテランの頭の中だけにある知恵を、会社の資産にできないか？">
+  <header class="hd"><b>18</b>強みをAI資産にする</header>
   <h2 class="ttl">暗黙知を、企業の資産に変える</h2>
   <p class="note" data-s="0" style="--d:3">AIがベテランを置き換えるのではない。<br>ベテランの知恵を、組織で増幅する。</p>
   <svg class="pipe" viewBox="0 0 1920 1080"><polyline class="bg" points="230,900 440,860 650,810 860,750 1070,680 1280,600 1490,510 1720,400"/><polyline class="fg" points="230,900 440,860 650,810 860,750 1070,680 1280,600 1490,510 1720,400"/></svg>
@@ -866,8 +730,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 </section>
 
 <!-- ========== 19 ========== -->
-<section class="slide" id="s19" data-title="AI × 自社固有データ ＝ 自社だけのAI活用資産" data-ch="6" data-oji="同じAIを使っても、入れるものが違えば、出てくる価値は変わります。">
-  <header class="hd"><b>19</b>企業固有の価値</header>
+<section class="slide" id="s19" data-title="AI × 自社固有データ ＝ 自社だけのAI活用資産" data-ch="5" data-oji="同じAIを使っても、入れるものが違えば、出てくる価値は変わります。">
+  <header class="hd"><b>19</b>強みをAI資産にする</header>
   <h2 class="ttl">AI × 自社固有データ ＝ 自社だけのAI活用資産</h2>
   <div class="eq" data-s="0" style="--d:3">
     <div class="ai">AI</div><div class="op">×</div>
@@ -885,40 +749,8 @@ button{font:inherit;color:inherit;cursor:pointer}
   <p class="kmsg" data-s="1"><small>「AIを導入する」のではなく、</small><span class="hl">「自社だけのAI活用資産をつくる」</span></p>
 </section>
 
-<!-- ========== 20 ========== -->
-<section class="slide" id="s20" data-title="AI時代のコンサルに必要な6つの力" data-ch="7" data-oji="AIを導入する人から、AIで会社を変える人へ。">
-  <header class="hd"><b>20</b>AI時代のコンサル</header>
-  <h2 class="ttl">AI時代のコンサルに必要な6つの力</h2>
-  <div class="left" data-s="1"><p class="big">AIツールの知識<br><span class="hl">だけではない。</span></p><p class="sm">六角形をクリックすると、その力を扱ったスライドに戻れます。</p></div>
-  <div class="hx core" style="left:1240px;top:640px" data-s="0"><div class="ins"><span>AI<br>×人間理解<br>×事業理解</span></div></div>
-  <button class="hx" data-s="0" data-fx="pop" data-go="14" style="left:1114px;top:432px;--d:2"><div class="ins"><b>①</b><span>問いを<br>つくる</span><small>p.13</small></div></button>
-  <button class="hx" data-s="0" data-fx="pop" data-go="15" style="left:1366px;top:432px;--d:3"><div class="ins"><b>②</b><span>問題と課題を<br>分ける</span><small>p.14</small></div></button>
-  <button class="hx" data-s="0" data-fx="pop" data-go="11" style="left:1492px;top:640px;--d:4"><div class="ins"><b>③</b><span>違和感を<br>発見する</span><small>p.10–11</small></div></button>
-  <button class="hx" data-s="0" data-fx="pop" data-go="17" style="left:1366px;top:848px;--d:5"><div class="ins"><b>④</b><span>暗黙知を<br>引き出す</span><small>p.17</small></div></button>
-  <button class="hx" data-s="0" data-fx="pop" data-go="19" style="left:1114px;top:848px;--d:6"><div class="ins"><b>⑤</b><span>固有データを<br>価値に変える</span><small>p.19</small></div></button>
-  <button class="hx" data-s="0" data-fx="pop" data-go="24" style="left:988px;top:640px;--d:7"><div class="ins"><b>⑥</b><span>AIで何を<br>変えるか設計</span><small>p.24</small></div></button>
-</section>
-
-<!-- ========== 21 ========== -->
-<section class="slide" id="s21" data-title="AIを「回答装置」にしない" data-ch="7" data-oji="AIには、反対役もやってもらいましょう。">
-  <header class="hd"><b>21</b>AI時代のコンサル</header>
-  <h2 class="ttl">AIを「回答装置」にしない</h2>
-  <div class="aiside" data-s="0" style="--d:3">
-    <div class="aib" id="s21ai">AI：「この施策が<br>おすすめです。」</div>
-    <div class="conf"><div class="t"><span>見えていない前提</span><span id="s21p">多い</span></div><div class="bar"><i id="s21bar"></i></div><div class="st" id="s21st">一回の回答で、終わらせない</div></div>
-  </div>
-  <div class="hq">
-    <div data-s="1" style="--d:0">「なぜ？」</div>
-    <div data-s="1" style="--d:7">「それは一般論では？」</div>
-    <div data-s="1" style="--d:14">「この会社で成立しない条件は？」</div>
-    <div data-s="1" style="--d:21">「現場社員なら何に反発する？」</div>
-    <div data-s="1" style="--d:28">「失敗するとしたら？」</div>
-  </div>
-  <p class="kmsg" data-s="2"><span class="hl">AIを、思考の壁打ち相手にする。</span></p>
-</section>
-
 <!-- ========== 22 ========== -->
-<section class="slide" id="s22" data-title="AI × TEAM" data-ch="8" data-oji="遠慮して、全部『いいですね』では困ります。">
+<section class="slide" id="s22" data-title="AI × TEAM" data-ch="7" data-oji="遠慮して、全部『いいですね』では困ります。">
   <header class="hd"><b>22</b>TEAMからPROTOTYPEへ</header>
   <h2 class="ttl">AI × TEAM</h2>
   <div class="left" data-s="0" style="--d:2"><p class="lead">一人の正解より、<br>複数の視点。</p><p class="src"><b>Project Aristotle</b>（Google）が示した<br>チームの働き方に関わる5つの要素</p></div>
@@ -933,7 +765,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 </section>
 
 <!-- ========== 23 ========== -->
-<section class="slide" id="s23" data-title="アイデアを決める。そして、つくる。" data-ch="8" data-oji="投票結果が正解ではない。最後は人間が決めます。">
+<section class="slide" id="s23" data-title="アイデアを決める。そして、つくる。" data-ch="7" data-oji="投票結果が正解ではない。最後は人間が決めます。">
   <header class="hd"><b>23</b>TEAMからPROTOTYPEへ</header>
   <h2 class="ttl">アイデアを決める。そして、つくる。</h2>
   <div class="flow" data-s="0" style="--d:2"><span>発散</span><i>→</i><span>比較</span><i>→</i><span class="cur">投票</span><i>→</i><span>対話</span><i>→</i><span>決定</span></div>
@@ -946,60 +778,56 @@ button{font:inherit;color:inherit;cursor:pointer}
   <p class="kmsg" data-s="1">決めたら、<span class="hl">PROTOTYPEへ。</span></p>
 </section>
 
-<!-- ========== 24 ========== -->
-<section class="slide" id="s24" data-title="ハッカソンでやること" data-ch="8" data-steps="7" data-oji="AIを使うことが目的じゃない。お客様の『困った』を変えることが目的です。" data-oji-at="7">
-  <header class="hd"><b>24</b>TEAMからPROTOTYPEへ</header>
-  <h2 class="ttl">ハッカソンでやること</h2>
-  <p class="goal" data-s="0" style="--d:3">今日の話は、そのままハッカソンの手順になる。</p>
-  <div class="axis"><i id="s24bar"></i></div>
-  <div class="stn up first" style="left:200px"><span class="dot"></span><button class="lab" data-i="1"><b>CUSTOMER</b><span>お客様は何に困っている？</span></button></div>
-  <div class="stn dn" style="left:453px"><span class="dot"></span><button class="lab" data-i="2"><b>QUESTION</b><span>Why？ Why Again？ What If？</span></button></div>
-  <div class="stn up" style="left:706px"><span class="dot"></span><button class="lab" data-i="3"><b>GIANTS</b><span>知恵・事例・フレームワークは？</span></button></div>
-  <div class="stn dn" style="left:959px"><span class="dot"></span><button class="lab" data-i="4"><b>AI</b><span>広げる・疑う・整理する</span></button></div>
-  <div class="stn up" style="left:1212px"><span class="dot"></span><button class="lab" data-i="5"><b>TEAM</b><span>仲間の視点を掛け合わせる</span></button></div>
-  <div class="stn dn" style="left:1465px"><span class="dot"></span><button class="lab" data-i="6"><b>VOTE → DECISION</b><span>支持の強さを見て、人間が決める</span></button></div>
-  <div class="stn up last" style="left:1718px"><span class="dot"></span><button class="lab" data-i="7"><b>PROTOTYPE</b><span>動くものにする</span></button></div>
-  <div class="creator">Zoho Creatorで、動く形にする</div>
-</section>
-
 <!-- ========== 25 ========== -->
-<section class="slide" id="s25" data-title="最後のメッセージ" data-ch="9" data-field="off" data-oji="さあ、ちょっと面白いものを作りましょう。" data-oji-at="7">
+<section class="slide" id="s25" data-title="最後のメッセージ" data-ch="8" data-field="off" data-oji="さあ、ちょっと面白いものを作りましょう。" data-oji-at="5">
   <div class="g1">
-    <p data-s="0" data-until="3" style="--d:6">巨人の肩に乗ろう。</p>
-    <p data-s="1" data-until="3">AIにも力を借りよう。</p>
-    <p data-s="2" data-until="3">仲間の力も借りよう。</p>
-    <p class="fin" data-s="3" data-until="3">そして、お客様の<span class="komatta">「困った」</span>を<br><span class="hl">「できた」に変えよう。</span></p>
+    <p data-s="0" data-until="2" style="--d:6">巨人の肩に乗ろう。</p>
+    <p data-s="1" data-until="2">AIにも力を借りよう。</p>
+    <p data-s="2" data-until="2">仲間の力も借りよう。</p>
   </div>
   <div class="g2">
-    <p data-s="4" data-until="4">AIで自分を磨く。</p>
-    <p data-s="4" data-until="4" style="--d:6">仲間と力を掛け合わせる。</p>
-    <p data-s="4" data-until="4" style="--d:12"><span class="hl">お客様の価値をつくる。</span></p>
+    <p data-s="3" data-until="3">AIで自分を磨く。</p>
+    <p data-s="3" data-until="3" style="--d:6">仲間と力を掛け合わせる。</p>
+    <p data-s="3" data-until="3" style="--d:12"><span class="hl">お客様の価値をつくる。</span></p>
   </div>
   <div class="g4">
-    <p class="h" data-s="5" data-until="5">AI技術を、机上の空論で終わらせない。<b>三者でチームを組む</b></p>
+    <p class="h" data-s="4" data-until="4">AI技術を、机上の空論で終わらせない。<b>三者でチームを組む</b></p>
     <div class="roles">
-      <div class="role" data-s="5" data-until="5" style="--d:3"><span class="en">Consultant</span><b>ビジネスの知見</b><p>現場の一次情報、ビジネスロジック、顧客の真の課題理解</p><small>ドメイン知識</small></div>
-      <div class="role" data-s="5" data-until="5" style="--d:6"><span class="en">Engineer</span><b>技術の実装力</b><p>最新のAI技術、アーキテクチャ設計、高度なプロトタイプ実装力</p><small>テクノロジー</small></div>
-      <div class="role" data-s="5" data-until="5" style="--d:9"><span class="en">External Person</span><b>新しい視点</b><p>業界の常識に囚われないアイデア、モダンなUX視点、新しい価値観</p><small>ブレイクスルー</small></div>
+      <div class="role" data-s="4" data-until="4" style="--d:3"><span class="en">Consultant</span><b>ビジネスの知見</b><p>現場の一次情報、ビジネスロジック、顧客の真の課題理解</p><small>ドメイン知識</small></div>
+      <div class="role" data-s="4" data-until="4" style="--d:6"><span class="en">Engineer</span><b>技術の実装力</b><p>最新のAI技術、アーキテクチャ設計、高度なプロトタイプ実装力</p><small>テクノロジー</small></div>
+      <div class="role" data-s="4" data-until="4" style="--d:9"><span class="en">Next Your Company</span><b>新しい視点</b><p>コンサルとエンジニアがサポートする</p><small>ブレイクスルー</small></div>
     </div>
-    <p class="fx" data-s="5" data-until="5" style="--d:14">「ビジネスの知見」×「技術の実装力」×「新しい視点」＝<span class="hl">「机上の理論ではないソリューション」</span></p>
+    <p class="fx" data-s="4" data-until="4" style="--d:14">「ビジネスの知見」×「技術の実装力」×「新しい視点」＝<span class="hl">「机上の理論ではないソリューション」</span></p>
   </div>
-  <div class="g5"><div data-s="6" data-until="6" data-fx="fade" style="--d:3"><p class="jp">全体は、部分の総和に勝る。</p><p class="enq">“The whole is greater than the sum of its parts.”</p><p class="by">― アリストテレス</p></div></div>
-  <div class="g3"><div data-s="7" data-fx="fade" style="--d:6"><small class="ev">AI経営支援エージェント開発ハッカソン</small><p>未来の経営を<br>アップデートせよ</p><small>日本の現場を、未来へ導け。</small></div></div>
+  <div class="g5"><div data-s="5" data-until="5" data-fx="fade" style="--d:3"><p class="jp">全体は、部分の総和に勝る。</p><p class="enq">“The whole is greater than the sum of its parts.”</p><p class="by">― アリストテレス</p></div></div>
 </section>
 
-<!-- ========== SOURCES ========== -->
-<section class="slide" id="s26" data-title="参考出典・参考資料" data-ch="9" data-field="calm" data-field-o=".4">
-  <header class="hd"><b>REF</b>参考出典・参考資料</header>
-  <h2 class="ttl">参考出典・参考資料</h2>
-  <div class="refs">
-    <div class="ref"><b>Weathernews 生成AIハッカソン</b><a href="https://global.weathernews.com/blog/article-2025071101/" target="_blank" rel="noopener">global.weathernews.com/blog/article-2025071101/</a></div>
-    <div class="ref"><b>Microsoft Customer Story｜Telstra</b><a href="https://www.microsoft.com/en/customers/story/1740058425924206437-telstra-telecommunications-azure-openai-service" target="_blank" rel="noopener">microsoft.com/en/customers/story/1740058425924206437-telstra…</a></div>
-    <div class="ref"><b>Microsoft Customer Story｜京都府</b><a href="https://www.microsoft.com/ja-jp/customers/story/27235-kyoto-prefecture-microsoft-365-copilot" target="_blank" rel="noopener">microsoft.com/ja-jp/customers/story/27235-kyoto-prefecture…</a></div>
-    <div class="ref"><b>Boston｜Adopt a Hydrant</b><a href="https://www.boston.gov/departments/new-urban-mechanics/adopt-hydrant" target="_blank" rel="noopener">boston.gov/departments/new-urban-mechanics/adopt-hydrant</a></div>
-    <div class="ref"><b>Code for America｜Adopt-a-Hydrant</b><a href="https://github.com/codeforamerica/adopt-a-hydrant" target="_blank" rel="noopener">github.com/codeforamerica/adopt-a-hydrant</a></div>
-    <div class="ref"><b>American Economic Association｜Quadratic Voting</b><a href="https://www.aeaweb.org/articles?id=10.1257/pandp.20181002" target="_blank" rel="noopener">aeaweb.org/articles?id=10.1257/pandp.20181002</a></div>
+<!-- ========== 08 ========== -->
+<section class="slide" id="s08" data-title="AI活用は、5段階で考える" data-ch="9" data-oji="プロンプトが上手いだけで、会社の価値は変わるでしょうか？">
+  <header class="hd"><b>08</b>付録</header>
+  <h2 class="ttl">AI活用は、5段階で考える</h2>
+  <div class="stairs">
+    <div class="stp"><div class="n">①</div><h4>操作</h4><p>AIを使う</p></div>
+    <div class="stp"><div class="n">②</div><h4>指示</h4><p>AIに<br>上手く頼む</p></div>
+    <div class="stp hi"><div class="n">③</div><h4>評価</h4><p>AIを疑う</p></div>
+    <div class="stp hi"><div class="n">④</div><h4>設計</h4><p>AIを業務に<br>組み込む</p></div>
+    <div class="stp hi"><div class="n">⑤</div><h4>価値創造</h4><p>AIで事業を<br>変える</p></div>
   </div>
+  <p class="kmsg" data-s="1">差別化が<br>生まれるのは、<br><span class="hl">③～⑤。</span></p>
+</section>
+
+<!-- ========== 20 ========== -->
+<section class="slide" id="s20" data-title="AI時代に必要な6つの力" data-ch="9" data-oji="AIを導入する人から、AIで会社を変える人へ。">
+  <header class="hd"><b>20</b>付録</header>
+  <h2 class="ttl">AI時代に必要な6つの力</h2>
+  <div class="left" data-s="1"><p class="big">AIツールの知識<br><span class="hl">だけではない。</span></p><p class="sm">六角形をクリックすると、その力を扱ったスライドに戻れます。</p></div>
+  <div class="hx core" style="left:1240px;top:640px" data-s="0"><div class="ins"><span>AI<br>×人間理解<br>×事業理解</span></div></div>
+  <button class="hx" data-s="0" data-fx="pop" data-go="14" style="left:1114px;top:432px;--d:2"><div class="ins"><b>①</b><span>問いを<br>つくる</span><small>p.13</small></div></button>
+  <button class="hx" data-s="0" data-fx="pop" data-go="15" style="left:1366px;top:432px;--d:3"><div class="ins"><b>②</b><span>問題と課題を<br>分ける</span><small>p.14</small></div></button>
+  <button class="hx" data-s="0" data-fx="pop" data-go="11" style="left:1492px;top:640px;--d:4"><div class="ins"><b>③</b><span>違和感を<br>発見する</span><small>p.10–11</small></div></button>
+  <button class="hx" data-s="0" data-fx="pop" data-go="17" style="left:1366px;top:848px;--d:5"><div class="ins"><b>④</b><span>暗黙知を<br>引き出す</span><small>p.17</small></div></button>
+  <button class="hx" data-s="0" data-fx="pop" data-go="19" style="left:1114px;top:848px;--d:6"><div class="ins"><b>⑤</b><span>固有データを<br>価値に変える</span><small>p.19</small></div></button>
+  <button class="hx" data-s="0" data-fx="pop" data-go="24" style="left:988px;top:640px;--d:7"><div class="ins"><b>⑥</b><span>AIで何を<br>変えるか設計</span><small>p.24</small></div></button>
 </section>
 
 <footer id="foot"><img src="data:image/png;base64,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" alt="Funai Soken" width="204" height="34"><span>Copyright 2026 Funai Consulting Inc. All Rights Reserved.</span></footer>
@@ -1016,7 +844,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 <div id="hud">
   <button id="bPrev" aria-label="前へ">←</button>
-  <span id="counter">0 / 25</span>
+  <span id="counter">表紙 / 16</span>
   <button id="bNext" aria-label="次へ">→</button>
   <div id="chapters"></div>
   <span id="chname"></span>
@@ -1056,9 +884,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 const deck=document.getElementById('deck');
 const slides=[...deck.querySelectorAll('.slide')];
 const N=slides.length;
-const CHAPTERS=['表紙','AIで何が変わる？','では、人間には何が残る？','AIの答えを信じていい？','違和感を問いに変える','ゼロから考えない','企業固有の価値','AI時代のコンサル','TEAMからPROTOTYPEへ','Closing'];
-// 講師ノートの目安時間（分）: index 1..25
-const PLAN=[0,2,1.5,1.5,2,2,3,2,2,2,2,2,2.5,2.5,2,1.5,2,2,2,2,2,2,2,1.5,3,2.5,0];
+let LAST=-1; slides.forEach((s,k)=>{ if(+s.dataset.ch<9) LAST=k; }); const TOTAL=LAST; // 本編の最後（付録の直前）と、本編の総数
+function noLabel(k){ if(k===0)return '表紙'; if(k>LAST)return 'A'+(k-LAST); return String(k).padStart(2,'0'); }
+const CHAPTERS=['表紙','AIで何が変わる？','差は「強み」から生まれる','強みを見つける問い','AIを疑い、巨人の肩に乗る','強みをAI資産にする','経営支援エージェントとは','TEAMからPROTOTYPEへ','Closing','付録'];
+// 講師ノートの目安時間（分）: スライドの並び順ごと
+const PLAN=[0,3,3,2,2,2.5,2,2,3,2.5,3,2,2,2,2,1.5,2.5,0,0]; // v2: 新しい並び順（付録は0分） // v2: 新しい並び順（付録は0分） // v2: 新しい並び順（付録は0分）。新規スライドの追加時に更新する // v2: 新しい並び順（付録は0分）。統合・新規スライドの追加時に更新する
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let cur=0, step=0, hooks={};
 
@@ -1163,7 +993,7 @@ function apply(sl,st,prev){
   if(f){const list=f.split(','); setField(list[Math.min(st,list.length-1)], sl.dataset.fieldO);}
   else setField('off');
   deck.classList.toggle('dark-oji', sl.id==='s13' && st>=3);
-  deck.classList.toggle('foot-dark', (sl.id==='s13' && st>=3) || (sl.id==='s10' && st>=1));
+  deck.classList.toggle('foot-dark', (sl.id==='s13' && st>=3) || (sl.id==='s10' && st===1));
   hooks[sl.id]?.step?.(sl,st,prev);
 }
 function go(i,st=0,{instant=false}={}){
@@ -1201,8 +1031,8 @@ for(let c=0;c<CHAPTERS.length;c++){
 function updateHud(){
   const ch=+slides[cur].dataset.ch;
   [...chWrap.children].forEach((b,c)=>{b.classList.toggle('cur',c===ch);b.classList.toggle('done',c<ch)});
-  const no= cur===0?'表紙': cur===N-1?'REF': String(cur).padStart(2,'0');
-  document.getElementById('counter').textContent=`${no} / 25`;
+  const no=noLabel(cur);
+  document.getElementById('counter').textContent= cur>LAST? no : `${no} / ${TOTAL}`;
   document.getElementById('chname').textContent=CHAPTERS[ch];
   [...document.querySelectorAll('#ovgrid button')].forEach((b,k)=>b.classList.toggle('cur',k===cur));
 }
@@ -1211,7 +1041,7 @@ addEventListener('pointermove',wake); wake();
 document.getElementById('bPrev').onclick=prev;
 document.getElementById('bNext').onclick=next;
 const ov=document.getElementById('overview'), ovg=document.getElementById('ovgrid');
-slides.forEach((s,k)=>{const b=document.createElement('button');b.innerHTML=`<b>${k===0?'表紙':k===N-1?'REF':String(k).padStart(2,'0')}</b>${s.dataset.title}`;b.onclick=()=>{ov.classList.remove('show');go(k)};ovg.appendChild(b)});
+slides.forEach((s,k)=>{const b=document.createElement('button');b.innerHTML=`<b>${noLabel(k)}</b>${s.dataset.title}`;b.onclick=()=>{ov.classList.remove('show');go(k)};ovg.appendChild(b)});
 document.getElementById('bOv').onclick=()=>ov.classList.toggle('show');
 const help=document.getElementById('help');
 document.getElementById('bHelp').onclick=()=>help.classList.toggle('show');
@@ -1242,7 +1072,7 @@ addEventListener('keydown',e=>{
   const k=e.key;
   if(['ArrowRight','PageDown',' ','Enter','ArrowDown'].includes(k)){ if(k==='Enter'&&(document.activeElement.tagName==='BUTTON'||document.activeElement.tagName==='A')&&document.activeElement!==document.body) return; e.preventDefault(); next(); }
   else if(['ArrowLeft','PageUp','Backspace','ArrowUp'].includes(k)){ e.preventDefault(); prev(); }
-  else if(k==='Home') go(0); else if(k==='End') go(N-1);
+  else if(k==='Home') go(0); else if(k==='End') go(LAST);
   else if(k==='o'||k==='O') ov.classList.toggle('show');
   else if(k==='f'||k==='F') fs();
   else if(k==='t'||k==='T') tBox.classList.toggle('show');
@@ -1259,17 +1089,6 @@ deck.addEventListener('touchend',e=>{ if(tx===null) return; const dx=e.changedTo
 deck.addEventListener('click',e=>{ if(e.target.closest('button')) setTimeout(()=>document.activeElement.blur(),0) });
 
 /* ================= slide hooks ================= */
-// 01: node examples
-(()=>{const core=document.getElementById('s01core');
-  document.querySelectorAll('#s01 .node').forEach(n=>n.addEventListener('click',()=>{
-    const was=n.classList.contains('sel');
-    document.querySelectorAll('#s01 .node').forEach(x=>x.classList.remove('sel'));
-    if(was){core.innerHTML='<b>AI</b>';return}
-    n.classList.add('sel'); core.innerHTML=`<p>${n.dataset.k}<small>${n.dataset.v}</small></p>`;
-  }));
-  hooks.s01={leave(){core.innerHTML='<b>AI</b>';document.querySelectorAll('#s01 .node').forEach(x=>x.classList.remove('sel'))}};
-})();
-
 // 05: context elements
 (()=>{const sl=document.getElementById('s05'), els=[...sl.querySelectorAll('.el')];
   const states=['「よろしく！」だけの状態','まだ迷う','まだ迷う','動けるが、危うい','動けるが、危うい','もう一歩','任せられる'];
@@ -1288,10 +1107,11 @@ deck.addEventListener('click',e=>{ if(e.target.closest('button')) setTimeout(()=
 
 // 10: typing
 (()=>{const box=document.getElementById('s10ai'); const full='既存顧客へのキャンペーンを強化し、リピート率を高めましょう。'; let tm=[];
-  hooks.s10={enter(){tm.forEach(clearTimeout);tm=[];box.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';
+  const ttl=document.querySelector('#s10 .ttl'), T0='AIに聞く。', T1='「違和感」は、思考を止めるためではない';
+  hooks.s10={enter(){ttl.textContent=T0;tm.forEach(clearTimeout);tm=[];box.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';
       if(reduce){box.textContent=full;return}
       tm.push(setTimeout(()=>{let i=0;const tick=()=>{box.innerHTML=full.slice(0,i)+'<span class="caret"></span>'; if(i++<full.length) tm.push(setTimeout(tick,55)); else tm.push(setTimeout(()=>box.textContent=full,900))};tick()},2200));},
-    step(s,st,prev){ if(prev===-1 && st>0){tm.forEach(clearTimeout);box.textContent=full} },
+    step(s,st,prev){ ttl.textContent= st>=2 ? T1 : T0; if(prev===-1 && st>0){tm.forEach(clearTimeout);box.textContent=full} },
     leave(){tm.forEach(clearTimeout)}};
 })();
 
@@ -1351,13 +1171,6 @@ document.querySelectorAll('#s20 .hx[data-go]').forEach(h=>h.addEventListener('cl
       d.querySelector('.plus').disabled= used-votes[i]**2+(votes[i]+1)**2>CAP; d.classList.toggle('top',mx>0&&votes[i]===mx)})}
   document.getElementById('s23reset').onclick=()=>{votes.fill(0);render()};
   render();
-})();
-
-// 24: road
-(()=>{const sl=document.getElementById('s24'), st=[...sl.querySelectorAll('.stn')], bar=document.getElementById('s24bar');
-  hooks.s24={step(s,n){st.forEach((e,i)=>{e.classList.toggle('done',i<n);e.classList.toggle('cur',i===n-1)});
-    bar.style.width= n===0?'0%':((n-1)/6*96+4)+'%';}};
-  sl.querySelectorAll('.lab').forEach(b=>b.addEventListener('click',()=>go(cur,+b.dataset.i)));
 })();
 
 /* ---------- start ---------- */
