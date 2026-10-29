@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQLインジェクションの仕組みと対策</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+/* sql injection */
+.steps4{grid-template-columns:repeat(4,1fr)}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps4,.steps5{grid-template-columns:1fr}}
+.mails th{width:8em;white-space:nowrap}
+.btn:disabled{opacity:.4;cursor:default}
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 22px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.goals{margin:0 0 10px;padding-left:1.2em}
+.goals li{font-weight:700;margin-bottom:4px}
+.flowh{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap}
+.fb{flex:1;min-width:180px;border:2px solid var(--ink);border-radius:12px;background:var(--surface);padding:12px 16px;display:grid;gap:2px}
+.fb span{font-size:.9em;color:var(--sub)}
+.fa{align-self:center;font-weight:900;color:var(--sub)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pre-btn{border:1px solid var(--indigo);background:transparent;color:var(--indigo);border-radius:8px;padding:5px 12px;font-size:14px;font-family:"JetBrains Mono","Zen Kaku Gothic New",monospace}
+.pre-btn:hover{background:var(--indigo-soft)}
+.inp{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 12px;font:inherit;font-family:"JetBrains Mono","Zen Kaku Gothic New",monospace;font-size:15px}
+.inp.wide{flex:1;min-width:150px}
+.chk{display:flex;gap:8px;align-items:center;font-weight:700}
+.chk input{accent-color:var(--indigo);transform:scale(1.2)}
+.sqlv{line-height:1.9;word-break:break-all}
+.sqlv .t-c{color:#9FB0FF;font-weight:600}
+.sqlv .t-d{background:#F2C230;color:#1C2430;border-radius:3px;padding:0 1px}
+.sqlv .t-m{color:#8A93A8;font-style:italic}
+.sqlv .fromin{text-decoration:underline wavy #FF8A7A;text-underline-offset:4px}
+.sqlv .params{margin-top:8px;color:#DCE1EE}
+.lg{display:inline-block;margin-left:10px;padding:0 8px;border-radius:4px;font-size:12.5px;font-weight:700}
+.lg.d{background:var(--mark)} .lg.c{background:var(--indigo-soft);color:var(--indigo)} .lg.u{text-decoration:underline wavy var(--ng);text-underline-offset:3px}
+.lg.d{color:#1C2430}
+.code{background:var(--code-bg);border-radius:8px;padding:8px 0;overflow-x:auto}
+.ln{display:block;width:100%;text-align:left;background:transparent;border:none;border-left:4px solid transparent;color:var(--code-ink);font-family:"JetBrains Mono",monospace;font-size:13.5px;line-height:1.7;padding:1px 12px 1px 0;white-space:pre;cursor:pointer}
+.ln i{display:inline-block;width:2.8em;text-align:right;color:#7F8AA8;font-style:normal;margin-right:12px}
+.ln:hover{background:rgba(255,255,255,.07)}
+.ln.flag{background:rgba(242,194,48,.22);border-left-color:#F2C230}
+.ln.okline{background:rgba(91,199,158,.22);border-left-color:#5BC79E}
+.ln.missline{background:rgba(233,133,114,.28);border-left-color:#E98572}
+.ln.wrongline{background:rgba(255,255,255,.1);border-left-color:#9AA3B5}
+.ln .why{display:block;white-space:normal;margin:2px 8px 4px 3.8em;color:#F2C230;font-family:"Zen Kaku Gothic New",sans-serif;font-size:14px}
+.checks.tick li{display:block;padding:10px 14px}
+.checks.tick label{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.checks.tick input{margin-top:8px;transform:scale(1.25);accent-color:var(--indigo)}
+.checks.tick span{display:block;font-weight:700}
+.checks.tick small{display:block;font-weight:400;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="SQLインジェクションの仕組みと対策">
+ <div class="inner">
+  <h1>SQLインジェクションの仕組みと対策</h1>
+  <p class="sub">なぜ起きるのか。どう見分け、どう防ぎ、AIが作ったアプリをどう確かめるか</p>
+  <div class="rule"></div>
+  <p><b>このスライドで身につくこと</b></p>
+  <ul class="goals">
+   <li>SQLインジェクションが起きる理由を、説明できる</li>
+   <li>危険なコードと、安全なコードを、見分けられる</li>
+   <li>AIが生成したアプリのセキュリティを、確認できる</li>
+  </ul>
+  <p class="note">※ 教材のため、デモのデータはすべて架空のダミーです。許可のないシステムには、試さないでください。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="アプリとデータベースの関係：SQL文を組み立てて送る">
+ <div class="inner">
+  <span class="tag">1　前提</span>
+  <h2>アプリは、SQL文を組み立てて、データベースに送る</h2>
+  <p class="def">ログインや検索のたびに、アプリは「この条件のデータをください」というSQL文を作り、データベース（DB）に送っています。</p>
+  <div class="flowh">
+   <div class="fb"><b>利用者</b><span>画面に入力する</span></div>
+   <div class="fa">→</div>
+   <div class="fb"><b>アプリ</b><span>入力を使って、SQL文を作る</span></div>
+   <div class="fa">→</div>
+   <div class="fb"><b>データベース</b><span>SQL文を実行して、結果を返す</span></div>
+  </div>
+  <div class="pre" style="margin-top:14px">SELECT * FROM users WHERE name = 'sato' AND password = 'demo-pw-3f9a'
+（「users表から、名前がsatoで、パスワードが…の行を取り出す」という命令）</div>
+  <div class="msg">ここで、<mark>利用者の入力が、SQL文の中に入る</mark>。これが、すべての出発点。</div>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="POINT！ 入力が「データ」から「命令」に変わる">
+ <div class="inner">
+  <span class="tag">2　仕組み</span>
+  <h2>POINT！ 入力が、「データ」から「命令」に変わる</h2>
+  <p class="def">アプリが、SQL文に入力を<b>文字列として、つなげて</b>作っているとします。入力を変えて、SQL文のどこが「データ」で、どこが「命令」かを見てください。</p>
+  <div class="presets" id="p3presets" role="group" aria-label="入力例"></div>
+  <div class="row-btns" style="margin-bottom:8px"><label for="p3in"><b>検索キーワード：</b></label><input id="p3in" class="inp wide" value="ボールペン" autocomplete="off"></div>
+  <div class="panel">
+   <p class="note" style="margin:0 0 6px">アプリのコード（危険な書き方）</p>
+   <div class="pre">sql = "SELECT * FROM items WHERE name = '" + keyword + "'"</div>
+   <p class="note" style="margin:12px 0 6px">できあがったSQL文　<span class="lg d">データ（文字列の中）</span><span class="lg c">命令（SQLの構造）</span><span class="lg u">入力された部分</span></p>
+   <div class="pre sqlv" id="p3sql"></div>
+   <div class="result" id="p3res"></div>
+  </div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="体験①：ログイン画面を、突破される">
+ <div class="inner">
+  <span class="tag">2　仕組み</span>
+  <h2>体験①：ログイン画面を、突破される</h2>
+  <p class="def">架空のユーザー表を使った、簡易なSQL解析で動いています。実装を切り替えて、同じ入力でも結果が変わることを確かめてください。</p>
+  <div class="seg" id="p4mode" role="group" aria-label="実装">
+   <button type="button" data-m="bad" aria-pressed="true">危険：文字列をつなげる</button>
+   <button type="button" data-m="ok" aria-pressed="false">安全：プレースホルダ</button>
+  </div>
+  <div class="presets" id="p4presets" role="group" aria-label="入力例"></div>
+  <div class="cols">
+   <div class="panel">
+    <div class="row-btns" style="margin-bottom:8px"><label for="p4u" style="min-width:5em"><b>ユーザー名</b></label><input id="p4u" class="inp wide" autocomplete="off"></div>
+    <div class="row-btns"><label for="p4p" style="min-width:5em"><b>パスワード</b></label><input id="p4p" class="inp wide" autocomplete="off"></div>
+    <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="p4go">ログイン</button></div>
+    <div class="result" id="p4res"></div>
+   </div>
+   <div class="panel">
+    <p class="note" style="margin:0 0 6px" id="p4lab">アプリが作ったSQL文</p>
+    <div class="pre sqlv" id="p4sql"></div>
+    <p class="note" style="margin:10px 0 4px">users表（架空のダミー）</p>
+    <table class="mails" id="p4tbl"></table>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="体験②：検索画面から、非公開データが漏れる">
+ <div class="inner">
+  <span class="tag">2　仕組み</span>
+  <h2>体験②：検索画面から、非公開データが漏れる</h2>
+  <p class="def">商品を、カテゴリで検索する画面です。「公開中のもの（public = 1）だけ」を返す条件が付いています。入力を変えて、その条件がどうなるかを見てください。</p>
+  <div class="seg" id="p5mode" role="group" aria-label="実装">
+   <button type="button" data-m="bad" aria-pressed="true">危険：文字列をつなげる</button>
+   <button type="button" data-m="ok" aria-pressed="false">安全：プレースホルダ</button>
+  </div>
+  <div class="presets" id="p5presets" role="group" aria-label="入力例"></div>
+  <div class="row-btns" style="margin-bottom:8px"><label for="p5in"><b>カテゴリ：</b></label><input id="p5in" class="inp wide" value="文具" autocomplete="off"><button type="button" class="btn" id="p5go">検索</button></div>
+  <div class="cols">
+   <div class="panel"><p class="note" style="margin:0 0 6px" id="p5lab">アプリが作ったSQL文</p><div class="pre sqlv" id="p5sql"></div><div class="result" id="p5res"></div></div>
+   <div class="panel"><p class="note" style="margin:0 0 6px">検索結果</p><table class="mails" id="p5tbl"></table></div>
+  </div>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="起きうる被害">
+ <div class="inner">
+  <span class="tag">3　影響</span>
+  <h2>起きうる被害</h2>
+  <p class="def">実際の影響は、アプリの作りや、データベースの権限・設定によって異なります。代表的なものを確認してください。</p>
+  <div class="steps steps4" id="dmg" role="group" aria-label="被害の種類"></div>
+  <div class="panel" id="dmgBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="対策の全体像：多層で守る">
+ <div class="inner">
+  <span class="tag">4　対策</span>
+  <h2>対策の全体像：多層で守る</h2>
+  <p class="def">最も重要なのは、①のプレースホルダです。それだけに頼らず、複数を重ねます。クリックして確認してください。</p>
+  <div class="steps steps5" id="def" role="group" aria-label="対策"></div>
+  <div class="panel" id="defBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="プレースホルダが、なぜ効くのか">
+ <div class="inner">
+  <span class="tag">4　対策</span>
+  <h2>プレースホルダが、なぜ効くのか</h2>
+  <p class="def">SQL文の「型」と「値」を、別々にDBへ渡します。値は、あとから「値」としてだけ扱われるので、命令にはなりません。段階をクリックしてください。</p>
+  <div class="steps" id="ph" role="group" aria-label="段階"></div>
+  <div class="cols">
+   <div class="panel"><p class="note" style="margin:0 0 6px">アプリのコード（安全な書き方）</p><div class="pre" id="phCode"></div></div>
+   <div class="panel"><p class="note" style="margin:0 0 6px">DBの中で起きること</p><div class="pre" id="phDb"></div><div class="result" id="phRes"></div></div>
+  </div>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="落とし穴：自作のエスケープと、数値の列">
+ <div class="inner">
+  <span class="tag">4　対策</span>
+  <h2>落とし穴：自作のエスケープと、数値の列</h2>
+  <p class="def">「引用符（'）を、2つに置き換えればよい」という自作の対策を入れた場合を試します。文字列の列と、数値の列で、結果を比べてください。</p>
+  <div class="seg" id="p9col" role="group" aria-label="列の種類">
+   <button type="button" data-c="str" aria-pressed="true">文字列の列：category = '…'</button>
+   <button type="button" data-c="num" aria-pressed="false">数値の列：id = …</button>
+  </div>
+  <div class="row-btns" style="margin-bottom:8px"><label class="chk"><input type="checkbox" id="p9esc" checked> 引用符を2つに置き換える（自作の対策）</label></div>
+  <div class="presets" id="p9presets" role="group" aria-label="入力例"></div>
+  <div class="row-btns" style="margin-bottom:8px"><label for="p9in"><b>入力：</b></label><input id="p9in" class="inp wide" autocomplete="off"></div>
+  <div class="cols">
+   <div class="panel"><p class="note" style="margin:0 0 6px">できあがったSQL文</p><div class="pre sqlv" id="p9sql"></div><div class="result" id="p9res"></div></div>
+   <div class="panel"><p class="note" style="margin:0 0 6px">検索結果</p><table class="mails" id="p9tbl"></table></div>
+  </div>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="動的に変えられない部分：ORDER BYと列名">
+ <div class="inner">
+  <span class="tag">4　対策</span>
+  <h2>プレースホルダでは守れない部分</h2>
+  <p class="def">プレースホルダで渡せるのは、「値」だけです。並べ替えの列名（ORDER BY）や、テーブル名を、利用者の指定で変えたいときは、別の対策が必要です。</p>
+  <div class="cols">
+   <div class="panel"><h3>危険な例</h3><div class="pre">// ユーザーが sort=price や sort=name を指定
+db.query(`SELECT * FROM items ORDER BY ${sort}`)</div><p style="margin:10px 0 0">指定された文字列が、そのままSQL文の構造になる。プレースホルダ（?）は使えない。</p></div>
+   <div class="panel"><h3>安全な例：許可リスト（ホワイトリスト）</h3><div class="pre">const allowed = { price: "price", name: "name" };
+const col = allowed[sort] ?? "name";   // 許可した列名だけ
+db.query(`SELECT * FROM items ORDER BY ${col}`)</div><p style="margin:10px 0 0">利用者の入力は「選ぶだけ」にして、SQL文に入る文字列は、アプリが決めたものに限る。</p></div>
+  </div>
+  <div class="msg">「値」はプレースホルダ。「構造」は<mark>許可リスト</mark>。</div>
+ </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="確認クイズ：危険？ 安全？">
+ <div class="inner">
+  <span class="tag">5　見分ける</span>
+  <h2>危険なコードと、安全なコードを見分ける</h2>
+  <p class="def">コードを読んで、「危険」か「安全」かを選んでください。全8問です。</p>
+  <div class="panel">
+   <p class="note" id="qNo" style="margin:0 0 6px"></p>
+   <div class="pre" id="qCode"></div>
+   <div class="opts" id="qOpts" role="group" aria-label="選択肢" style="margin-top:12px"></div>
+   <div class="result" id="qRes"></div>
+   <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="qNext" hidden>次の問題</button><button type="button" class="btn ghost" id="qRetry" hidden>もう一度</button></div>
+  </div>
+ </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="AIが生成したアプリは、なぜ確認が必要か">
+ <div class="inner">
+  <span class="tag">6　AI生成コード</span>
+  <h2>AIが生成したアプリは、なぜ確認が必要か</h2>
+  <p class="def">AIが作ったコードは、動くことが多い一方で、安全でない書き方が含まれる可能性があります。「動く」と「安全」は、別の問題です。</p>
+  <div class="cards">
+   <div class="card"><span class="n">理由 1</span><h3>動くことが優先されやすい</h3><p>短く書ける「文字列をつなげる」書き方が、そのまま出力されることがある。</p></div>
+   <div class="card"><span class="n">理由 2</span><h3>学習した古い書き方が混ざる</h3><p>学習データには、安全でない書き方も含まれるため、そのまま再現されることがある。</p></div>
+   <div class="card"><span class="n">理由 3</span><h3>頼み方で、変わるとは限らない</h3><p>「安全に」と頼んでも、毎回、正しく直るとは限らない。結果を、人が確認する必要がある。</p></div>
+   <div class="card"><span class="n">理由 4</span><h3>作った人が、気づきにくい</h3><p>コードを読まずに公開すると、問題があっても気づけない。</p></div>
+  </div>
+  <div class="msg">AIが書いたコードも、<mark>人が確認してから、公開する</mark>。</div>
+ </div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-title="体験③：AIが作ったコードを、レビューしよう">
+ <div class="inner">
+  <span class="tag">6　AI生成コード</span>
+  <h2>体験③：AIが作ったコードを、レビューしよう</h2>
+  <p class="def">架空の「メモアプリ」を、AIが作りました。<b>危険だと思う行</b>を、クリックして選び、「答え合わせ」を押してください。</p>
+  <div class="panel">
+   <div class="code" id="rvCode" role="group" aria-label="コード"></div>
+   <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="rvCheck">答え合わせ</button><button type="button" class="btn ghost" id="rvReset">やり直す</button></div>
+   <div class="result" id="rvRes"></div>
+  </div>
+  <p class="note" style="margin-top:8px">※ 架空のコードです。実在するシステムのものではありません。</p>
+ </div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-title="確認の手順：見る・試す・直す・確かめる">
+ <div class="inner">
+  <span class="tag">6　AI生成コード</span>
+  <h2>AIが生成したアプリの、確認の手順</h2>
+  <p class="def">クリックして、各ステップの内容を確認してください。</p>
+  <div class="steps steps4" id="chk" role="group" aria-label="手順"></div>
+  <div class="panel" id="chkBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-title="まとめと、達成の確認">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめと、達成の確認</h2>
+  <div class="msg" style="margin-top:6px">入力を「データ」として渡す。<br><mark>SQL文の構造と、入力を、分ける。</mark></div>
+  <p class="note" style="margin:10px 0 6px">できるようになったか、チェックしてください。</p>
+  <ul class="checks tick" id="goalChecks">
+   <li><label><input type="checkbox"><span>SQLインジェクションが起きる理由を、説明できる<small class="note">入力が文字列の外に出て、SQL文の構造の一部になるから。</small></span></label></li>
+   <li><label><input type="checkbox"><span>危険なコードと、安全なコードを、見分けられる<small class="note">文字列のつなげ（+、テンプレートリテラル、f文字列）は危険。プレースホルダ（?、%s）は安全。</small></span></label></li>
+   <li><label><input type="checkbox"><span>AIが生成したアプリのセキュリティを、確認できる<small class="note">コードを見る→テスト環境で試す→直す→確かめる、の順に進める。</small></span></label></li>
+  </ul>
+  <div class="links">
+   <a href="../ai-security-prelearning/">AIセキュリティ事前学習 →</a>
+   <a href="../ai-security/">生成AIを止めないためのセキュリティ →</a>
+  </div>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open')&&!e.target.closest('input,.code,.sqlv'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn,start){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[start].click();
+  }
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function rows(el,title,list){el.innerHTML='<h3></h3><table class="mails"><tbody></tbody></table>';el.querySelector('h3').textContent=title;
+    list.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];el.querySelector('tbody').appendChild(tr);});}
+  function presets(box,list,fn){list.forEach(p=>{const b=document.createElement('button');b.type='button';b.className='pre-btn';b.textContent=p[0];b.title=p[1];b.onclick=()=>fn(p);box.appendChild(b);});}
+  function table(el,head,data){el.innerHTML='<thead><tr>'+head.map(()=>'<th></th>').join('')+'</tr></thead><tbody></tbody>';
+    [...el.querySelectorAll('th')].forEach((th,i)=>th.textContent=head[i]);
+    data.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML=r.map(()=>'<td></td>').join('');[...tr.children].forEach((td,i)=>td.textContent=r[i]);el.querySelector('tbody').appendChild(tr)});
+    if(!data.length){const tr=document.createElement('tr');tr.innerHTML='<td colspan="'+head.length+'"></td>';tr.firstChild.textContent='（該当なし）';el.querySelector('tbody').appendChild(tr)}}
+
+  /* ===== a tiny SQL engine (for teaching only) ===== */
+  const USERS=[{id:1,name:'sato',password:'demo-pw-3f9a',role:'一般'},{id:2,name:'admin',password:'demo-pw-77c1',role:'管理者'},{id:3,name:'suzuki',password:'demo-pw-b204',role:'一般'}];
+  const ITEMS=[{id:1,name:'ボールペン',category:'文具',public:1,price:120},{id:2,name:'ノート',category:'文具',public:1,price:250},{id:3,name:'ホッチキス',category:'文具',public:1,price:480},{id:4,name:'社内向け特価表',category:'社内',public:0,price:0},{id:5,name:'仕入れ先一覧',category:'社内',public:0,price:0},{id:6,name:'マグカップ',category:'雑貨',public:1,price:800}];
+  const TABLES={users:USERS,items:ITEMS};
+  function tokenize(sql){const t=[];let i=0;const n=sql.length;
+    while(i<n){const c=sql[i];
+      if(/\s/.test(c)){i++;continue}
+      if(c==='-'&&sql[i+1]==='-'){t.push({type:'comment',s:i,e:n,v:sql.slice(i)});i=n;continue}
+      if(c==="'"){let j=i+1,v='',closed=false;while(j<n){if(sql[j]==="'"){if(sql[j+1]==="'"){v+="'";j+=2;continue}closed=true;j++;break}v+=sql[j];j++}
+        t.push({type:'str',s:i,e:j,v,closed});i=j;continue}
+      if(/[0-9]/.test(c)){let j=i;while(j<n&&/[0-9.]/.test(sql[j]))j++;t.push({type:'num',s:i,e:j,v:parseFloat(sql.slice(i,j))});i=j;continue}
+      if(/[A-Za-z_]/.test(c)){let j=i;while(j<n&&/[A-Za-z_0-9]/.test(sql[j]))j++;t.push({type:'id',s:i,e:j,v:sql.slice(i,j)});i=j;continue}
+      if(c==='<'||c==='>'||c==='!'){const two=sql.substr(i,2);if(['<>','<=','>=','!='].includes(two)){t.push({type:'op',s:i,e:i+2,v:two});i+=2;continue}}
+      t.push({type:'op',s:i,e:i+1,v:c});i++;}
+    return t}
+  function parseWhere(toks){let p=0;const peek=()=>toks[p],kw=(v)=>peek()&&peek().type==='id'&&peek().v.toUpperCase()===v;
+    function operand(){const t=toks[p];if(!t)throw new Error('式が途中で終わっています');
+      if(t.type==='str'){if(!t.closed)throw new Error('文字列が閉じていません（引用符が足りません）');p++;return{k:'lit',v:t.v}}
+      if(t.type==='num'){p++;return{k:'lit',v:t.v}}
+      if(t.type==='id'){p++;return{k:'col',v:t.v}}
+      if(t.v==='('){p++;const e=orExpr();if(!peek()||peek().v!==')')throw new Error('かっこが閉じていません');p++;return e}
+      throw new Error('予期しない記号：'+t.v)}
+    function cmp(){if(kw('NOT')){p++;return{k:'not',a:cmp()}}
+      const l=operand();const t=peek();
+      if(t&&t.type==='op'&&['=','<>','!=','<','>','<=','>='].includes(t.v)){p++;const r=operand();return{k:'cmp',op:t.v,l,r}}
+      if(t&&t.type==='id'&&t.v.toUpperCase()==='LIKE'){p++;const r=operand();return{k:'like',l,r}}
+      return l}
+    function andExpr(){let l=cmp();while(kw('AND')){p++;l={k:'and',l,r:cmp()}}return l}
+    function orExpr(){let l=andExpr();while(kw('OR')){p++;l={k:'or',l,r:andExpr()}}return l}
+    const e=orExpr();return{expr:e,rest:toks.slice(p)}}
+  function evalE(e,row){switch(e.k){
+    case 'lit':return e.v;case 'col':if(!(e.v in row))throw new Error('列がありません：'+e.v);return row[e.v];
+    case 'not':return !evalE(e.a,row);case 'and':return evalE(e.l,row)&&evalE(e.r,row);case 'or':return evalE(e.l,row)||evalE(e.r,row);
+    case 'like':{const pat=String(evalE(e.r,row)).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/%/g,'.*');return new RegExp('^'+pat+'$').test(String(evalE(e.l,row)))}
+    case 'cmp':{const a=evalE(e.l,row),b=evalE(e.r,row);switch(e.op){case '=':return a==b;case '<>':case '!=':return a!=b;case '<':return a<b;case '>':return a>b;case '<=':return a<=b;case '>=':return a>=b}}}}
+  // runs "SELECT <cols> FROM <table> [WHERE ...]" ; returns {rows,cols,table,stmts,error}
+  function runSql(sql){const out={rows:[],cols:[],stmts:1,error:null,ignored:null};
+    try{const toks=tokenize(sql);
+      // split on ';' outside strings
+      const stmts=[[]];toks.forEach(t=>{if(t.type==='op'&&t.v===';')stmts.push([]);else if(t.type!=='comment')stmts[stmts.length-1].push(t)});
+      const real=stmts.filter(s=>s.length);out.stmts=real.length;
+      const st=real[0];if(!st||st[0].type!=='id'||st[0].v.toUpperCase()!=='SELECT')throw new Error('SELECT文ではありません');
+      let k=1;const cols=[];while(k<st.length&&!(st[k].type==='id'&&st[k].v.toUpperCase()==='FROM')){if(st[k].v!==',')cols.push(st[k].v);k++}
+      if(k>=st.length)throw new Error('FROM がありません');const table=st[k+1]&&st[k+1].v;if(!TABLES[table])throw new Error('表がありません：'+table);
+      let rowsAll=TABLES[table];const rest=st.slice(k+2);
+      if(rest.length){if(!(rest[0].type==='id'&&rest[0].v.toUpperCase()==='WHERE'))throw new Error('WHERE の位置が正しくありません');
+        const w=parseWhere(rest.slice(1));if(w.rest.length)throw new Error('文法エラー：'+w.rest[0].v+' の付近');
+        rowsAll=rowsAll.filter(r=>evalE(w.expr,r))}
+      out.table=table;out.cols=cols[0]==='*'?Object.keys(TABLES[table][0]):cols;out.rows=rowsAll;
+      if(real.length>1)out.ignored=real.slice(1).map(s=>s.map(t=>t.type==='str'?"'"+t.v+"'":(t.v)).join(' '));
+    }catch(e){out.error=e.message}
+    return out}
+  // paints the SQL: data (inside string) / command (structure) / input (underline)
+  function paintSql(el,sql,inStart,inEnd){el.innerHTML='';const toks=tokenize(sql);const cls=new Array(sql.length).fill('c');
+    for(let i=0;i<sql.length;i++)if(/\s/.test(sql[i]))cls[i]='w';
+    toks.forEach(t=>{const c=t.type==='str'?'d':(t.type==='comment'?'m':'c');for(let i=t.s;i<t.e;i++)cls[i]=c});
+    let i=0;while(i<sql.length){let j=i;const inp=(x)=>inStart!=null&&x>=inStart&&x<inEnd;while(j<sql.length&&cls[j]===cls[i]&&inp(j)===inp(i))j++;
+      const sp=document.createElement('span');sp.className='t-'+cls[i]+(inp(i)?' fromin':'');sp.textContent=sql.slice(i,j);el.appendChild(sp);i=j}}
+  function inputEscaped(sql,inStart,inEnd){// did any input char become structure (non-string token)?
+    if(inEnd<=inStart)return false;const toks=tokenize(sql);for(let i=inStart;i<inEnd;i++){if(/\s/.test(sql[i]))continue;const t=toks.find(t=>i>=t.s&&i<t.e);if(t&&t.type!=='str')return true;if(t&&t.type==='str'&&(i===t.s||(t.closed&&i===t.e-1)))return true}return false}
+
+  /* ===== 3: data vs command ===== */
+  const P3=[['ボールペン','ふつうの入力'],["' OR '1'='1",'引用符で文字列を閉じる'],["x' OR name = 'ノート",'別の条件をつなげる'],["x'; DROP TABLE items; --",'命令を追加する（教材のため実行はしません）'],["'",'引用符を1つだけ']];
+  function draw3(){const v=$('p3in').value,pre="SELECT * FROM items WHERE name = '",suf="'",sql=pre+v+suf,s0=pre.length,e0=s0+v.length;
+    paintSql($('p3sql'),sql,s0,e0);const r=runSql(sql),esc=inputEscaped(sql,s0,e0);
+    if(r.error&&/閉じていません|文法/.test(r.error))res($('p3res'),'bad','SQL文として成立しなくなりました（'+r.error+'）。入力がSQL文の構造に影響した、ということです。エラーが画面に出る場合は、攻撃者へのヒントにもなります。');
+    else if(esc)res($('p3res'),'bad','入力が、文字列の外に出て、SQL文の構造（命令）の一部になっています。'+(r.stmts>1?'さらに、命令が '+r.stmts+' つに分かれました。':'')+(r.rows.length>1||(r.rows.length&&v!==r.rows[0].name)?'この例では、'+r.rows.length+' 件が取り出されます。':''));
+    else res($('p3res'),'good','入力は、すべて「文字列の中」に収まっています。データとして扱われ、SQL文の構造は変わりません。');}
+  presets($('p3presets'),P3,p=>{$('p3in').value=p[0];draw3()});$('p3in').addEventListener('input',draw3);draw3();
+
+  /* ===== 4: login ===== */
+  const P4=[['sato / demo-pw-3f9a','ふつうのログイン','sato','demo-pw-3f9a'],["admin'--  （パスワードは何でも）",'コメントでパスワードの確認を消す',"admin'--",'x'],["' OR '1'='1 を両方に",'常に真になる条件をつなげる',"' OR '1'='1","' OR '1'='1"],['sato / まちがったパスワード','ふつうの失敗','sato','abc']];
+  function login(){const u=$('p4u').value,p=$('p4p').value,mode=document.querySelector('#p4mode [aria-pressed=true]').dataset.m,box=$('p4sql');
+    if(mode==='bad'){const sql="SELECT * FROM users WHERE name = '"+u+"' AND password = '"+p+"'",s0=("SELECT * FROM users WHERE name = '").length;
+      paintSql(box,sql,s0,s0+u.length);const pi=sql.indexOf("' AND password = '")+("' AND password = '").length;
+      // underline password part as well
+      const r=runSql(sql);$('p4lab').textContent='アプリが作ったSQL文（文字列をつなげた）';
+      if(r.error)res($('p4res'),'bad','エラー：'+r.error);
+      else if(r.rows.length){const x=r.rows[0],normal=(u===x.name&&p===x.password);res($('p4res'),normal?'good':'bad',(normal?'ログイン成功：':'ログイン成功（パスワードを知らないのに）：')+x.name+'（'+x.role+'）としてログインしました。'+(r.rows.length>1?'SQLは '+r.rows.length+' 行を返しています。':''));}
+      else res($('p4res'),'','ログイン失敗：ユーザー名かパスワードが違います。');}
+    else{box.innerHTML='';const tpl="SELECT * FROM users WHERE name = ? AND password = ?";
+      const a=document.createElement('span');a.className='t-c';a.textContent=tpl;box.appendChild(a);
+      const b=document.createElement('div');b.className='params';b.innerHTML='値（別に渡す）：<span class="t-d fromin"></span>　<span class="t-d fromin"></span>';
+      b.querySelectorAll('span')[0].textContent="'"+u+"'";b.querySelectorAll('span')[1].textContent="'"+p+"'";box.appendChild(b);
+      $('p4lab').textContent='アプリが作ったSQL文（プレースホルダ）';
+      const row=USERS.find(x=>x.name===u&&x.password===p);
+      if(row)res($('p4res'),'good','ログイン成功：'+row.name+'（'+row.role+'）。入力は「値」として照合され、命令にはなりません。');
+      else res($('p4res'),'','ログイン失敗：入力はすべて「値」として照合されるため、怪しい入力でも、突破できません。');}}
+  presets($('p4presets'),P4,p=>{$('p4u').value=p[2];$('p4p').value=p[3];login()});
+  $('p4go').onclick=login;seg($('p4mode'),login);
+  table($('p4tbl'),['id','name','password','role'],USERS.map(u=>[u.id,u.name,u.password,u.role]));
+  $('p4u').value='sato';$('p4p').value='demo-pw-3f9a';login();
+
+  /* ===== 5: search leak ===== */
+  const P5=[['文具','ふつうの検索','文具'],["文具' OR 1=1 --",'全件を取り出す',"文具' OR 1=1 --"],["社内' --",'コメントで「公開中だけ」の条件を消す',"社内' --"]];
+  function search5(){const v=$('p5in').value,mode=document.querySelector('#p5mode [aria-pressed=true]').dataset.m,box=$('p5sql');let rowsR;
+    if(mode==='bad'){const pre="SELECT id, name, category, public FROM items WHERE category = '",suf="' AND public = 1",sql=pre+v+suf;paintSql(box,sql,pre.length,pre.length+v.length);
+      $('p5lab').textContent='アプリが作ったSQL文（文字列をつなげた）';const r=runSql(sql);
+      if(r.error){res($('p5res'),'bad','エラー：'+r.error);table($('p5tbl'),['id','name','category','public'],[]);return}
+      rowsR=r.rows;const leaked=rowsR.filter(x=>x.public===0).length;
+      res($('p5res'),leaked?'bad':'good',leaked?'非公開のデータ '+leaked+' 件が、含まれています。「public = 1」の条件が、働いていません。':'公開中のデータだけが、返りました。');}
+    else{box.innerHTML='';const a=document.createElement('span');a.className='t-c';a.textContent='SELECT id, name, category, public FROM items WHERE category = ? AND public = 1';box.appendChild(a);
+      const b=document.createElement('div');b.className='params';b.innerHTML='値（別に渡す）：<span class="t-d fromin"></span>';b.querySelector('span').textContent="'"+v+"'";box.appendChild(b);
+      $('p5lab').textContent='アプリが作ったSQL文（プレースホルダ）';rowsR=ITEMS.filter(x=>x.category===v&&x.public===1);
+      res($('p5res'),'good','入力は、カテゴリ名という「値」として照合されます。「public = 1」の条件は、常に働きます。');}
+    table($('p5tbl'),['id','name','category','public'],rowsR.map(x=>[x.id,x.name,x.category,x.public]))}
+  presets($('p5presets'),P5,p=>{$('p5in').value=p[2];search5()});$('p5go').onclick=search5;seg($('p5mode'),search5);search5();
+
+  /* ===== 6: damage ===== */
+  const DM=[
+    {t:'認証の回避',s:'パスワードを知らずに、ログイン',d:'ログインの条件を、常に真にされると、パスワードを知らなくても、ログインされる。管理者として入られる可能性もある。',e:'体験①の「admin'+"'"+'--」。'},
+    {t:'情報の漏えい',s:'見せてはいけないデータが見える',d:'検索の条件が、無効にされ、顧客情報・非公開データ・パスワード（ハッシュ）などが、取り出される可能性がある。',e:'体験②の「社内'+"'"+' --」。'},
+    {t:'データの改ざん・削除',s:'書き換え、消される',d:'更新・削除の命令を、追加できる環境や権限では、データの書き換えや、テーブルの削除に至る可能性がある。多くの環境では既定で、複数の文を許さないが、設定や使う部品によって異なる。',e:'「x'+"'"+'; DROP TABLE items; --」のような入力。'},
+    {t:'被害の拡大',s:'そこから、別の場所へ',d:'取り出した情報（認証情報など）を足がかりに、別のシステムへ侵入されたり、他の利用者のなりすましに、つながる可能性がある。',e:'DBに、必要以上の権限があるほど、影響が広がる。'}
+  ];
+  btnList($('dmg'),DM,(x,i)=>'被害 '+(i+1),x=>x.t,x=>rows($('dmgBody'),x.t+'：'+x.s,[['何が起きるか',x.d],['デモでは',x.e]]),0);
+
+  /* ===== 7: defenses ===== */
+  const DF=[
+    {t:'プレースホルダ',s:'値は、別に渡す',d:'SQL文の構造と、値を、別々にDBへ渡す（パラメータ化クエリ）。値は命令として解釈されない。最も基本で、効果の大きい対策。',e:'「?」や「%s」「:name」で値の位置を示し、値は引数で渡す。'},
+    {t:'ORMの正しい使用',s:'部品に任せる',d:'ORMやクエリビルダは、通常、値をパラメータとして扱う。ただし、生のSQLを書ける機能（raw など）に、入力をつなげると、危険になる。',e:'filter(name=name) は安全。raw("… " + name) は危険。'},
+    {t:'許可リスト',s:'構造に入るものは、決めておく',d:'列名・並び順・テーブル名など、プレースホルダで渡せない部分は、アプリが許可した値の中から選ぶ。入力値の型・長さ・形式の検証も、補助として行う。',e:'sort=price なら、許可リストの「price」に置き換える。'},
+    {t:'最小権限',s:'被害を小さく',d:'アプリが使うDBアカウントには、必要な操作だけを許可する。テーブルの削除や、管理操作の権限は、与えない。',e:'参照だけのアプリには、SELECT 権限だけ。'},
+    {t:'エラーと確認',s:'ヒントを与えない／見つける',d:'SQLやエラーの詳細を、画面に出さない。ログに残す。コードレビューや、自動検査ツール、テスト環境での検査で、混入を見つける。',e:'画面には「エラーが発生しました」だけを出す。'}
+  ];
+  btnList($('def'),DF,(x,i)=>'対策 '+(i+1),x=>x.t,x=>rows($('defBody'),x.t+'：'+x.s,[['内容',x.d],['例',x.e]]),0);
+
+  /* ===== 8: placeholders ===== */
+  const PH=[
+    {t:'① 型を送る',code:'const sql = "SELECT * FROM users\\n  WHERE name = ? AND password = ?";\\ndb.prepare(sql);   // ← まず、SQL文の「型」だけを渡す',db:'SQL文を受け取った。\\n構造を解析して確定する：\\n  name = （値の穴1）\\n  AND password = （値の穴2）\\n\\n→ ここで、命令の形が決まる。',r:'この時点で、SQL文の構造は、確定します。'},
+    {t:'② 値を別に渡す',code:'db.prepare(sql);\\ndb.run(["admin\\u0027 --", "abc"]);   // ← 値は別に渡す',db:'値を受け取った：\\n  穴1 ← "admin\\u0027 --"\\n  穴2 ← "abc"\\n\\n構造はすでに確定している。\\n値は、穴に入れるだけで、解析し直さない。',r:'「\\u0027 --」という文字も、ただの文字として扱われます。'},
+    {t:'③ 値として使う',code:'// 結果を受け取る\\nrows = db.all();',db:'name が「admin\\u0027 --」と等しい行を探す。\\n→ そんな名前のユーザーはいない。\\n→ 0件。',r:'入力は、最後まで「値」。命令にはならず、突破できません。'}
+  ];
+  btnList($('ph'),PH,(x,i)=>'段階 '+(i+1),x=>x.t,x=>{$('phCode').textContent=x.code.replace(/\\n/g,'\n').replace(/\\u0027/g,"'");$('phDb').textContent=x.db.replace(/\\n/g,'\n').replace(/\\u0027/g,"'");res($('phRes'),'good',x.r.replace(/\\u0027/g,"'"))},0);
+
+  /* ===== 9: escape pitfall ===== */
+  const P9S=[["文具",'ふつうの入力'],["文具' OR 1=1 --",'引用符を使った攻撃']],P9N=[["1",'ふつうの入力'],["1 OR 1=1",'引用符を使わない攻撃']];
+  function draw9(){const col=document.querySelector('#p9col [aria-pressed=true]').dataset.c,esc=$('p9esc').checked;let v=$('p9in').value,used=v;if(esc)used=v.replace(/'/g,"''");
+    let pre,suf,sql;if(col==='str'){pre="SELECT id, name, category, public FROM items WHERE category = '";suf="' AND public = 1";sql=pre+used+suf}else{pre="SELECT id, name, category, public FROM items WHERE id = ";suf='';sql=pre+used}
+    paintSql($('p9sql'),sql,pre.length,pre.length+used.length);const r=runSql(sql);
+    if(r.error){res($('p9res'),'bad','エラー：'+r.error);table($('p9tbl'),['id','name','category','public'],[]);return}
+    const leaked=r.rows.filter(x=>x.public===0).length,all=r.rows.length;
+    if(col==='str')res($('p9res'),esc?'good':(all>3||leaked?'bad':'good'),esc?(v.includes("'")?'引用符が2つに置き換わり、入力は文字列の中に収まりました。この例では、防げています。ただし、データベースや文字コードの違いで、抜けが出ることがあり、これだけに頼るのは、おすすめできません。':'ふつうの入力です。'):(leaked||all>3?'エスケープがないと、突破されます。':'ふつうの入力です。'));
+    else res($('p9res'),all>1?'bad':'good',all>1?'数値の列には、引用符が使われないため、引用符を置き換えても、意味がありません。'+all+' 件が返り、非公開のデータも含まれます。':'ふつうの入力です。');
+    table($('p9tbl'),['id','name','category','public'],r.rows.map(x=>[x.id,x.name,x.category,x.public]))}
+  function p9presets(){const box=$('p9presets');box.innerHTML='';const list=document.querySelector('#p9col [aria-pressed=true]').dataset.c==='str'?P9S:P9N;presets(box,list,p=>{$('p9in').value=p[0];draw9()});$('p9in').value=list[0][0]}
+  seg($('p9col'),()=>{p9presets();draw9()});$('p9esc').addEventListener('change',draw9);$('p9in').addEventListener('input',draw9);p9presets();draw9();
+
+  /* ===== 11: quiz ===== */
+  const QS=[
+    {c:'db.query("SELECT * FROM users WHERE id = " + req.query.id)',a:'危険',e:'入力（req.query.id）を、文字列としてつなげています。数値の列でも、「1 OR 1=1」のような入力で、構造を変えられます。'},
+    {c:'db.query("SELECT * FROM users WHERE id = ?", [req.query.id])',a:'安全',e:'「?」の位置に、値を別に渡しています（プレースホルダ）。入力は、値としてだけ扱われます。'},
+    {c:'cur.execute(f"SELECT * FROM users WHERE name = \'{name}\'")',a:'危険',e:'f文字列で、入力を埋め込んでいます。見た目は読みやすくても、文字列をつなげているのと同じです。'},
+    {c:'cur.execute("SELECT * FROM users WHERE name = %s", (name,))',a:'安全',e:'「%s」は、値の位置を示すプレースホルダで、値は第2引数で、別に渡しています（使うライブラリの作法に従います）。'},
+    {c:'cur.execute("SELECT * FROM users WHERE name = \'%s\'" % name)',a:'危険',e:'見た目は、プレースホルダに似ていますが、Pythonの「%」で、文字列を整形しているだけです。DBには、つなげ終わったSQL文が、渡されます。'},
+    {c:'db.query(`SELECT * FROM notes WHERE title = \'${title}\'`)',a:'危険',e:'テンプレートリテラル（バッククォート）で、入力を埋め込んでいます。文字列のつなげと、同じです。'},
+    {c:'const allowed = { price: "price", name: "name" };\nconst col = allowed[sort] ?? "name";\ndb.query(`SELECT * FROM items ORDER BY ${col}`)',a:'安全',e:'SQL文に入る文字列は、アプリが決めた許可リストの値だけです。入力（sort）は、選ぶためだけに使っています。'},
+    {c:'User.objects.raw("SELECT * FROM auth_user WHERE name = \'" + name + "\'")',a:'危険',e:'ORMでも、生のSQL（raw）に、入力をつなげると、危険です。ORMを使っているから安全、とは限りません。'}
+  ];
+  const OPT=['危険','安全'];let qi=0,score=0,answered=false;
+  function drawQ(){answered=false;$('qNo').textContent='第 '+(qi+1)+' 問 / '+QS.length;$('qCode').textContent=QS[qi].c;
+    const o=$('qOpts');o.innerHTML='';OPT.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=t;
+      b.onclick=()=>{if(answered)return;answered=true;const ok=t===QS[qi].a;if(ok)score++;
+        [...o.children].forEach(c=>{c.disabled=true;if(c.textContent===QS[qi].a)c.setAttribute('aria-pressed','true')});
+        res($('qRes'),ok?'good':'bad',(ok?'正解です。':'正解は「'+QS[qi].a+'」です。')+QS[qi].e);
+        if(qi<QS.length-1)$('qNext').hidden=false;else{$('qRetry').hidden=false;$('qRes').textContent+='　結果：'+score+' / '+QS.length+' 問正解'}};o.appendChild(b)});
+    res($('qRes'),'','');$('qNext').hidden=true;$('qRetry').hidden=true}
+  $('qNext').onclick=()=>{qi++;drawQ()};$('qRetry').onclick=()=>{qi=0;score=0;drawQ()};drawQ();
+
+  /* ===== 13: code review ===== */
+  const RV=[
+    ['const express = require("express");',0,''],
+    ['const db = new sqlite3.Database("app.db");',0,''],
+    ['',0,''],
+    ['app.get("/search", (req, res) => {',0,''],
+    ['  const q = req.query.q;',0,''],
+    ['  const sql = "SELECT id, title FROM notes WHERE title LIKE \'%" + q + "%\'";',1,'検索キーワード（q）を、そのままつなげています。SQLインジェクションの危険があります。'],
+    ['  db.all(sql, (err, rows) => {',0,''],
+    ['    if (err) return res.status(500).send(err.message + "\\n" + sql);',1,'エラーの詳細と、SQL文を、画面に出しています。攻撃者に、ヒントを与えます。'],
+    ['    res.json(rows);',0,''],
+    ['  });',0,''],
+    ['});',0,''],
+    ['',0,''],
+    ['app.post("/login", (req, res) => {',0,''],
+    ['  const { user, pass } = req.body;',0,''],
+    ['  db.get(`SELECT * FROM users WHERE user = \'${user}\' AND pass = \'${pass}\'`, (err, row) => {',1,'テンプレートリテラルで、入力を埋め込んでいます。ログインを突破される危険があります。'],
+    ['    if (row) return res.send("OK");',0,''],
+    ['    res.status(401).send("NG");',0,''],
+    ['  });',0,''],
+    ['});',0,''],
+    ['',0,''],
+    ['app.get("/note", (req, res) => {',0,''],
+    ['  db.get("SELECT * FROM notes WHERE id = ?", [req.query.id], (err, row) => res.json(row));',0,'この行は、プレースホルダを使っていて、安全です。'],
+    ['});',0,'']
+  ];
+  const rvBox=$('rvCode');let rvChecked=false;
+  RV.forEach((l,i)=>{const b=document.createElement('button');b.type='button';b.className='ln';b.innerHTML='<i></i><code></code>';b.querySelector('i').textContent=i+1;b.querySelector('code').textContent=l[0]||' ';b.dataset.i=i;
+    b.onclick=()=>{if(rvChecked)return;b.classList.toggle('flag')};rvBox.appendChild(b)});
+  $('rvCheck').onclick=()=>{rvChecked=true;let hit=0,miss=0,wrong=0;[...rvBox.children].forEach((b,i)=>{const bad=RV[i][1]===1,fl=b.classList.contains('flag');b.classList.remove('okline','missline','wrongline');
+      if(bad&&fl){b.classList.add('okline');hit++}else if(bad&&!fl){b.classList.add('missline');miss++}else if(!bad&&fl){b.classList.add('wrongline');wrong++}
+      if(RV[i][2]){const t=document.createElement('div');t.className='why';t.textContent=RV[i][2];b.appendChild(t)}});
+    const total=RV.filter(l=>l[1]===1).length;
+    res($('rvRes'),hit===total&&!wrong?'good':'bad','危険な行 '+total+' か所のうち、'+hit+' か所を見つけました。'+(miss?'見逃し：'+miss+' か所。':'')+(wrong?'安全な行を選んだ数：'+wrong+'。':'')+'　このほか、パスワードを、平文のまま照合している点（行15）も、本来は、見直すべき点です。')};
+  $('rvReset').onclick=()=>{rvChecked=false;[...rvBox.children].forEach(b=>{b.classList.remove('flag','okline','missline','wrongline');const w=b.querySelector('.why');if(w)w.remove()});res($('rvRes'),'','')};
+
+  /* ===== 14: check procedure ===== */
+  const CK=[
+    {t:'見る',s:'コードを読む',d:'SQL文を作っている所を探す。「SELECT」「INSERT」「UPDATE」「DELETE」「query(」「execute(」「raw(」を検索し、入力が、文字列として、つながっていないかを確かめる。',e:'つなげ（+）、テンプレートリテラル（${ }）、f文字列、% の整形は、要注意。エラー表示や、DBの権限も、あわせて見る。'},
+    {t:'試す',s:'テスト環境で試す',d:'自分が管理する、テスト用の環境で、「\u0027」（引用符）や、「\u0027 OR \u00271\u0027=\u00271」などを入力し、挙動を見る。エラーが出たり、全件が返ったりしたら、疑わしい。',e:'許可のないシステムに試してはいけない。不正アクセスにあたる可能性がある。'},
+    {t:'直す',s:'プレースホルダに直す',d:'見つかった箇所を、プレースホルダ（パラメータ化クエリ）に直す。AIに直させる場合も、直し方の方針（プレースホルダを使う）を、指示に書く。',e:'ORDER BY や列名は、許可リストにする。'},
+    {t:'確かめる',s:'直ったか、確認する',d:'直したあとで、もう一度「試す」を行う。コードも、人が読み直す。DBの権限（最小権限）と、エラーの出し方も、確認する。',e:'直したつもりで、別の箇所が、残っていないかも、見直す。'}
+  ];
+  btnList($('chk'),CK,(x,i)=>'STEP '+(i+1),x=>x.t,(x,i)=>{rows($('chkBody'),x.t+'：'+x.s,[['やること',x.d],['ポイント',x.e]]);
+    if(i===2||i===0){const pr=document.createElement('div');pr.className='pre';pr.style.marginTop='12px';
+      pr.textContent=i===0?'AIへの依頼例（レビュー）：\n「次のコードに、SQLインジェクションの危険がないか、行ごとに指摘してください。\n  文字列でSQL文を組み立てている箇所、エラーの詳細表示、DBの権限の観点も確認してください。」':'AIへの依頼例（修正）：\n「SQL文は、すべてプレースホルダ（パラメータ化クエリ）に書き換えてください。\n  列名やORDER BYは、許可リストで制限し、エラーの詳細は画面に出さないでください。」';
+      $('chkBody').appendChild(pr)}},0);
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
