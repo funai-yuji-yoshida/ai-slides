@@ -14,6 +14,7 @@
 
 | スライド | 内容 |
 |---|---|
+| [Webの3つの攻撃：XSS・CSRF・SQLインジェクション](https://funai-yuji-yoshida.github.io/ai-slides/slides/web-attacks/) | XSSとCSRFを、たとえ話と体験で理解し、SQLインジェクションと比べる。あぶないコードと安全なコードを見分け、AIが作ったアプリを確認できるようになる（デモは安全なシミュレーション・架空のデータ） |
 | [SQLインジェクションの仕組みと対策](https://funai-yuji-yoshida.github.io/ai-slides/slides/sql-injection/) | 入力欄に「指示」が紛れ込む攻撃を、レストランの注文票のたとえと体験で理解する。あぶないコードと安全なコードを見分け、AIが作ったアプリを確認できるようになる（デモはすべて架空のダミーデータ） |
 | [組み合わせ爆発とアリの知恵　巡回セールスマン問題とACO](https://funai-yuji-yoshida.github.io/ai-slides/slides/ant-colony-tsp/) | 全部調べると何年もかかる巡回セールスマン問題を、アリの行動をヒントにしたアントコロニー最適化で、最適に近い答えに導く。動かしながら学ぶ |
 | [機械学習の4つの学び方　教師あり・教師なし・強化学習](https://funai-yuji-yoshida.github.io/ai-slides/slides/machine-learning-types/) | 教師あり学習、教師なし学習、強化学習、深層強化学習。何を手がかりに学ぶのかの違いを、学習が進む様子を動かしながら理解する |

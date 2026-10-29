@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Webの3つの攻撃：XSS・CSRF・SQLインジェクション</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+/* sql injection */
+.steps4{grid-template-columns:repeat(4,1fr)}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps4,.steps5{grid-template-columns:1fr}}
+.mails th{width:8em;white-space:nowrap}
+.btn:disabled{opacity:.4;cursor:default}
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 22px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.goals{margin:0 0 10px;padding-left:1.2em}
+.goals li{font-weight:700;margin-bottom:4px}
+.flowh{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap}
+.fb{flex:1;min-width:180px;border:2px solid var(--ink);border-radius:12px;background:var(--surface);padding:12px 16px;display:grid;gap:2px}
+.fb span{font-size:.9em;color:var(--sub)}
+.fa{align-self:center;font-weight:900;color:var(--sub)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pre-btn{border:1px solid var(--indigo);background:transparent;color:var(--indigo);border-radius:8px;padding:5px 12px;font-size:14px;font-family:"JetBrains Mono","Zen Kaku Gothic New",monospace}
+.pre-btn:hover{background:var(--indigo-soft)}
+.inp{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 12px;font:inherit;font-family:"JetBrains Mono","Zen Kaku Gothic New",monospace;font-size:15px}
+.inp.wide{flex:1;min-width:150px}
+.chk{display:flex;gap:8px;align-items:center;font-weight:700}
+.chk input{accent-color:var(--indigo);transform:scale(1.2)}
+.sqlv{line-height:1.9;word-break:break-all}
+.sqlv .t-c{color:#9FB0FF;font-weight:600}
+.sqlv .t-d{background:#F2C230;color:#1C2430;border-radius:3px;padding:0 1px}
+.sqlv .t-m{color:#8A93A8;font-style:italic}
+.sqlv .fromin{text-decoration:underline wavy #FF8A7A;text-underline-offset:4px}
+.sqlv .params{margin-top:8px;color:#DCE1EE}
+.lg{display:inline-block;margin-left:10px;padding:0 8px;border-radius:4px;font-size:12.5px;font-weight:700}
+.lg.d{background:var(--mark)} .lg.c{background:var(--indigo-soft);color:var(--indigo)} .lg.u{text-decoration:underline wavy var(--ng);text-underline-offset:3px}
+.lg.d{color:#1C2430}
+.code{background:var(--code-bg);border-radius:8px;padding:8px 0;overflow-x:auto}
+.ln{display:block;width:100%;text-align:left;background:transparent;border:none;border-left:4px solid transparent;color:var(--code-ink);font-family:"JetBrains Mono",monospace;font-size:13.5px;line-height:1.7;padding:1px 12px 1px 0;white-space:pre;cursor:pointer}
+.ln i{display:inline-block;width:2.8em;text-align:right;color:#7F8AA8;font-style:normal;margin-right:12px}
+.ln:hover{background:rgba(255,255,255,.07)}
+.ln.flag{background:rgba(242,194,48,.22);border-left-color:#F2C230}
+.ln.okline{background:rgba(91,199,158,.22);border-left-color:#5BC79E}
+.ln.missline{background:rgba(233,133,114,.28);border-left-color:#E98572}
+.ln.wrongline{background:rgba(255,255,255,.1);border-left-color:#9AA3B5}
+.ln .why{display:block;white-space:normal;margin:2px 8px 4px 3.8em;color:#F2C230;font-family:"Zen Kaku Gothic New",sans-serif;font-size:14px}
+.checks.tick li{display:block;padding:10px 14px}
+.checks.tick label{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.checks.tick input{margin-top:8px;transform:scale(1.25);accent-color:var(--indigo)}
+.checks.tick span{display:block;font-weight:700}
+.checks.tick small{display:block;font-weight:400;margin-top:2px}
+
+/* easier-to-read additions */
+.pre-btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:1px;padding:6px 12px}
+.pre-btn small{font-size:12px;font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;color:var(--sub)}
+.pre-btn code{font-size:14px}
+.ticket{border:2px dashed var(--ink);border-radius:10px;background:var(--surface);padding:14px 18px}
+.tkrow{display:flex;gap:14px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+.tkrow:last-child{border-bottom:none}
+.tkrow span{min-width:4.5em;color:var(--sub);font-size:.9em}
+.tkrow b{font-size:1.05em;overflow-wrap:anywhere}
+.tkrow b.hi{background:var(--ng-soft);border-radius:4px;padding:2px 6px}
+.clerk{margin:0;padding-left:1.4em}
+.clerk li{padding:4px 0}
+.clerk li.ng{color:var(--ng);font-weight:700}
+.clerk li.ok{color:var(--ok);font-weight:700}
+.tip{background:var(--mark-soft);border-left:5px solid var(--mark);border-radius:8px;padding:12px 16px;margin-bottom:14px}
+.tip>b{display:block;margin-bottom:4px}
+.tipcols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tipcols span{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:8px}
+.tipcols .ng{background:var(--ng-soft);color:var(--ng)}
+.tipcols .ok{background:var(--ok-soft);color:var(--ok)}
+@media (max-width:820px){.tipcols{grid-template-columns:1fr}}
+
+/* web attacks */
+.sqlv .t-x{background:#E98572;color:#1C2430;border-radius:3px;padding:0 1px}
+.lg.x{background:#E98572;color:#1C2430}
+.infra{display:flex;align-items:stretch;gap:10px;margin:4px 0 14px;flex-wrap:wrap}
+.ib{flex:1;min-width:170px;border:2px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 16px;display:grid;gap:2px;transition:all .3s}
+.ib span{font-size:.9em;color:var(--sub)}
+.ib.hit{border-color:var(--ng);background:var(--ng-soft);box-shadow:0 0 0 3px var(--ng-soft)}
+.ia{align-self:center;font-weight:900;color:var(--sub)}
+.view{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:12px 14px;min-height:3em}
+.cmt{overflow-wrap:anywhere}
+.cmt b{font-weight:900}
+.notice{display:inline-block;background:var(--ng-soft);color:var(--ng);font-size:.85em;font-weight:700;border-radius:4px;padding:2px 8px;margin:2px 0}
+.bal{font-size:clamp(24px,3vw,36px);font-weight:900;font-variant-numeric:tabular-nums}
+.cmp{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.cm{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:14px 16px}
+.cm:nth-child(2){border-top-color:var(--mark)}
+.cm:nth-child(3){border-top-color:var(--ng)}
+.cm b{display:block;margin-bottom:4px}
+.cm p{margin:0;color:var(--sub)}
+@media (max-width:820px){.cmp{grid-template-columns:1fr}}
+.mails td{white-space:normal}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="Webの3つの攻撃：XSS・CSRF・SQLインジェクション">
+ <div class="inner">
+  <h1>Webの3つの攻撃<br>XSS・CSRF・SQLインジェクション</h1>
+  <p class="sub">たとえ話と体験で、違いと対策をつかむ</p>
+  <div class="rule"></div>
+  <p><b>このスライドで、できるようになること</b></p>
+  <ul class="goals">
+   <li>3つの攻撃の「違い」を、自分の言葉で説明できる</li>
+   <li>あぶないコードと、安全なコードを、見分けられる</li>
+   <li>AIが作ったアプリを、セキュリティの面で確認できる</li>
+  </ul>
+  <p class="note">※ デモは、すべて安全なシミュレーションです。データは、架空のダミーです。許可のないシステムには、試さないでください。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="全体像：3つの攻撃は、どこを狙うのか">
+ <div class="inner">
+  <span class="tag">1　全体像</span>
+  <h2>全体像：3つの攻撃は、どこを狙うのか</h2>
+  <p class="def">Webアプリは、「利用者のブラウザ」と「サーバー」と「データベース」で、動いています。攻撃を選ぶと、狙われる場所が光ります。</p>
+  <div class="steps" id="ov" role="group" aria-label="攻撃"></div>
+  <div class="infra" id="infra">
+   <div class="ib" data-k="br"><b>利用者のブラウザ</b><span>画面を表示する</span></div>
+   <div class="ia">⇄</div>
+   <div class="ib" data-k="sv"><b>サーバー（アプリ）</b><span>依頼を受けて、処理する</span></div>
+   <div class="ia">⇄</div>
+   <div class="ib" data-k="db"><b>データベース</b><span>情報をしまう</span></div>
+  </div>
+  <div class="panel" id="ovBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="XSS：たとえ話「町の掲示板の貼り紙」">
+ <div class="inner">
+  <span class="tag">2　XSS</span>
+  <h2>XSS（クロスサイトスクリプティング）：たとえ話</h2>
+  <p class="def">町の掲示板に、だれでも貼り紙ができるとします。読んだ人は、貼り紙に書かれたことを、「指示」として受け取ってしまうと、どうなるでしょうか。</p>
+  <div class="seg" id="xtMode" role="group" aria-label="貼り紙">
+   <button type="button" data-m="ok" aria-pressed="true">ふつうの貼り紙</button>
+   <button type="button" data-m="bad" aria-pressed="false">悪意のある貼り紙</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><p class="note" style="margin:0 0 8px">掲示板に貼られた紙</p><div class="ticket"><div class="tkrow"><b id="xtPaper"></b></div></div></div>
+   <div class="panel"><p class="note" style="margin:0 0 8px">読んだ人の動き</p><ol class="clerk" id="xtReader"></ol></div>
+  </div>
+  <div class="result" id="xtRes"></div>
+  <div class="msg">他の人が書いた文章が、読んだ人のブラウザで、<mark>「指示」として実行されてしまう</mark>。これがXSSです。</div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="POINT！ XSSは、画面に出すときに起きる">
+ <div class="inner">
+  <span class="tag">2　XSS</span>
+  <h2>POINT！ XSSは、「画面に出すとき」に起きる</h2>
+  <p class="def">掲示板のコメントを、画面（HTML）に出すとき、入力を<b>そのまま</b>入れると、「ただの文字」が「指示（タグ）」に変わります。作り方を切り替えて、試してください。</p>
+  <div class="seg" id="xsMode" role="group" aria-label="作り方">
+   <button type="button" data-m="bad" aria-pressed="true">あぶない：そのまま入れる</button>
+   <button type="button" data-m="ok" aria-pressed="false">安全：無害化して入れる（エスケープ）</button>
+  </div>
+  <div class="presets" id="xsPresets" role="group" aria-label="入力例"></div>
+  <div class="row-btns" style="margin-bottom:8px"><label for="xsIn"><b>コメント：</b></label><input id="xsIn" class="inp wide" autocomplete="off"></div>
+  <div class="cols">
+   <div class="panel">
+    <p class="note" style="margin:0 0 6px" id="xsLab">サーバーが作った画面のHTML</p>
+    <p class="note" style="margin:0 0 6px"><span class="lg d">ただの文字</span><span class="lg c">指示（タグ）</span><span class="lg x">実行されるもの</span><span class="lg u">入力した部分</span></p>
+    <div class="pre sqlv" id="xsHtml"></div>
+    <div class="result" id="xsRes"></div>
+   </div>
+   <div class="panel">
+    <p class="note" style="margin:0 0 6px">利用者のブラウザでの、見え方</p>
+    <div class="view" id="xsView"></div>
+    <p class="note" style="margin:10px 0 4px">攻撃者のサーバーに届くもの（ダミー）</p>
+    <div class="pre" id="xsLeak"></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="XSSで、何が困るのか">
+ <div class="inner">
+  <span class="tag">2　XSS</span>
+  <h2>XSSで、何が困るのか</h2>
+  <p class="def">他の利用者のブラウザで、攻撃者の指示が動くと、「その人になりすます」ことが、できてしまう可能性があります。実際の影響は、アプリの作りによって変わります。</p>
+  <div class="steps steps4" id="xdm" role="group" aria-label="被害"></div>
+  <div class="panel" id="xdmBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="XSSの対策：出すときに、無害化する">
+ <div class="inner">
+  <span class="tag">2　XSS</span>
+  <h2>XSSの対策：出すときに、無害化する</h2>
+  <p class="def">いちばん大事なのは、①です。②以降は、念のための、重ね着です。クリックして確認してください。</p>
+  <div class="steps steps5" id="xdf" role="group" aria-label="対策"></div>
+  <div class="panel" id="xdfBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="CSRF：たとえ話「本人確認済みの人に、依頼書を出させる」">
+ <div class="inner">
+  <span class="tag">3　CSRF</span>
+  <h2>CSRF（クロスサイトリクエストフォージェリ）：たとえ話</h2>
+  <p class="def">銀行の窓口は、「会員証」を見せた人の依頼を、<b>本人の依頼</b>として受け付けます。もし、だれかが用意した依頼書を、本人が知らずに出してしまったら？ 段階をクリックして確認してください。</p>
+  <div class="steps" id="ctSteps" role="group" aria-label="段階"></div>
+  <div class="panel" id="ctBody" aria-live="polite"></div>
+  <div class="msg">サイトは、「会員証（Cookie）を持っている＝本人の依頼」と、<mark>思い込んでしまう</mark>。これがCSRFです。</div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="POINT！ 体験：罠のページで、勝手に送金される">
+ <div class="inner">
+  <span class="tag">3　CSRF</span>
+  <h2>POINT！ 体験：罠のページで、勝手に送金される</h2>
+  <p class="def">ブラウザは、あるサイトにアクセスするとき、そのサイトの「会員証（Cookie）」を、<b>自動で</b>付けます。それを、悪用する攻撃です。条件を変えて、試してください（架空の銀行です）。</p>
+  <div class="row-btns" style="margin-bottom:8px">
+   <span class="note" style="margin:0">あなたの状態：</span>
+   <div class="seg" id="csLogin" role="group" aria-label="ログイン状態" style="margin:0"><button type="button" data-l="in" aria-pressed="true">銀行にログイン中</button><button type="button" data-l="out" aria-pressed="false">ログアウト中</button></div>
+   <span class="note" style="margin:0 0 0 8px">銀行の作り：</span>
+   <div class="seg" id="csMode" role="group" aria-label="銀行の作り" style="margin:0"><button type="button" data-m="bad" aria-pressed="true">あぶない：確認なし</button><button type="button" data-m="ok" aria-pressed="false">安全：合言葉（トークン）あり</button></div>
+  </div>
+  <div class="cols">
+   <div class="panel">
+    <p class="note" style="margin:0 0 6px">あなたの口座（架空）</p>
+    <div class="bal" id="csBal"></div>
+    <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="csGo">罠のページを開く</button><button type="button" class="btn ghost" id="csReset">リセット</button></div>
+    <div class="result" id="csRes"></div>
+   </div>
+   <div class="panel">
+    <p class="note" style="margin:0 0 6px">ブラウザが、自動で送った依頼</p>
+    <div class="pre" id="csReq"></div>
+    <p class="note" style="margin:10px 0 4px">銀行サーバーの判断</p>
+    <ol class="clerk" id="csLog"></ol>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="CSRFの対策：本人の意思を、確かめる">
+ <div class="inner">
+  <span class="tag">3　CSRF</span>
+  <h2>CSRFの対策：本人の意思を、確かめる</h2>
+  <p class="def">「会員証を持っている」だけでなく、「この画面から、本人が出した依頼か」を、確かめます。クリックして確認してください。</p>
+  <div class="steps steps5" id="cdf" role="group" aria-label="対策"></div>
+  <div class="panel" id="cdfBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="3つを比べる：何が、どこで混ざるのか">
+ <div class="inner">
+  <span class="tag">4　比べる</span>
+  <h2>3つを比べる：何が、どこで混ざるのか</h2>
+  <p class="def">3つの攻撃は、「信用してはいけないものを、信用してしまう」という点で、共通しています。見る項目を、切り替えてください。</p>
+  <div class="seg" id="cmpSeg" role="group" aria-label="項目"></div>
+  <div class="cmp" id="cmp"></div>
+  <div class="msg">どれも、<mark>「入力」や「依頼」を、そのまま信じない</mark>ことが、守りの出発点。</div>
+ </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="確認クイズ①：どの攻撃？">
+ <div class="inner">
+  <span class="tag">5　見分ける</span>
+  <h2>確認クイズ①：どの攻撃？</h2>
+  <p class="def">場面を読んで、いちばん近い攻撃を選んでください。全6問です。</p>
+  <div class="panel">
+   <p class="note" id="aNo" style="margin:0 0 6px"></p>
+   <p id="aText" style="font-size:1.1em;font-weight:700;margin:0 0 12px"></p>
+   <div class="opts" id="aOpts" role="group" aria-label="選択肢"></div>
+   <div class="result" id="aRes"></div>
+   <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="aNext" hidden>次の問題</button><button type="button" class="btn ghost" id="aRetry" hidden>もう一度</button></div>
+  </div>
+ </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="確認クイズ②：あぶない？ 安全？">
+ <div class="inner">
+  <span class="tag">5　見分ける</span>
+  <h2>確認クイズ②：あぶない？ 安全？</h2>
+  <div class="tip">
+   <b>見分けるコツ</b>
+   <div class="tipcols">
+    <div><span class="ng">XSS</span>入力を、<b>そのまま</b>画面に出している（innerHTML、| safe、dangerouslySet…）</div>
+    <div><span class="ng">CSRF</span>重要な操作が、<b>確認なし</b>で通る（トークンなし、GETで更新、Cookieの設定なし）</div>
+   </div>
+  </div>
+  <div class="panel">
+   <p class="note" id="qNo" style="margin:0 0 6px"></p>
+   <div class="pre" id="qCode"></div>
+   <div class="opts" id="qOpts" role="group" aria-label="選択肢" style="margin-top:12px"></div>
+   <div class="result" id="qRes"></div>
+   <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="qNext" hidden>次の問題</button><button type="button" class="btn ghost" id="qRetry" hidden>もう一度</button></div>
+  </div>
+ </div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-title="AIが作ったアプリは、3つとも確認が必要">
+ <div class="inner">
+  <span class="tag">6　AI生成コード</span>
+  <h2>AIが作ったアプリは、3つとも確認が必要</h2>
+  <p class="def">AIが作ったコードは、動くことが多い一方で、あぶない書き方が混ざる可能性があります。「動く」と「安全」は、別のことです。</p>
+  <div class="cards">
+   <div class="card"><span class="n">SQLインジェクション</span><h3>入力を、注文書につなげがち</h3><p>短く書ける「文字をつなげる」書き方が、そのまま出ることがあります。</p></div>
+   <div class="card"><span class="n">XSS</span><h3>入力を、そのまま画面に出しがち</h3><p>innerHTML など、手軽な書き方が、選ばれることがあります。</p></div>
+   <div class="card"><span class="n">CSRF</span><h3>「本人の確認」が、抜けがち</h3><p>動作に直接関係しないため、トークンなどが、書かれないことがあります。</p></div>
+  </div>
+  <div class="msg">AIが書いたコードも、<mark>人が確認してから、公開する</mark>。</div>
+  <div class="links"><a href="../sql-injection/">SQLインジェクションの仕組みと対策 →</a></div>
+ </div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-title="体験：3つの攻撃を、1つのコードで探す">
+ <div class="inner">
+  <span class="tag">6　AI生成コード</span>
+  <h2>体験：3つの攻撃を、1つのコードで探す</h2>
+  <p class="def">AIが作った、架空の「投稿アプリ」です。<b>あぶないと思う行</b>を、クリックして選び、「答え合わせ」を押してください。</p>
+  <div class="tip" style="margin-bottom:10px"><b>ヒント</b><div>SQL文に入力をつなげた行／入力をそのままHTMLに入れた行／本人の確認なしで、データを変える行／Cookieの設定</div></div>
+  <div class="panel">
+   <div class="code" id="rvCode" role="group" aria-label="コード"></div>
+   <div class="row-btns" style="margin-top:10px"><button type="button" class="btn" id="rvCheck">答え合わせ</button><button type="button" class="btn ghost" id="rvReset">やり直す</button></div>
+   <div class="result" id="rvRes"></div>
+  </div>
+  <p class="note" style="margin-top:8px">※ 架空のコードです。実在するシステムのものではありません。</p>
+ </div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-title="確認の手順：見る・試す・直す・確かめる">
+ <div class="inner">
+  <span class="tag">6　AI生成コード</span>
+  <h2>AIが作ったアプリの、確認の手順</h2>
+  <p class="def">4つのステップで進めます。クリックして、確認してください。</p>
+  <div class="steps steps4" id="chk" role="group" aria-label="手順"></div>
+  <div class="panel" id="chkBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-title="まとめと、達成の確認">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめと、達成の確認</h2>
+  <div class="msg" style="margin-top:6px">入力は、信じない。出すときは、無害化する。<br><mark>大事な操作は、本人かどうかを、確かめる。</mark></div>
+  <p class="note" style="margin:10px 0 6px">できるようになったか、チェックしてください。</p>
+  <ul class="checks tick" id="goalChecks">
+   <li><label><input type="checkbox"><span>3つの攻撃の違いを、自分の言葉で説明できる<small class="note">SQLインジェクション＝DBに送る文に、指示が混ざる。XSS＝画面に出す文に、指示が混ざる。CSRF＝本人のふりをして、依頼を出させる。</small></span></label></li>
+   <li><label><input type="checkbox"><span>あぶないコードと、安全なコードを、見分けられる<small class="note">そのまま入れる・つなげる・確認なし、は、あぶない。穴あき・無害化・トークンは、安全。</small></span></label></li>
+   <li><label><input type="checkbox"><span>AIが作ったアプリを、セキュリティの面で確認できる<small class="note">見る → テスト環境で試す → 直す → 確かめる。</small></span></label></li>
+  </ul>
+  <div class="links">
+   <a href="../sql-injection/">SQLインジェクションの仕組みと対策 →</a>
+   <a href="../ai-security-prelearning/">AIセキュリティ事前学習 →</a>
+  </div>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open')&&!e.target.closest('input,.code,.sqlv'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn,start){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[start].click();
+  }
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function rows(el,title,list){el.innerHTML='<h3></h3><table class="mails"><tbody></tbody></table>';el.querySelector('h3').textContent=title;
+    list.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];el.querySelector('tbody').appendChild(tr);});}
+  function presets(box,list,fn){list.forEach(p=>{const b=document.createElement('button');b.type='button';b.className='pre-btn';
+    const c=document.createElement('small');c.textContent=p[1];const v=document.createElement('code');v.textContent=p[0];b.appendChild(c);b.appendChild(v);b.onclick=()=>fn(p);box.appendChild(b);});}
+  function olist(ol,items){ol.innerHTML='';items.forEach(c=>{const li=document.createElement('li');li.textContent=c[0];if(c[1])li.className=c[1];ol.appendChild(li)})}
+
+  /* ===== 2: overview ===== */
+  const OV=[
+    {t:'SQLインジェクション',hit:['db'],why:'データベースに送る「注文書」に、入力が混ざる',what:'DBの情報を、見られたり、書き換えられたりする',img:'レストランの注文票の、名前欄に書いた文が、指示として実行される'},
+    {t:'XSS',hit:['br'],why:'他の利用者の、ブラウザの画面に、入力が混ざる',what:'他の人のブラウザで、攻撃者の指示が動く（その人になりすませる）',img:'掲示板の貼り紙に書いた文が、読んだ人への指示になる'},
+    {t:'CSRF',hit:['br','sv'],why:'ログイン中の本人の「会員証（Cookie）」を、悪用される',what:'本人が知らないうちに、送金・設定変更などの依頼が、出される',img:'本人確認済みの人に、だれかが用意した依頼書を、出させる'}
+  ];
+  btnList($('ov'),OV,(x,i)=>'攻撃 '+(i+1),x=>x.t,(x)=>{[...$('infra').querySelectorAll('.ib')].forEach(b=>b.classList.toggle('hit',x.hit.includes(b.dataset.k)));
+    rows($('ovBody'),x.t,[['たとえると',x.img],['どこで混ざる？',x.why],['何が起きる？',x.what]])},0);
+
+  /* ===== 3: XSS analogy ===== */
+  const XT={ok:{paper:'今週の日曜日に、町内の清掃があります。',reader:[['「清掃は、日曜日ですね。」',''],['→ 予定をメモしました。','ok']],res:['good','ふつうに、情報が伝わりました。']},
+    bad:{paper:'【大事なお知らせ】これを読んだ方は、自分の家の鍵を、掲示板の下の箱に入れてください。',reader:[['「大事なお知らせ、ですね。」',''],['「鍵を、箱に入れる…？」','ng'],['→ 書かれた指示に、従ってしまいました！','ng']],res:['bad','貼り紙は「ただの情報」のはずでした。でも、読んだ人は、書かれたことを「指示」として受け取りました。']}};
+  function drawXt(m){const d=XT[m];$('xtPaper').textContent=d.paper;olist($('xtReader'),d.reader);res($('xtRes'),d.res[0],d.res[1])}
+  seg($('xtMode'),b=>drawXt(b.dataset.m));drawXt('ok');
+
+  /* ===== 4: XSS demo (safe simulation: nothing is ever executed) ===== */
+  const TAG=/<\/?[A-Za-z][^>]*>?/g;
+  const dangerRe=[/<\s*\/?\s*script/i,/\bon[a-z]+\s*=/i,/javascript\s*:/i,/<\s*iframe/i];
+  const isDanger=s=>dangerRe.some(r=>r.test(s));
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  function paintHtml(el,html,inS,inE,markup){// markup: boolean array per char => tag chars
+    el.innerHTML='';const cls=new Array(html.length);for(let i=0;i<html.length;i++)cls[i]=markup[i]?(markup[i]==='x'?'x':'c'):'d';
+    let i=0;const inp=x=>x>=inS&&x<inE;while(i<html.length){let j=i;while(j<html.length&&cls[j]===cls[i]&&inp(j)===inp(i))j++;
+      const sp=document.createElement('span');sp.className='t-'+cls[i]+(inp(i)?' fromin':'');sp.textContent=html.slice(i,j);el.appendChild(sp);i=j}}
+  function markupMap(html){const m=new Array(html.length).fill(false);let r;TAG.lastIndex=0;while((r=TAG.exec(html))){const bad=isDanger(r[0]);for(let k=r.index;k<r.index+r[0].length;k++)m[k]=bad?'x':'c'}
+    // script body counts as executed code too
+    const sc=/<\s*script[^>]*>([\s\S]*?)<\s*\/\s*script\s*>/ig;let q;while((q=sc.exec(html))){const s0=q.index+q[0].indexOf(q[1],q[0].indexOf('>')+1);for(let k=s0;k<s0+q[1].length;k++)m[k]='x'}return m}
+  function renderView(el,input,unsafe){el.innerHTML='';const box=document.createElement('div');box.className='cmt';
+    if(!unsafe){box.textContent=input;el.appendChild(box);return}
+    // very small renderer: <b>/<i> become real elements, anything else dangerous is shown as a notice; never inserts raw HTML
+    let pos=0,m;const re=/<\s*(\/?)\s*(b|i)\s*>/ig;const stack=[box];let cursor=box;
+    const addText=t=>{if(t)cursor.appendChild(document.createTextNode(t))};
+    while((m=re.exec(input))){const before=input.slice(pos,m.index);pushText(before);pos=m.index+m[0].length;
+      if(m[1]===''){const e=document.createElement(m[2].toLowerCase());cursor.appendChild(e);stack.push(e);cursor=e}else if(stack.length>1){stack.pop();cursor=stack[stack.length-1]}}
+    pushText(input.slice(pos));
+    function pushText(t){// split out dangerous tags and show them as notices
+      let p=0,r;const re2=/<\s*script[^>]*>[\s\S]*?<\s*\/\s*script\s*>|<\s*(img|iframe|a)\b[^>]*>/ig;
+      while((r=re2.exec(t))){addText(t.slice(p,r.index));const n=document.createElement('span');n.className='notice';n.textContent='⚠ ここで、ブラウザが「実行する指示」として扱います（教材のため、実行はしません）';cursor.appendChild(n);p=r.index+r[0].length}
+      addText(t.slice(p).replace(/<[^>]*>?/g,''))}
+    el.appendChild(box)}
+  const XS=[['とても参考になりました。','ふつうのコメント'],['<b>大事</b>なお知らせです','HTMLのタグを入れる（太字）'],["<script>alert('XSS')<\/script>",'スクリプトを入れる'],['<img src=x onerror=alert(1)>','画像のエラーを使う']];
+  function drawXs(){const v=$('xsIn').value,mode=document.querySelector('#xsMode [aria-pressed=true]').dataset.m;
+    const pre='<div class="comment">',suf='</div>';let ins=mode==='bad'?v:esc(v);const html=pre+ins+suf;
+    const map=markupMap(html);paintHtml($('xsHtml'),html,pre.length,pre.length+ins.length,map);
+    $('xsLab').textContent=mode==='bad'?'サーバーが作った画面のHTML（そのまま入れた）':'サーバーが作った画面のHTML（無害化して入れた）';
+    renderView($('xsView'),v,mode==='bad');
+    const danger=mode==='bad'&&isDanger(v),hasTag=mode==='bad'&&/<[A-Za-z]/.test(v);
+    if(danger){res($('xsRes'),'bad','入力が、「ただの文字」から、「実行される指示」に変わりました。他の人がこのコメントを見ると、その人のブラウザで、攻撃者の指示が動きます。');
+      $('xsLeak').textContent='（もし実行されたら）\nログイン状態の情報などが、攻撃者のサーバーに送られる可能性があります。\n例：session=demo-session-abc123  ← ダミーです';}
+    else if(hasTag){res($('xsRes'),'bad','入力が、HTMLの「指示（タグ）」として扱われました。今回は、太字になるだけですが、入力をそのまま入れていることが、問題の入口です。');$('xsLeak').textContent='（今回は、届くものはありません）';}
+    else{res($('xsRes'),'good',mode==='ok'&&/[<>]/.test(v)?'「<」「>」が、無害な文字（&lt; &gt;）に置き換わりました。入力は、すべて「ただの文字」として表示されます。':'ふつうの文字です。問題ありません。');$('xsLeak').textContent='（届くものは、ありません）';}}
+  presets($('xsPresets'),XS,p=>{$('xsIn').value=p[0];drawXs()});$('xsIn').addEventListener('input',drawXs);seg($('xsMode'),drawXs);$('xsIn').value=XS[0][0];drawXs();
+
+  /* ===== 5: XSS damage ===== */
+  const XD=[
+    {t:'なりすまし',s:'ログイン状態を、使われる',d:'ログイン状態を示す情報（Cookieなど）が、盗まれると、その人になりすまして、サイトを使われる可能性があります。',e:'Cookieに「HttpOnly」を付けると、スクリプトから読めなくなり、被害を小さくできます。'},
+    {t:'偽の画面',s:'偽のログイン欄を、出される',d:'正しいサイトの画面に、偽のログイン欄を出されて、ID・パスワードを入力させられる可能性があります。',e:'見た目は、本物のサイトの中なので、利用者が気づきにくい。'},
+    {t:'勝手な操作',s:'本人のふりをして、操作される',d:'利用者のブラウザの中で動くため、投稿・設定変更など、本人ができる操作を、勝手に行われる可能性があります。',e:'「CSRF」より、さらに自由度が高い、といわれます。'},
+    {t:'画面の改ざん',s:'表示を書き換えられる',d:'ページの表示を、書き換えられて、うその情報や、不正なリンクを、表示される可能性があります。',e:'サイトの信頼が、傷つきます。'}
+  ];
+  btnList($('xdm'),XD,(x,i)=>'被害 '+(i+1),x=>x.t,x=>rows($('xdmBody'),x.t+'：'+x.s,[['何が起きるか',x.d],['ポイント',x.e]]),0);
+
+  /* ===== 6: XSS defenses ===== */
+  const XF=[
+    {t:'出すとき無害化',s:'本命の対策',d:'入力を画面に出すとき、「<」「>」「&」などを、無害な文字に置き換えます（エスケープ）。ふつうは、フレームワークやテンプレートの機能に、任せます。',e:'textContent を使う。テンプレートの自動エスケープを、切らない。'},
+    {t:'あぶない書き方を避ける',s:'HTMLをそのまま入れない',d:'innerHTML、document.write、テンプレートの「| safe」、Reactの dangerouslySetInnerHTML は、入力をそのままHTMLにします。どうしても必要な場合だけ、専用のライブラリで、無害化してから使います。',e:'el.textContent = comment; は安全。el.innerHTML = comment; はあぶない。'},
+    {t:'Cookieの設定',s:'HttpOnly',d:'Cookieに「HttpOnly」を付けると、スクリプトから、Cookieを読めなくなります。万一の被害を、小さくできます。',e:'Set-Cookie: session=…; HttpOnly; Secure; SameSite=Lax'},
+    {t:'CSP',s:'実行できるスクリプトを、限る',d:'CSP（コンテンツ・セキュリティ・ポリシー）で、「このサイトのスクリプトだけ、実行してよい」と、ブラウザに伝えます。万一の混入を、止める助けになります。',e:"Content-Security-Policy: script-src 'self'"},
+    {t:'入力のチェック',s:'補助として',d:'文字数や形式のチェックは、補助になります。ただし、「あぶない文字を消す」だけでは、抜けが出やすいため、「出すときの無害化」を、基本にします。',e:'入力チェックだけに、頼らない。'}
+  ];
+  btnList($('xdf'),XF,(x,i)=>'対策 '+(i+1),x=>x.t,x=>rows($('xdfBody'),x.t+'：'+x.s,[['内容',x.d],['例',x.e.replace(/\\u0027/g,"'")]]),0);
+
+  /* ===== 7: CSRF analogy ===== */
+  const CT=[
+    {t:'① 会員証を持つ',d:'あなたは、銀行にログインしました。ブラウザは、銀行の「会員証（Cookie）」を、持っています。ブラウザは、銀行にアクセスするたびに、会員証を、自動で見せます。',e:'ここまでは、ふつうの状態です。'},
+    {t:'② 罠のページを開く',d:'あなたは、別のページ（罠）を開きます。メールのリンクや、掲示板の書き込みから、誘導されることがあります。ページの中には、銀行宛ての「送金の依頼書」が、仕込まれています。',e:'あなたは、依頼書が仕込まれていることを、知りません。'},
+    {t:'③ 勝手に依頼が出る',d:'罠のページが、あなたのブラウザを使って、銀行に、依頼書を送ります。このとき、ブラウザは、銀行の会員証を、自動で付けます。銀行は、「会員証がある＝本人の依頼」と判断し、送金してしまいます。',e:'本人が、ボタンを押したわけでは、ありません。'}
+  ];
+  btnList($('ctSteps'),CT,(x,i)=>'段階 '+(i+1),x=>x.t,x=>rows($('ctBody'),x.t,[['何が起きるか',x.d],['ポイント',x.e]]),0);
+
+  /* ===== 8: CSRF demo (simulation) ===== */
+  let bal=100000;const AMT=10000;
+  function drawCs(msgs){$('csBal').textContent='残高：'+bal.toLocaleString('ja-JP')+' 円';
+    const login=document.querySelector('#csLogin [aria-pressed=true]').dataset.l,mode=document.querySelector('#csMode [aria-pressed=true]').dataset.m;
+    $('csReq').textContent='POST /transfer  （銀行宛て）\nCookie: '+(login==='in'?'session=demo-session-abc123  ← ブラウザが自動で付ける':'（なし：ログアウト中）')+'\nBody:   to=demo-attacker&amount='+AMT+(mode==='ok'?'\nトークン: （罠のページは、正しい値を知らない）':'\nトークン: （この銀行は、確認しない）');
+    if(msgs){olist($('csLog'),msgs.log);res($('csRes'),msgs.cls,msgs.text)}}
+  $('csGo').onclick=()=>{const login=document.querySelector('#csLogin [aria-pressed=true]').dataset.l,mode=document.querySelector('#csMode [aria-pressed=true]').dataset.m;
+    if(login==='out')drawCs({log:[['依頼を受け取った。','' ],['会員証（Cookie）が、ない。','ok'],['→ ログインが必要なので、拒否しました。','ok']],cls:'good',text:'ログアウト中は、会員証が付かないので、依頼は拒否されました。'});
+    else if(mode==='bad'){if(bal<AMT){drawCs({log:[['残高が足りません。','']],cls:'',text:'残高が足りないため、送金されませんでした。'});return}bal-=AMT;
+      drawCs({log:[['依頼を受け取った。',''],['会員証（Cookie）が、ある → 本人だ。','ng'],['「どの画面から出した依頼か」は、確認しない。','ng'],['→ '+AMT.toLocaleString('ja-JP')+'円を、送金してしまいました！','ng']],cls:'bad',text:'本人は、何も押していないのに、送金されました。罠のページを、もう一度開くと、さらに送金されます。'})}
+    else drawCs({log:[['依頼を受け取った。',''],['会員証（Cookie）は、ある。',''],['合言葉（CSRFトークン）を確認 → 違う。','ok'],['→ 本人の画面から出した依頼ではないので、拒否しました。','ok']],cls:'good',text:'罠のページは、銀行が出した合言葉（トークン）を知らないので、依頼は、拒否されました。'})};
+  $('csReset').onclick=()=>{bal=100000;drawCs({log:[],cls:'',text:''});olist($('csLog'),[]);res($('csRes'),'','')};
+  seg($('csLogin'),()=>drawCs());seg($('csMode'),()=>drawCs());drawCs();
+
+  /* ===== 9: CSRF defenses ===== */
+  const CF=[
+    {t:'CSRFトークン',s:'本命の対策',d:'本物の画面にだけ、ランダムな「合言葉（トークン）」を埋め込み、依頼を受けるとき、確認します。罠のページは、合言葉を知らないので、拒否されます。',e:'フォームに、<input type="hidden" name="csrf_token" value="…"> を入れる。多くのフレームワークに、機能があります。'},
+    {t:'SameSite Cookie',s:'会員証が、自動で付かない',d:'Cookieに「SameSite=Lax」や「Strict」を付けると、他のサイトから来た依頼には、会員証が付きにくくなります。最近のブラウザでは、既定で有効なことも多いですが、設定を明示するのが、おすすめです。',e:'Set-Cookie: session=…; HttpOnly; Secure; SameSite=Lax'},
+    {t:'GETで、変えない',s:'更新は、POSTなどで',d:'データを変更する処理を、GET（リンクを開くだけ）にしないようにします。リンクや画像から、簡単に、呼び出されてしまうためです。',e:'GET /delete?id=1 は、あぶない。POST /delete + トークンにする。'},
+    {t:'大事な操作は、再確認',s:'もう一度、本人に聞く',d:'送金・パスワード変更など、大事な操作は、パスワードの再入力や、確認画面を、はさみます。',e:'「本当に、送金しますか？」＋ パスワードの再入力。'},
+    {t:'出どころの確認',s:'Origin / Referer',d:'依頼が、自分のサイトから出たものか、ヘッダー（Origin、Referer）で、確認します。補助として、使われます。',e:'トークンとあわせて、使うことが多い。'}
+  ];
+  btnList($('cdf'),CF,(x,i)=>'対策 '+(i+1),x=>x.t,x=>rows($('cdfBody'),x.t+'：'+x.s,[['内容',x.d],['例',x.e]]),0);
+
+  /* ===== 10: comparison ===== */
+  const CMP=[
+    {k:'たとえると',v:['レストランの注文票の、名前欄に書いた文が、指示として実行される','掲示板の貼り紙に書いた文が、読んだ人への指示になる','本人確認済みの人に、だれかが用意した依頼書を、出させる']},
+    {k:'狙われる場所',v:['サーバーの、データベース','他の利用者の、ブラウザ','ログイン中の利用者の「権限」']},
+    {k:'何が混ざる？',v:['入力が、DBに送る文（SQL）に、混ざる','入力が、画面に出す文（HTML）に、混ざる','他のサイトからの依頼が、本人の依頼に、混ざる']},
+    {k:'起きること',v:['情報を見られる・書き換えられる','他の人のブラウザで、スクリプトが動く（なりすましなど）','本人が知らないうちに、送金・設定変更などが行われる']},
+    {k:'対策の本命',v:['穴あきの注文票（プレースホルダ）','出すときの無害化（エスケープ）','CSRFトークン、SameSite Cookie']}
+  ];
+  const cmpSeg=$('cmpSeg');CMP.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.textContent=x.k;b.setAttribute('aria-pressed',i===0?'true':'false');cmpSeg.appendChild(b)});
+  function drawCmp(i){const x=CMP[i],box=$('cmp');box.innerHTML='';['SQLインジェクション','XSS','CSRF'].forEach((n,j)=>{const d=document.createElement('div');d.className='cm';d.innerHTML='<b></b><p></p>';d.querySelector('b').textContent=n;d.querySelector('p').textContent=x.v[j];box.appendChild(d)})}
+  seg(cmpSeg,b=>drawCmp([...cmpSeg.children].indexOf(b)));drawCmp(0);
+
+  /* ===== 11: which attack? ===== */
+  const AS=[
+    {t:"検索欄に「' OR '1'='1」と入れたら、全部のデータが表示された。",a:'SQLインジェクション',e:'入力が、DBに送る文に、混ざっています。'},
+    {t:'掲示板に書き込まれた <script> が、別の人の画面で、動いた。',a:'XSS',e:'入力が、画面に出す文（HTML）に、混ざって、他の人のブラウザで、実行されています。'},
+    {t:'メールのリンクを開いたら、ログイン中の自分のアカウントの設定が、勝手に、変更された。',a:'CSRF',e:'ブラウザが、会員証（Cookie）を自動で付けるため、本人の依頼として、扱われています。'},
+    {t:'プロフィール欄に書いた文が、そのまま、他の人のページのHTMLになり、スクリプトが動いた。',a:'XSS',e:'入力を、無害化せずに、画面に出しているのが、原因です。'},
+    {t:'ログイン中に、罠のページを開いたら、勝手に、送金された。送金の確認は、なかった。',a:'CSRF',e:'「本人の画面から出した依頼か」を、確かめていないのが、原因です。'},
+    {t:"ログイン画面に「admin'--」と入れたら、パスワードなしで、入れた。",a:'SQLインジェクション',e:'入力が、DBに送る文を、変えてしまっています。'}
+  ];
+  const AOPT=['SQLインジェクション','XSS','CSRF'];let ai=0,as=0,aAns=false;
+  function drawA(){aAns=false;$('aNo').textContent='第 '+(ai+1)+' 問 / '+AS.length;$('aText').textContent=AS[ai].t;
+    const o=$('aOpts');o.innerHTML='';AOPT.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=t;
+      b.onclick=()=>{if(aAns)return;aAns=true;const ok=t===AS[ai].a;if(ok)as++;[...o.children].forEach(c=>{c.disabled=true;if(c.textContent===AS[ai].a)c.setAttribute('aria-pressed','true')});
+        res($('aRes'),ok?'good':'bad',(ok?'正解です。':'正解は「'+AS[ai].a+'」です。')+AS[ai].e);
+        if(ai<AS.length-1)$('aNext').hidden=false;else{$('aRetry').hidden=false;$('aRes').textContent+='　結果：'+as+' / '+AS.length+' 問正解'}};o.appendChild(b)});
+    res($('aRes'),'','');$('aNext').hidden=true;$('aRetry').hidden=true}
+  $('aNext').onclick=()=>{ai++;drawA()};$('aRetry').onclick=()=>{ai=0;as=0;drawA()};drawA();
+
+  /* ===== 12: code quiz ===== */
+  const QS=[
+    {c:'el.innerHTML = comment;',a:'あぶない',e:'入力を、HTMLとして、そのまま入れています（XSS）。'},
+    {c:'el.textContent = comment;',a:'安全',e:'入力は、「ただの文字」として表示されます。タグも、文字のまま見えます。'},
+    {c:'<div>{{ comment | safe }}</div>',a:'あぶない',e:'「| safe」は、「無害化しなくてよい」という意味です（XSS）。'},
+    {c:'<div>{{ comment }}</div>',a:'安全',e:'多くのテンプレートエンジンは、既定で、自動的に無害化します（使う道具の設定に従います）。'},
+    {c:'<form method="post" action="/transfer">\n  <input name="to">\n  <input name="amount">\n</form>',a:'あぶない',e:'本人の画面から出した依頼かを、確かめる「合言葉（トークン）」が、ありません（CSRF）。'},
+    {c:'<form method="post" action="/transfer">\n  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">\n  <input name="to">\n  <input name="amount">\n</form>',a:'安全',e:'合言葉（CSRFトークン）が、入っています。サーバー側で、確認することが、前提です。'},
+    {c:'app.get("/delete", (req, res) => {\n  db.run("DELETE FROM posts WHERE id = ?", [req.query.id]);\n})',a:'あぶない',e:'データを消す処理が、GET（リンクを開くだけ）で動きます。罠のリンクで、呼び出されます（CSRF）。'},
+    {c:'Set-Cookie: session=abc123',a:'あぶない',e:'「HttpOnly」「Secure」「SameSite」が、ありません。\n安全な例：Set-Cookie: session=abc123; HttpOnly; Secure; SameSite=Lax'}
+  ];
+  const OPT=['あぶない','安全'];let qi=0,score=0,answered=false;
+  function drawQ(){answered=false;$('qNo').textContent='第 '+(qi+1)+' 問 / '+QS.length;$('qCode').textContent=QS[qi].c;
+    const o=$('qOpts');o.innerHTML='';OPT.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=t;
+      b.onclick=()=>{if(answered)return;answered=true;const ok=t===QS[qi].a;if(ok)score++;
+        [...o.children].forEach(c=>{c.disabled=true;if(c.textContent===QS[qi].a)c.setAttribute('aria-pressed','true')});
+        res($('qRes'),ok?'good':'bad',(ok?'正解です。':'正解は「'+QS[qi].a+'」です。')+QS[qi].e);
+        if(qi<QS.length-1)$('qNext').hidden=false;else{$('qRetry').hidden=false;$('qRes').textContent+='　結果：'+score+' / '+QS.length+' 問正解'}};o.appendChild(b)});
+    res($('qRes'),'','');$('qNext').hidden=true;$('qRetry').hidden=true}
+  $('qNext').onclick=()=>{qi++;drawQ()};$('qRetry').onclick=()=>{qi=0;score=0;drawQ()};drawQ();
+
+  /* ===== 14: review ===== */
+  const RV=[
+    ['const express = require("express");',0,''],
+    ['const session = require("express-session");',0,''],
+    ['const app = express();',0,''],
+    ['app.use(session({ secret: "demo-secret", cookie: {} }));',1,'Cookieの設定が、空です。「HttpOnly」「Secure」「SameSite」を、付けていません（XSS・CSRFの被害が、広がりやすくなります）。'],
+    ['',0,''],
+    ['app.get("/search", (req, res) => {',0,''],
+    ['  const sql = "SELECT * FROM posts WHERE author = \'" + req.query.author + "\'";',1,'入力（author）を、「+」で、SQL文につなげています（SQLインジェクション）。'],
+    ['  db.all(sql, (err, rows) => {',0,''],
+    ['    res.send("<h2>" + req.query.author + " の投稿</h2>" + rows.map(r => "<p>" + r.body + "</p>").join(""));',1,'入力や、投稿の中身を、無害化せずに、HTMLに入れています（XSS）。'],
+    ['  });',0,''],
+    ['});',0,''],
+    ['',0,''],
+    ['app.get("/delete", (req, res) => {',1,'データを消す処理が、GET（リンクを開くだけ）で動きます。ログインの確認も、ありません（CSRF）。'],
+    ['  db.run("DELETE FROM posts WHERE id = ?", [req.query.id]);',0,''],
+    ['  res.send("削除しました");',0,''],
+    ['});',0,''],
+    ['',0,''],
+    ['app.post("/transfer", (req, res) => {',1,'POSTですが、CSRFトークンの確認が、ありません（CSRF）。罠のページから、依頼を出せます。'],
+    ['  db.run("UPDATE accounts SET balance = balance - ? WHERE id = ?", [req.body.amount, req.session.userId]);',0,'この行の、「?」の穴あきは、安全です。'],
+    ['  res.send("送金しました");',0,''],
+    ['});',0,''],
+    ['app.listen(3000);',0,'']
+  ];
+  const rvBox=$('rvCode');let rvChecked=false;
+  RV.forEach((l,i)=>{const b=document.createElement('button');b.type='button';b.className='ln';b.innerHTML='<i></i><code></code>';b.querySelector('i').textContent=i+1;b.querySelector('code').textContent=l[0]||' ';b.dataset.i=i;
+    b.onclick=()=>{if(rvChecked)return;b.classList.toggle('flag')};rvBox.appendChild(b)});
+  $('rvCheck').onclick=()=>{rvChecked=true;let hit=0,miss=0,wrong=0;[...rvBox.children].forEach((b,i)=>{const bad=RV[i][1]===1,fl=b.classList.contains('flag');b.classList.remove('okline','missline','wrongline');
+      if(bad&&fl){b.classList.add('okline');hit++}else if(bad&&!fl){b.classList.add('missline');miss++}else if(!bad&&fl){b.classList.add('wrongline');wrong++}
+      if(RV[i][2]){const t=document.createElement('div');t.className='why';t.textContent=RV[i][2];b.appendChild(t)}});
+    const total=RV.filter(l=>l[1]===1).length;
+    res($('rvRes'),hit===total&&!wrong?'good':'bad','あぶない行は '+total+' か所（SQLインジェクション1、XSS1、CSRF2、Cookie1）。そのうち '+hit+' か所を、見つけました。'+(miss?'見逃し：'+miss+' か所。':'')+(wrong?'安全な行を選んだ数：'+wrong+'。':''))};
+  $('rvReset').onclick=()=>{rvChecked=false;[...rvBox.children].forEach(b=>{b.classList.remove('flag','okline','missline','wrongline');const w=b.querySelector('.why');if(w)w.remove()});res($('rvRes'),'','')};
+
+  /* ===== 15: procedure ===== */
+  const CK=[
+    {t:'見る',s:'コードを読む',d:'3つの観点で、探します。\n① SQL文に、入力をつなげていないか。\n② 入力を、そのまま画面に出していないか（innerHTML、| safe、dangerouslySetInnerHTML）。\n③ 大事な操作に、トークンや確認があるか。GETで更新していないか。Cookieの設定は、あるか。',e:'「+」「${ }」「innerHTML」「| safe」「app.get(」（更新系）などを、検索すると見つけやすい。'},
+    {t:'試す',s:'テスト環境で試す',d:'自分が管理する、テスト用の環境で、試します。\n・コメント欄に、<b>太字</b> と入れて、太字で表示されたら、無害化されていない可能性があります。\n・大事な操作が、別のページのフォームから、通ってしまわないか、確かめます。',e:'許可のないシステムに試してはいけません。不正アクセスにあたる可能性があります。'},
+    {t:'直す',s:'3つの本命対策に直す',d:'SQLインジェクション → 穴あきの注文票（プレースホルダ）。\nXSS → 出すときの無害化（textContent、自動エスケープ）。\nCSRF → CSRFトークン、SameSite Cookie、GETで更新しない。',e:'AIに直させる場合も、方針（この3つ）を、指示に書く。'},
+    {t:'確かめる',s:'直ったか、確認する',d:'直したあとで、もう一度「試す」を行います。コードも、人が読み直します。Cookieの設定、エラーの出し方も、確認します。',e:'別の場所に、同じ書き方が、残っていないかも、見直します。'}
+  ];
+  btnList($('chk'),CK,(x,i)=>'STEP '+(i+1),x=>x.t,(x,i)=>{rows($('chkBody'),x.t+'：'+x.s,[['やること',x.d],['ポイント',x.e]]);
+    [...$('chkBody').querySelectorAll('td')].forEach(td=>td.style.whiteSpace='pre-line');
+    if(i===0||i===2){const pr=document.createElement('div');pr.className='pre';pr.style.marginTop='12px';
+      pr.textContent=i===0?'AIへの依頼例（レビュー）：\n「次のコードに、SQLインジェクション、XSS、CSRFの危険がないか、行ごとに指摘してください。\n  Cookieの設定と、エラーの出し方も確認してください。」':'AIへの依頼例（修正）：\n「SQL文はプレースホルダにしてください。画面に出す入力は、無害化（エスケープ）してください。\n  データを変える処理は、POSTにして、CSRFトークンを確認してください。」';
+      $('chkBody').appendChild(pr)}},0);
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
