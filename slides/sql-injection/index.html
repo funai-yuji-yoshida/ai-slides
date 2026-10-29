@@ -219,6 +219,13 @@ mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;p
 .checks.tick span{display:block;font-weight:700}
 .checks.tick small{display:block;font-weight:400;margin-top:2px}
 
+/* why-box */
+.whybox{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--ng);border-radius:8px;padding:14px 18px}
+.whybox[hidden]{display:none}
+.whybox h4{margin:0 0 8px;font-size:1.05em}
+.whybox .pre{margin:4px 0 10px;white-space:pre-wrap}
+.whybox .note{margin:6px 0 2px}
+.whybox .strong{font-weight:700;margin:8px 0 0}
 /* easier-to-read additions */
 .pre-btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:1px;padding:6px 12px}
 .pre-btn small{font-size:12px;font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;color:var(--sub)}
@@ -302,8 +309,8 @@ mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;p
    <div class="card"><span class="n">SQL</span><h3>倉庫に出す、注文書</h3><p>「この条件のものを、ください」という、DB専用の言葉。たとえるなら「注文票」。</p></div>
    <div class="card"><span class="n">アプリ</span><h3>注文書を、自動で書く人</h3><p>利用者が入力した言葉を使って、注文書を書き、DBに送ります。</p></div>
   </div>
-  <div class="pre" style="margin-top:14px">SELECT * FROM users WHERE name = 'sato'</div>
-  <p class="note" style="margin:6px 0 0">日本語にすると：「users表から、nameがsatoの行を、ください」</p>
+  <div class="pre" style="margin-top:14px">SELECT * FROM users WHERE username = 'sato'</div>
+  <p class="note" style="margin:6px 0 0">日本語にすると：「users表から、usernameがsatoの行を、ください」</p>
   <div class="msg">問題は、注文書の中に、<mark>利用者の入力が入る</mark>こと。</div>
  </div>
 </section>
@@ -352,6 +359,7 @@ mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;p
     <table class="mails" id="p4tbl"></table>
    </div>
   </div>
+  <div class="whybox" id="p4why" hidden></div>
  </div>
 </section>
 
@@ -599,7 +607,7 @@ db.query(`SELECT * FROM items ORDER BY ${col}`)</div><p style="margin:10px 0 0">
     if(!data.length){const tr=document.createElement('tr');tr.innerHTML='<td colspan="'+head.length+'"></td>';tr.firstChild.textContent='（該当なし）';el.querySelector('tbody').appendChild(tr)}}
 
   /* ===== a tiny SQL engine (for teaching only) ===== */
-  const USERS=[{id:1,name:'sato',password:'demo-pw-3f9a',role:'一般'},{id:2,name:'admin',password:'demo-pw-77c1',role:'管理者'},{id:3,name:'suzuki',password:'demo-pw-b204',role:'一般'}];
+  const USERS=[{id:1,username:'sato',password:'demo-pw-3f9a',role:'一般'},{id:2,username:'admin',password:'demo-pw-77c1',role:'管理者'},{id:3,username:'suzuki',password:'demo-pw-b204',role:'一般'}];
   const ITEMS=[{id:1,name:'ボールペン',category:'文具',public:1,price:120},{id:2,name:'ノート',category:'文具',public:1,price:250},{id:3,name:'ホッチキス',category:'文具',public:1,price:480},{id:4,name:'社内向け特価表',category:'社内',public:0,price:0},{id:5,name:'仕入れ先一覧',category:'社内',public:0,price:0},{id:6,name:'マグカップ',category:'雑貨',public:1,price:800}];
   const TABLES={users:USERS,items:ITEMS};
   function tokenize(sql){const t=[];let i=0;const n=sql.length;
@@ -620,9 +628,10 @@ db.query(`SELECT * FROM items ORDER BY ${col}`)</div><p style="margin:10px 0 0">
       if(t.type==='id'){p++;return{k:'col',v:t.v}}
       if(t.v==='('){p++;const e=orExpr();if(!peek()||peek().v!==')')throw new Error('かっこが閉じていません');p++;return e}
       throw new Error('予期しない記号：'+t.v)}
+    const srcOf=(a,b)=>toks.slice(a,b).map(t=>t.type==='str'?"'"+t.v+"'":String(t.v)).join(' ');
     function cmp(){if(kw('NOT')){p++;return{k:'not',a:cmp()}}
-      const l=operand();const t=peek();
-      if(t&&t.type==='op'&&['=','<>','!=','<','>','<=','>='].includes(t.v)){p++;const r=operand();return{k:'cmp',op:t.v,l,r}}
+      const p0=p;const l=operand();const t=peek();
+      if(t&&t.type==='op'&&['=','<>','!=','<','>','<=','>='].includes(t.v)){p++;const r=operand();return{k:'cmp',op:t.v,l,r,txt:srcOf(p0,p)}}
       if(t&&t.type==='id'&&t.v.toUpperCase()==='LIKE'){p++;const r=operand();return{k:'like',l,r}}
       return l}
     function andExpr(){let l=cmp();while(kw('AND')){p++;l={k:'and',l,r:cmp()}}return l}
@@ -664,34 +673,64 @@ db.query(`SELECT * FROM items ORDER BY ${col}`)</div><p style="margin:10px 0 0">
     const ol=$('tlClerk');ol.innerHTML='';d.clerk.forEach(c=>{const li=document.createElement('li');li.textContent=c[0];if(c[1])li.className=c[1];ol.appendChild(li)});res($('tlRes'),d.res[0],d.res[1])}
   seg($('tlMode'),b=>drawTl(b.dataset.m));drawTl('ok');
 
+  /* ===== explain how the WHERE clause is evaluated (True / False) ===== */
+  const TF=b=>b?'True':'False';
+  function leaves(e,row,out){if(e.k==='cmp'){out.push([e.txt,evalE(e,row)])}else if(e.k==='and'||e.k==='or'){leaves(e.l,row,out);leaves(e.r,row,out)}else if(e.k==='not')leaves(e.a,row,out);return out}
+  function fmtBool(e,row,parent){if(e.k==='cmp')return TF(evalE(e,row));
+    if(e.k==='and'){const t=fmtBool(e.l,row,'and')+' AND '+fmtBool(e.r,row,'and');return parent==='or'?'('+t+')':t}
+    if(e.k==='or')return fmtBool(e.l,row,'or')+' OR '+fmtBool(e.r,row,'or');
+    if(e.k==='not')return 'NOT '+fmtBool(e.a,row,'not');return TF(!!evalE(e,row))}
+  function foldAnd(e,row,parent){if(e.k==='and'){const v=evalE(e,row);return parent==='or'?TF(v):foldAnd(e.l,row,'and')+' AND '+foldAnd(e.r,row,'and')}
+    if(e.k==='or')return foldAnd(e.l,row,'or')+' OR '+foldAnd(e.r,row,'or');return e.k==='cmp'?TF(evalE(e,row)):fmtBool(e,row,parent)}
+  function whereExplain(sql){const toks=tokenize(sql).filter(t=>t.type!=='comment');let i=toks.findIndex(t=>t.type==='id'&&t.v.toUpperCase()==='WHERE');if(i<0)return null;
+    const w=parseWhere(toks.slice(i+1));if(w.rest.length)return null;const row=USERS[0];return{row,leaves:leaves(w.expr,row,[]),full:fmtBool(w.expr,row,null),folded:foldAnd(w.expr,row,null),value:!!evalE(w.expr,row),hasOr:/\bOR\b/i.test(toks.map(t=>t.v).join(' '))}}
+  function drawWhy(el,u,p,sql,r,mode){el.innerHTML='';el.hidden=true;if(mode!=='bad'||r.error)return;
+    const bypass=r.rows.length&&!(u===r.rows[0].username&&p===r.rows[0].password);if(!bypass)return;
+    const add=(tag,cls,text)=>{const d=document.createElement(tag);if(cls)d.className=cls;d.textContent=text;el.appendChild(d);return d};
+    add('h4','','なぜ、パスワードなしで、突破できるのか？');
+    if(/--/.test(u+p)&&/--/.test(sql)&&tokenize(sql).some(t=>t.type==='comment')&&!/\bOR\b/i.test(u+p)){
+      add('p','','「--」は、SQLで「ここから後ろは、コメント（無視する）」という意味です。');
+      const pre=document.createElement('div');pre.className='pre';pre.textContent="WHERE username = 'admin'  --' AND password = 'x'\n                        ↑ ここから後ろは、無視される\n→ 残る条件は「username = 'admin'」だけ。\n→ パスワードの確認が、消えてしまう。";el.appendChild(pre);
+      add('p','note','パスワードが何でも、「username = admin」だけで、条件が True になり、管理者としてログインできます。');el.hidden=false;return}
+    const ex=whereExplain(sql);if(!ex||!ex.hasOr)return;
+    add('p','','ユーザー「'+ex.row.username+'」の行を、例にして、条件を計算します。');
+    add('p','note','① 条件を、1つずつ、True（正しい）か False（正しくない）かで、見る');
+    const t1=document.createElement('div');t1.className='pre';t1.textContent=ex.leaves.map(l=>(l[0]+'                              ').slice(0,28)+'→ '+TF(l[1])).join('\n');el.appendChild(t1);
+    add('p','note','② AND は、OR より先に計算する（算数で「×」を「＋」より先に計算するのと、同じ）');
+    const t2=document.createElement('div');t2.className='pre';t2.textContent=ex.full;el.appendChild(t2);
+    add('p','note','③ 計算する');
+    const t3=document.createElement('div');t3.className='pre';t3.textContent=ex.folded+'\n= '+TF(ex.value);el.appendChild(t3);
+    add('p','strong','OR は、どれか1つでも True なら、全体が True になります。最後の「\'1\'=\'1\'」は、いつも True。だから、パスワードを知らなくても、すべての行が当たり、ログインできてしまいます。');
+    el.hidden=false}
+
   /* ===== 4: only-text vs instruction ===== */
   const P3=[['ボールペン','ふつうの入力'],["' OR '1'='1",'引用符で、文字の枠を閉じる'],["x' OR name = 'ノート",'別の条件を、足す'],["x'; DROP TABLE items; --",'命令を足す（教材のため、実行しません）'],["'",'引用符を1つだけ']];
   function draw3(){const v=$('p3in').value,pre="SELECT * FROM items WHERE name = '",suf="'",sql=pre+v+suf,s0=pre.length,e0=s0+v.length;
     paintSql($('p3sql'),sql,s0,e0);const r=runSql(sql),esc=inputEscaped(sql,s0,e0);
     if(r.error&&/閉じていません|文法/.test(r.error))res($('p3res'),'bad','注文書として読めなくなりました（'+r.error+'）。入力が、注文書の形に影響した証拠です。エラーが画面に出ると、攻撃者のヒントにもなります。');
-    else if(esc)res($('p3res'),'bad','入力が、「ただの文字」の枠からはみ出して、「指示」の一部になりました。'+(r.stmts>1?'命令が '+r.stmts+' つに分かれています。':'')+(r.rows.length>1||(r.rows.length&&v!==r.rows[0].name)?'この例では、'+r.rows.length+' 件が取り出されます。':''));
+    else if(esc)res($('p3res'),'bad','入力が、「ただの文字」の枠からはみ出して、「指示」の一部になりました。'+(/OR\s+'1'\s*=\s*'1/i.test(v)?'「\'1\'=\'1\'」は、いつも True。OR でつなぐと、全体が True になります。':'')+(r.stmts>1?'命令が '+r.stmts+' つに分かれています。':'')+(r.rows.length>1||(r.rows.length&&v!==r.rows[0].name)?'この例では、'+r.rows.length+' 件が取り出されます。':''));
     else res($('p3res'),'good','入力は、すべて「ただの文字」の枠の中にあります。だから、注文書の形は変わりません。');}
   presets($('p3presets'),P3,p=>{$('p3in').value=p[0];draw3()});$('p3in').addEventListener('input',draw3);draw3();
 
   /* ===== 5: login ===== */
   const P4=[['sato / demo-pw-3f9a','ふつうのログイン','sato','demo-pw-3f9a'],["admin'--　（パスワードは何でも）",'「パスワードの確認」を消す',"admin'--",'x'],["' OR '1'='1　を両方に",'「いつでも正しい」条件を足す',"' OR '1'='1","' OR '1'='1"],['sato / まちがったパスワード','ふつうの失敗','sato','abc']];
-  function login(){const u=$('p4u').value,p=$('p4p').value,mode=document.querySelector('#p4mode [aria-pressed=true]').dataset.m,box=$('p4sql');
-    if(mode==='bad'){const sql="SELECT * FROM users WHERE name = '"+u+"' AND password = '"+p+"'",s0=("SELECT * FROM users WHERE name = '").length;
+  function login(){const u=$('p4u').value,p=$('p4p').value,mode=document.querySelector('#p4mode [aria-pressed=true]').dataset.m,box=$('p4sql');drawWhy($('p4why'),u,p,"SELECT * FROM users WHERE username = '"+u+"' AND password = '"+p+"'",runSql("SELECT * FROM users WHERE username = '"+u+"' AND password = '"+p+"'"),mode);
+    if(mode==='bad'){const sql="SELECT * FROM users WHERE username = '"+u+"' AND password = '"+p+"'",s0=("SELECT * FROM users WHERE username = '").length;
       paintSql(box,sql,s0,s0+u.length);const r=runSql(sql);$('p4lab').textContent='アプリが作った注文書（入力をそのままつなげた）';
       if(r.error)res($('p4res'),'bad','エラー：'+r.error);
-      else if(r.rows.length){const x=r.rows[0],normal=(u===x.name&&p===x.password);res($('p4res'),normal?'good':'bad',(normal?'ログイン成功：':'パスワードを知らないのに、ログインできてしまいました：')+x.name+'（'+x.role+'）。'+(r.rows.length>1?'注文書が '+r.rows.length+' 行を返したためです。':''));}
+      else if(r.rows.length){const x=r.rows[0],normal=(u===x.username&&p===x.password);res($('p4res'),normal?'good':'bad',(normal?'ログイン成功：':'パスワードを知らないのに、ログインできてしまいました：')+x.username+'（'+x.role+'）。'+(r.rows.length>1?'注文書が '+r.rows.length+' 行を返したためです。':''));}
       else res($('p4res'),'','ログイン失敗：ユーザー名かパスワードが違います。');}
-    else{box.innerHTML='';const tpl="SELECT * FROM users WHERE name = ? AND password = ?";
+    else{box.innerHTML='';const tpl="SELECT * FROM users WHERE username = ? AND password = ?";
       const a=document.createElement('span');a.className='t-c';a.textContent=tpl;box.appendChild(a);
       const b=document.createElement('div');b.className='params';b.innerHTML='穴に入れる言葉（別に渡す）：<span class="t-d fromin"></span>　<span class="t-d fromin"></span>';
       b.querySelectorAll('span')[0].textContent="'"+u+"'";b.querySelectorAll('span')[1].textContent="'"+p+"'";box.appendChild(b);
       $('p4lab').textContent='アプリが作った注文書（穴あき）';
-      const row=USERS.find(x=>x.name===u&&x.password===p);
-      if(row)res($('p4res'),'good','ログイン成功：'+row.name+'（'+row.role+'）。入力は「ただの言葉」として照合されました。');
+      const row=USERS.find(x=>x.username===u&&x.password===p);
+      if(row)res($('p4res'),'good','ログイン成功：'+row.username+'（'+row.role+'）。入力は「ただの言葉」として照合されました。');
       else res($('p4res'),'','ログイン失敗：どんな入力も「ただの言葉」として照合されるので、突破できません。');}}
   presets($('p4presets'),P4,p=>{$('p4u').value=p[2];$('p4p').value=p[3];login()});
   $('p4go').onclick=login;seg($('p4mode'),login);
-  table($('p4tbl'),['id','name','password','role'],USERS.map(u=>[u.id,u.name,u.password,u.role]));
+  table($('p4tbl'),['id','username','password','role'],USERS.map(u=>[u.id,u.username,u.password,u.role]));
   $('p4u').value='sato';$('p4p').value='demo-pw-3f9a';login();
 
   /* ===== 6: search leak ===== */
@@ -720,9 +759,9 @@ db.query(`SELECT * FROM items ORDER BY ${col}`)</div><p style="margin:10px 0 0">
 
   /* ===== 8: placeholders ===== */
   const PH=[
-    {t:'① 穴あきの注文票を送る',code:'const sql = "SELECT * FROM users\\n  WHERE name = ? AND password = ?";\\ndb.prepare(sql);   // ← 「？」は、言葉を入れる穴',db:'注文票を受け取った。\\n形が、ここで決まる：\\n  name = （穴1）\\n  AND password = （穴2）\\n\\n→ 「指示」の部分は、もう変えられない。',r:'この時点で、注文票の形（指示）は、決まっています。'},
+    {t:'① 穴あきの注文票を送る',code:'const sql = "SELECT * FROM users\\n  WHERE username = ? AND password = ?";\\ndb.prepare(sql);   // ← 「？」は、言葉を入れる穴',db:'注文票を受け取った。\\n形が、ここで決まる：\\n  username = （穴1）\\n  AND password = （穴2）\\n\\n→ 「指示」の部分は、もう変えられない。',r:'この時点で、注文票の形（指示）は、決まっています。'},
     {t:'② 穴に入れる言葉を送る',code:'db.prepare(sql);\\ndb.run(["admin\\u0027 --", "abc"]);   // ← 穴に入れる言葉は、別に渡す',db:'言葉を受け取った：\\n  穴1 ← "admin\\u0027 --"\\n  穴2 ← "abc"\\n\\n形は、すでに決まっている。\\n言葉は、穴に入れるだけ。',r:'「\\u0027 --」のような記号も、ただの文字として扱われます。'},
-    {t:'③ ただの言葉として使う',code:'// 結果を受け取る\\nrows = db.all();',db:'name が「admin\\u0027 --」の人を探す。\\n→ そんな名前の人は、いない。\\n→ 0件。',r:'どんな言葉も、「指示」にはなりません。だから、突破されません。'}
+    {t:'③ ただの言葉として使う',code:'// 結果を受け取る\\nrows = db.all();',db:'username が「admin\\u0027 --」の人を探す。\\n→ そんな名前の人は、いない。\\n→ 0件。',r:'どんな言葉も、「指示」にはなりません。だから、突破されません。'}
   ];
   btnList($('ph'),PH,(x,i)=>'段階 '+(i+1),x=>x.t,x=>{$('phCode').textContent=x.code.replace(/\\n/g,'\n').replace(/\\u0027/g,"'");$('phDb').textContent=x.db.replace(/\\n/g,'\n').replace(/\\u0027/g,"'");res($('phRes'),'good',x.r.replace(/\\u0027/g,"'"))},0);
 
