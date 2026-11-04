@@ -14,6 +14,7 @@
 
 | スライド | 内容 |
 |---|---|
+| [デザインシステム検討ツール](https://funai-yuji-yoshida.github.io/ai-slides/slides/design-system-tool/) | フォント・色・文字サイズ・角丸・影を選んで、部品や画面例で確認。気に入った組み合わせをCSS変数やAIへの指示文として書き出せるツール（サンプルは架空のデータ） |
 | [Webの3つの攻撃：XSS・CSRF・SQLインジェクション](https://funai-yuji-yoshida.github.io/ai-slides/slides/web-attacks/) | XSSとCSRFを、たとえ話と体験で理解し、SQLインジェクションと比べる。あぶないコードと安全なコードを見分け、AIが作ったアプリを確認できるようになる（デモは安全なシミュレーション・架空のデータ） |
 | [SQLインジェクションの仕組みと対策](https://funai-yuji-yoshida.github.io/ai-slides/slides/sql-injection/) | 入力欄に「指示」が紛れ込む攻撃を、レストランの注文票のたとえと体験で理解する。あぶないコードと安全なコードを見分け、AIが作ったアプリを確認できるようになる（デモはすべて架空のダミーデータ） |
 | [組み合わせ爆発とアリの知恵　巡回セールスマン問題とACO](https://funai-yuji-yoshida.github.io/ai-slides/slides/ant-colony-tsp/) | 全部調べると何年もかかる巡回セールスマン問題を、アリの行動をヒントにしたアントコロニー最適化で、最適に近い答えに導く。動かしながら学ぶ |

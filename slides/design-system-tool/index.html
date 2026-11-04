@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>デザインシステム検討ツール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans+JP:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=M+PLUS+1p:wght@400;500;700;800&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&family=Murecho:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Shippori+Mincho:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --ui-bg:#ECEFF3; --ui-panel:#FFFFFF; --ui-panel-2:#F5F7FA; --ui-line:#D6DCE4; --ui-text:#18202B; --ui-muted:#5A6473;
+  --ui-ink:#18202B; --ui-on-ink:#FFFFFF; --ui-focus:#3A63E0;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ui-bg:#10141A; --ui-panel:#181F28; --ui-panel-2:#1E2630; --ui-line:#2C3642; --ui-text:#E4E8EE; --ui-muted:#96A1B0;
+    --ui-ink:#E4E8EE; --ui-on-ink:#10141A; --ui-focus:#8AA7FF;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ui-bg:#10141A; --ui-panel:#181F28; --ui-panel-2:#1E2630; --ui-line:#2C3642; --ui-text:#E4E8EE; --ui-muted:#96A1B0;
+  --ui-ink:#E4E8EE; --ui-on-ink:#10141A; --ui-focus:#8AA7FF;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px)}
+body{margin:0;background:var(--ui-bg);color:var(--ui-text);font-family:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;font-size:14px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ui-bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- chrome ---------- */
+.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;padding:24px 24px 12px}
+.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.01em}
+.top p{margin:4px 0 0;color:var(--ui-muted);max-width:60ch}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ubtn{border:1px solid var(--ui-line);background:var(--ui-panel);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:500}
+.ubtn:hover{border-color:var(--ui-muted)}
+.ubtn.ink{background:var(--ui-ink);color:var(--ui-on-ink);border-color:var(--ui-ink)}
+.seg{display:inline-flex;border:1px solid var(--ui-line);border-radius:8px;overflow:hidden;background:var(--ui-panel)}
+.seg button{border:0;background:transparent;padding:7px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ui-ink);color:var(--ui-on-ink)}
+
+.gal-head{display:flex;gap:12px;align-items:baseline;padding:8px 24px 6px}
+.gal-head h2{margin:0;font-size:14px}
+.gal-head span{color:var(--ui-muted);font-size:12px}
+.gallery{display:grid;grid-auto-flow:column;grid-auto-columns:208px;gap:10px;overflow-x:auto;padding:4px 24px 14px;scroll-snap-type:x proximity}
+.gcard{scroll-snap-align:start;text-align:left;border:1px solid var(--ui-line);background:var(--ui-panel);border-radius:12px;padding:12px;cursor:pointer;position:relative;display:flex;flex-direction:column;gap:8px}
+.gcard:hover{border-color:var(--ui-muted)}
+.gcard[aria-current="true"]{border-color:var(--ui-ink);box-shadow:0 0 0 1px var(--ui-ink)}
+.gcard .gname{font-weight:700;font-size:13px}
+.gcard .guse{font-size:11px;color:var(--ui-muted);line-height:1.4;min-height:2.8em}
+.gcard .gspec{font-size:26px;line-height:1.1;white-space:nowrap;overflow:hidden}
+.gcard .gsw{display:flex;height:18px;border-radius:4px;overflow:hidden}
+.gcard .gsw i{flex:1}
+.gcard .gbtn{align-self:flex-start;font-size:11px;padding:3px 10px;font-weight:600}
+.gcard .gdel{position:absolute;top:6px;right:6px;border:0;background:transparent;cursor:pointer;color:var(--ui-muted);font-size:14px;width:24px;height:24px;border-radius:6px}
+.gcard .gdel:hover{background:var(--ui-panel-2)}
+.empty-saved{color:var(--ui-muted);font-size:12px;padding:4px 24px 12px}
+
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;padding:8px 24px 64px;align-items:start}
+.panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);max-height:calc(100vh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;background:var(--ui-panel);border:1px solid var(--ui-line);border-radius:12px;padding:16px}
+.panel h3{margin:18px 0 8px;font-size:13px}
+.panel h3:first-child{margin-top:0}
+.ctl{display:grid;gap:4px;margin-bottom:10px}
+.ctl label{font-size:12px;color:var(--ui-muted)}
+.ctl select,.ctl input[type=text]{width:100%;padding:6px 8px;border:1px solid var(--ui-line);border-radius:6px;background:var(--ui-panel-2)}
+.ctl2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.color-in{display:flex;gap:6px;align-items:center}
+.color-in input[type=color]{width:38px;height:32px;padding:0;border:1px solid var(--ui-line);border-radius:6px;background:none;cursor:pointer}
+.range-row{display:flex;gap:8px;align-items:center}
+.range-row input{flex:1;accent-color:var(--ui-ink)}
+.range-row output{font-variant-numeric:tabular-nums;font-size:12px;min-width:52px;text-align:right}
+.seg.full{display:flex}
+.seg.full button{flex:1;padding:6px 4px;font-size:12px}
+.hint{font-size:11px;color:var(--ui-muted);margin:2px 0 0}
+
+.main{min-width:0}
+.secnav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ui-bg);display:flex;gap:4px;overflow-x:auto;padding:8px 0 10px}
+.secnav a{flex:none;text-decoration:none;color:var(--ui-text);padding:6px 12px;border-radius:999px;border:1px solid var(--ui-line);background:var(--ui-panel);font-size:13px}
+.secnav a:hover{border-color:var(--ui-muted)}
+.cur{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin:4px 0 14px}
+.cur strong{font-size:18px}
+.cur span{color:var(--ui-muted)}
+.sec{margin-bottom:36px}
+.sec > h2{font-size:16px;margin:0 0 4px}
+.sec > p.lead{margin:0 0 12px;color:var(--ui-muted);font-size:13px}
+
+.exp{background:var(--ui-panel);border:1px solid var(--ui-line);border-radius:12px;overflow:hidden}
+.exp-tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--ui-line);padding:6px 6px 0;background:var(--ui-panel-2)}
+.exp-tabs button{flex:none;border:0;background:transparent;padding:8px 12px;border-radius:8px 8px 0 0;cursor:pointer;color:var(--ui-muted)}
+.exp-tabs button[aria-selected="true"]{background:var(--ui-panel);color:var(--ui-text);font-weight:600}
+.exp-bar{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--ui-line)}
+.exp-bar span{color:var(--ui-muted);font-size:12px}
+.exp pre{margin:0;padding:14px;max-height:460px;overflow:auto;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;white-space:pre}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:var(--ui-ink);color:var(--ui-on-ink);padding:8px 16px;border-radius:999px;font-size:13px;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width: 920px){
+  .layout{grid-template-columns:1fr}
+  .panel{position:static;max-height:none}
+}
+@media (max-width: 560px){
+  .top,.gal-head,.layout{padding-left:14px;padding-right:14px}
+  .gallery{padding-left:14px;padding-right:14px}
+}
+
+/* ---------- design system preview (uses generated tokens) ---------- */
+.ds{background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);font-size:var(--fs-base);line-height:var(--lh-body);letter-spacing:var(--tracking);border:1px solid var(--ui-line);border-radius:14px;overflow:hidden}
+.ds *{letter-spacing:inherit}
+.ds .pad{padding:28px}
+.ds .hd{font-family:var(--font-heading);font-weight:var(--fw-heading);line-height:var(--lh-heading);margin:0}
+.ds .mono{font-family:var(--font-mono)}
+.ds .muted{color:var(--color-text-muted)}
+.ds .clabel{font-size:var(--fs-sm);color:var(--color-text-muted);margin:0 0 var(--space-3);font-weight:600}
+.ds .row{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center}
+.ds .stack{display:grid;gap:var(--space-4)}
+.ds .cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px}
+.ds .cblock{min-width:0}
+
+/* palette */
+.ds .brand{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:24px}
+.ds .bcard{border-radius:var(--radius-lg);padding:18px;min-height:132px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;border:0;text-align:left;font:inherit}
+.ds .bcard .bn{font-weight:700;font-size:var(--fs-lg);font-family:var(--font-heading)}
+.ds .bcard .bh{font-family:var(--font-mono);font-size:var(--fs-sm);opacity:.9}
+.ds .sc-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;margin-bottom:8px}
+.ds .sc-label{font-size:var(--fs-sm);font-weight:600}
+.ds .sc{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px;overflow-x:auto}
+.ds .sw{border:0;min-width:58px;height:62px;border-radius:6px;padding:6px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;font-size:10.5px;text-align:left;font-family:var(--font-mono);letter-spacing:0}
+.ds .sw span:first-child{font-weight:700}
+.ds .sw.base{outline:2px solid var(--color-text);outline-offset:1px}
+.ds .roles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:20px}
+.ds .role{display:flex;gap:10px;align-items:center;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:8px;background:var(--color-surface);cursor:pointer;text-align:left;font:inherit;color:inherit}
+.ds .role i{width:34px;height:34px;border-radius:var(--radius-sm);flex:none;border:1px solid var(--color-border)}
+.ds .role b{display:block;font-size:var(--fs-sm);font-weight:600}
+.ds .role code{font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);letter-spacing:0}
+.ds .semrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:20px}
+.ds .sem{border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--color-border)}
+.ds .sem div{padding:10px 12px;font-size:var(--fs-sm)}
+.ds .sem .s1{font-weight:700}
+.ds .ctab{width:100%;border-collapse:collapse;margin-top:20px;font-size:var(--fs-sm)}
+.ds .ctab td,.ds .ctab th{padding:8px 10px;border-bottom:1px solid var(--color-border);text-align:left}
+.ds .ctab th{color:var(--color-text-muted);font-weight:600}
+.ds .pv{display:inline-block;padding:2px 10px;border-radius:var(--radius-sm);font-weight:700}
+.ds .grade{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.ds .g-ok{background:var(--color-success-soft);color:var(--color-success-text)}
+.ds .g-mid{background:var(--color-warning-soft);color:var(--color-warning-text)}
+.ds .g-ng{background:var(--color-danger-soft);color:var(--color-danger-text)}
+
+/* type */
+.ds .fonts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:24px}
+.ds .fcard{border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px;background:var(--color-surface)}
+.ds .fcard .big{font-size:52px;line-height:1.1;margin:6px 0 10px}
+.ds .fcard .fn{font-size:var(--fs-sm);font-weight:600}
+.ds .fcard .fs{font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);word-break:break-all;letter-spacing:0}
+.ds .tscale{border-top:1px solid var(--color-border)}
+.ds .trow{display:grid;grid-template-columns:110px minmax(0,1fr);gap:16px;padding:12px 0;border-bottom:1px solid var(--color-border);align-items:baseline}
+.ds .trow .tk{font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);letter-spacing:0;line-height:1.5}
+.ds .trow .tk b{color:var(--color-text);font-size:12px}
+.ds .tsample{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ds .article{max-width:38em;margin-top:24px}
+.ds .article p{margin:0 0 1em}
+.ds .weights{display:flex;flex-wrap:wrap;gap:18px;margin-top:16px;font-family:var(--font-heading);font-size:var(--fs-xl)}
+
+/* space / radius / shadow */
+.ds .sp{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center;margin-bottom:6px;font-size:var(--fs-sm)}
+.ds .sp code{font-family:var(--font-mono);font-size:11px;letter-spacing:0;color:var(--color-text-muted)}
+.ds .sp i{display:block;height:14px;background:var(--color-primary);border-radius:2px}
+.ds .shapes{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px}
+.ds .shape{height:88px;background:var(--color-surface);border:1px solid var(--color-border);display:flex;align-items:flex-end;padding:8px;font-size:11px;font-family:var(--font-mono);letter-spacing:0;color:var(--color-text-muted)}
+.ds .shadow-box{border:0;border-radius:var(--radius-lg);background:var(--color-surface)}
+
+/* components */
+.ds .d-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);min-height:calc(var(--space-8) + 4px);border-radius:var(--radius-md);border:1px solid transparent;font:inherit;font-size:var(--fs-sm);font-weight:600;cursor:pointer;line-height:1.2;transition:background .15s,border-color .15s}
+.ds .d-btn.primary{background:var(--color-primary);color:var(--color-on-primary)}
+.ds .d-btn.primary:hover{background:var(--color-primary-hover)}
+.ds .d-btn.accent{background:var(--color-accent);color:var(--color-on-accent)}
+.ds .d-btn.accent:hover{background:var(--color-accent-hover)}
+.ds .d-btn.secondary{background:var(--color-surface);color:var(--color-text);border-color:var(--color-border-strong)}
+.ds .d-btn.secondary:hover{background:var(--color-surface-2)}
+.ds .d-btn.outline{background:transparent;color:var(--color-primary-text);border-color:var(--color-primary-text)}
+.ds .d-btn.outline:hover{background:var(--color-primary-soft)}
+.ds .d-btn.ghost{background:transparent;color:var(--color-primary-text)}
+.ds .d-btn.ghost:hover{background:var(--color-primary-soft)}
+.ds .d-btn.danger{background:var(--color-danger);color:var(--color-on-danger)}
+.ds .d-btn:disabled{opacity:.45;cursor:not-allowed}
+.ds .d-btn.sm{min-height:calc(var(--space-6) + 4px);padding:var(--space-1) var(--space-3);font-size:var(--fs-xs)}
+.ds .d-btn.lg{min-height:calc(var(--space-10) + 4px);padding:var(--space-3) var(--space-6);font-size:var(--fs-base)}
+.ds .d-btn.icon{padding:0;width:calc(var(--space-8) + 4px)}
+.ds .d-btn:focus-visible,.ds .d-input:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+.ds .field{display:grid;gap:var(--space-1);margin-bottom:var(--space-4)}
+.ds .d-label{font-size:var(--fs-sm);font-weight:600}
+.ds .req{font-size:var(--fs-xs);color:var(--color-danger-text);background:var(--color-danger-soft);padding:0 6px;border-radius:var(--radius-sm);margin-left:4px;font-weight:600}
+.ds .d-input{width:100%;padding:var(--space-2) var(--space-3);min-height:calc(var(--space-8) + 4px);border:1px solid var(--color-border-strong);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text);font:inherit;font-size:var(--fs-sm)}
+.ds .d-input::placeholder{color:var(--color-text-subtle)}
+.ds .d-input:focus{border-color:var(--color-primary);outline:none;box-shadow:0 0 0 3px var(--color-primary-soft)}
+.ds .d-input.invalid{border-color:var(--color-danger)}
+.ds .d-error{margin:0;font-size:var(--fs-xs);color:var(--color-danger-text)}
+.ds .d-help{margin:0;font-size:var(--fs-xs);color:var(--color-text-muted)}
+.ds .d-check{display:inline-flex;gap:var(--space-2);align-items:center;font-size:var(--fs-sm);cursor:pointer}
+.ds .d-check input{accent-color:var(--color-primary);width:16px;height:16px}
+.ds .d-switch{display:inline-flex;gap:var(--space-3);align-items:center;font-size:var(--fs-sm);cursor:pointer;margin-top:var(--space-3)}
+.ds .d-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.ds .d-switch .track{width:40px;height:22px;border-radius:999px;background:var(--color-border-strong);position:relative;transition:background .15s;flex:none}
+.ds .d-switch .track::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#FFFFFF;transition:transform .15s}
+.ds .d-switch input:checked + .track{background:var(--color-primary)}
+.ds .d-switch input:checked + .track::after{transform:translateX(18px)}
+.ds .d-switch input:focus-visible + .track{outline:2px solid var(--color-primary);outline-offset:2px}
+.ds .d-badge{display:inline-flex;align-items:center;gap:4px;padding:2px var(--space-2);border-radius:var(--radius-full);font-size:var(--fs-xs);font-weight:600;line-height:1.6}
+.ds .b-primary{background:var(--color-primary);color:var(--color-on-primary)}
+.ds .b-soft{background:var(--color-primary-soft);color:var(--color-primary-soft-text)}
+.ds .b-accent{background:var(--color-accent-soft);color:var(--color-accent-soft-text)}
+.ds .b-success{background:var(--color-success-soft);color:var(--color-success-text)}
+.ds .b-warning{background:var(--color-warning-soft);color:var(--color-warning-text)}
+.ds .b-danger{background:var(--color-danger-soft);color:var(--color-danger-text)}
+.ds .b-neutral{background:var(--color-surface-2);color:var(--color-text-muted);border:1px solid var(--color-border)}
+.ds .d-alert{display:flex;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);font-size:var(--fs-sm);border-left:4px solid}
+.ds .d-alert b{display:block}
+.ds .a-info{background:var(--color-info-soft);color:var(--color-info-text);border-color:var(--color-info)}
+.ds .a-success{background:var(--color-success-soft);color:var(--color-success-text);border-color:var(--color-success)}
+.ds .a-warning{background:var(--color-warning-soft);color:var(--color-warning-text);border-color:var(--color-warning)}
+.ds .a-danger{background:var(--color-danger-soft);color:var(--color-danger-text);border-color:var(--color-danger)}
+.ds .d-tabs{display:flex;gap:var(--space-1);border-bottom:1px solid var(--color-border);margin-bottom:var(--space-4)}
+.ds .d-tabs button{border:0;background:transparent;padding:var(--space-2) var(--space-3);font:inherit;font-size:var(--fs-sm);color:var(--color-text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.ds .d-tabs button[aria-selected="true"]{color:var(--color-primary-text);border-color:var(--color-primary);font-weight:600}
+.ds .d-seg{display:inline-flex;background:var(--color-surface-2);border-radius:var(--radius-md);padding:3px;gap:2px}
+.ds .d-seg button{border:0;background:transparent;padding:var(--space-1) var(--space-3);border-radius:var(--radius-sm);font:inherit;font-size:var(--fs-sm);color:var(--color-text-muted);cursor:pointer}
+.ds .d-seg button[aria-pressed="true"]{background:var(--color-surface);color:var(--color-text);box-shadow:var(--shadow-sm);font-weight:600}
+.ds .d-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);overflow:hidden}
+.ds .d-card .cb{padding:var(--space-5)}
+.ds .d-card .cf{padding:var(--space-3) var(--space-5);border-top:1px solid var(--color-border);display:flex;justify-content:flex-end;gap:var(--space-2);background:var(--color-surface-2)}
+.ds .d-card .thumb{height:96px;background:linear-gradient(135deg,var(--color-primary-soft),var(--color-accent-soft))}
+.ds .d-table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+.ds .d-table th{text-align:left;font-weight:600;color:var(--color-text-muted);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--color-border-strong);background:var(--color-surface-2);white-space:nowrap}
+.ds .d-table td{padding:var(--space-3);border-bottom:1px solid var(--color-border);white-space:nowrap}
+.ds .d-table tr:hover td{background:var(--color-surface-2)}
+.ds .num{text-align:right;font-variant-numeric:tabular-nums}
+.ds .tbl-wrap{overflow-x:auto;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}
+.ds .progress{height:8px;background:var(--color-surface-2);border-radius:var(--radius-full);overflow:hidden;border:1px solid var(--color-border)}
+.ds .progress i{display:block;height:100%;background:var(--color-primary);border-radius:inherit}
+.ds .avatar{width:36px;height:36px;border-radius:var(--radius-full);display:inline-grid;place-items:center;font-weight:700;font-size:var(--fs-sm);background:var(--color-primary-soft);color:var(--color-primary-soft-text);border:2px solid var(--color-surface)}
+.ds .avatar.a2{background:var(--color-accent-soft);color:var(--color-accent-soft-text)}
+.ds .avatar.a3{background:var(--color-surface-2);color:var(--color-text-muted)}
+.ds .avs{display:flex}
+.ds .avs .avatar+.avatar{margin-left:-10px}
+.ds .crumb{display:flex;gap:var(--space-2);font-size:var(--fs-sm);color:var(--color-text-muted);flex-wrap:wrap}
+.ds .crumb a{color:var(--color-primary-text);text-decoration:none}
+.ds .crumb a:hover{text-decoration:underline}
+.ds .pager{display:flex;gap:var(--space-1)}
+.ds .pager button{min-width:34px;height:34px;border:1px solid var(--color-border);background:var(--color-surface);border-radius:var(--radius-sm);font:inherit;font-size:var(--fs-sm);cursor:pointer;color:var(--color-text)}
+.ds .pager button[aria-current="page"]{background:var(--color-primary);border-color:var(--color-primary);color:var(--color-on-primary);font-weight:700}
+.ds .d-toast{display:flex;gap:var(--space-3);align-items:center;background:var(--color-text);color:var(--color-bg);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);font-size:var(--fs-sm);width:fit-content}
+.ds .d-toast button{border:0;background:transparent;color:inherit;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
+.ds .tip{position:relative;display:inline-block;background:var(--color-text);color:var(--color-bg);font-size:var(--fs-xs);padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm)}
+.ds .tip::after{content:"";position:absolute;left:14px;bottom:-5px;border:5px solid transparent;border-bottom:0;border-top-color:var(--color-text)}
+.ds a.link{color:var(--color-primary-text);text-underline-offset:3px}
+.ds .d-modal{background:var(--color-surface);border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);border:1px solid var(--color-border);padding:var(--space-6);max-width:380px}
+.ds .d-modal p{margin:var(--space-2) 0 var(--space-5);color:var(--color-text-muted);font-size:var(--fs-sm)}
+.ds .modal-bg{background:var(--color-surface-2);border-radius:var(--radius-lg);padding:var(--space-6);display:grid;place-items:center}
+
+/* app screen */
+.ds .app{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:560px}
+.ds .side{background:var(--color-surface);border-right:1px solid var(--color-border);padding:var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-1)}
+.ds .logo{display:flex;align-items:center;gap:var(--space-2);font-family:var(--font-heading);font-weight:var(--fw-heading);font-size:var(--fs-lg);padding:var(--space-2) var(--space-2) var(--space-5)}
+.ds .logo i{width:26px;height:26px;border-radius:var(--radius-md);background:var(--color-primary);display:inline-block}
+.ds .nav{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);font-size:var(--fs-sm);color:var(--color-text-muted);text-decoration:none}
+.ds .nav:hover{background:var(--color-surface-2);color:var(--color-text)}
+.ds .nav[aria-current="page"]{background:var(--color-primary-soft);color:var(--color-primary-soft-text);font-weight:700}
+.ds .nav .cnt{margin-left:auto;font-size:var(--fs-xs)}
+.ds .appmain{padding:var(--space-6);min-width:0}
+.ds .apphead{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center;justify-content:space-between;margin-bottom:var(--space-6)}
+.ds .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--space-4);margin-bottom:var(--space-6)}
+.ds .kpi{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4);box-shadow:var(--shadow-sm)}
+.ds .kpi .kl{font-size:var(--fs-sm);color:var(--color-text-muted)}
+.ds .kpi .kv{font-family:var(--font-heading);font-weight:var(--fw-heading);font-size:var(--fs-2xl);line-height:1.3;font-variant-numeric:tabular-nums}
+.ds .kpi .kd{font-size:var(--fs-xs);color:var(--color-success-text)}
+.ds .two{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:var(--space-4)}
+.ds .panelc{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4);box-shadow:var(--shadow-sm);min-width:0}
+.ds .bars{display:flex;align-items:flex-end;gap:var(--space-2);height:150px;padding-top:var(--space-3)}
+.ds .bars div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;font-size:var(--fs-xs);color:var(--color-text-muted)}
+.ds .bars i{display:block;width:100%;max-width:34px;background:var(--color-primary);border-radius:var(--radius-sm) var(--radius-sm) 0 0;opacity:.85}
+.ds .bars .now i{background:var(--color-accent);opacity:1}
+.ds .todo{display:grid;gap:var(--space-2);font-size:var(--fs-sm)}
+.ds .todo div{display:flex;gap:var(--space-2);align-items:center;padding:var(--space-2) 0;border-bottom:1px solid var(--color-border)}
+@media (max-width: 760px){
+  .ds .app{grid-template-columns:1fr}
+  .ds .side{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--color-border)}
+  .ds .logo{padding:var(--space-2)}
+  .ds .two{grid-template-columns:1fr}
+  .ds .pad{padding:18px}
+  .ds .trow{grid-template-columns:80px minmax(0,1fr)}
+  .ds .sc-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>デザインシステム検討ツール</h1>
+    <p>フォント・カラー・文字組み・形状を組み合わせ、実際の部品と画面で確かめてから、CSS変数やTailwind設定としてコピーできます。</p>
+  </div>
+  <div class="actions">
+    <div class="seg" role="group" aria-label="プレビューの表示モード">
+      <button type="button" data-mode="light" aria-pressed="true">ライト</button>
+      <button type="button" data-mode="dark" aria-pressed="false">ダーク</button>
+    </div>
+    <button class="ubtn" id="btn-random" type="button">ランダムに組み合わせる</button>
+    <button class="ubtn ink" id="btn-save" type="button">この組み合わせを保存</button>
+  </div>
+</header>
+
+<div class="gal-head"><h2>プリセット</h2><span>クリックで適用。左右にスクロールできます</span></div>
+<div class="gallery" id="gal-presets"></div>
+<div class="gal-head"><h2>保存した組み合わせ</h2><span>このブラウザにだけ保存されます</span></div>
+<div class="gallery" id="gal-saved"></div>
+
+<div class="layout">
+  <aside class="panel" aria-label="設定">
+    <h3>フォント</h3>
+    <div class="ctl2">
+      <div class="ctl"><label for="c-hL">見出し（欧文）</label><select id="c-hL" data-k="hL"></select></div>
+      <div class="ctl"><label for="c-hJ">見出し（和文）</label><select id="c-hJ" data-k="hJ"></select></div>
+      <div class="ctl"><label for="c-bL">本文（欧文）</label><select id="c-bL" data-k="bL"></select></div>
+      <div class="ctl"><label for="c-bJ">本文（和文）</label><select id="c-bJ" data-k="bJ"></select></div>
+      <div class="ctl"><label for="c-mono">等幅</label><select id="c-mono" data-k="mono"></select></div>
+      <div class="ctl"><label for="c-hw">見出しの太さ</label><select id="c-hw" data-k="hw" data-num="1">
+        <option value="400">400 標準</option><option value="500">500 中</option><option value="600">600 やや太</option><option value="700">700 太</option><option value="800">800 極太</option><option value="900">900 最太</option></select></div>
+    </div>
+    <p class="hint">欧文→和文の順に指定し、英数字だけ欧文書体で表示します。</p>
+
+    <h3>カラー</h3>
+    <div class="ctl"><label for="c-primary-t">プライマリ（主要アクション）</label>
+      <div class="color-in"><input type="color" id="c-primary" data-k="primary" aria-label="プライマリの色を選ぶ"><input type="text" id="c-primary-t" data-hex="primary" spellcheck="false"></div></div>
+    <div class="ctl"><label for="c-accent-t">アクセント（強調・二次）</label>
+      <div class="color-in"><input type="color" id="c-accent" data-k="accent" aria-label="アクセントの色を選ぶ"><input type="text" id="c-accent-t" data-hex="accent" spellcheck="false"></div></div>
+    <div class="ctl"><label for="c-neutral">ニュートラル（背景・文字・枠線）</label><select id="c-neutral" data-k="neutral"></select></div>
+
+    <h3>文字組み</h3>
+    <div class="ctl"><label for="c-base">基準サイズ</label><div class="range-row"><input type="range" id="c-base" data-k="base" data-num="1" min="13" max="18" step="1"><output data-out="base"></output></div></div>
+    <div class="ctl"><label for="c-ratio">サイズの比率</label><select id="c-ratio" data-k="ratio" data-num="1">
+      <option value="1.125">1.125（控えめ）</option><option value="1.15">1.15（業務向け）</option><option value="1.2">1.2（標準）</option><option value="1.25">1.25（メリハリ）</option><option value="1.333">1.333（大胆）</option></select></div>
+    <div class="ctl"><label for="c-lh">本文の行間</label><div class="range-row"><input type="range" id="c-lh" data-k="lh" data-num="1" min="1.4" max="2.1" step="0.05"><output data-out="lh"></output></div></div>
+    <div class="ctl"><label for="c-track">字間</label><div class="range-row"><input type="range" id="c-track" data-k="track" data-num="1" min="0" max="0.08" step="0.01"><output data-out="track"></output></div></div>
+
+    <h3>形状</h3>
+    <div class="ctl"><label for="c-radius">角丸（基準）</label><div class="range-row"><input type="range" id="c-radius" data-k="radius" data-num="1" min="0" max="24" step="1"><output data-out="radius"></output></div></div>
+    <div class="ctl"><label for="c-density">余白の密度</label><div class="range-row"><input type="range" id="c-density" data-k="density" data-num="1" min="0.8" max="1.3" step="0.05"><output data-out="density"></output></div></div>
+    <div class="ctl"><span id="lbl-shadow" style="font-size:12px;color:var(--ui-muted)">影</span>
+      <div class="seg full" role="group" aria-labelledby="lbl-shadow" id="seg-shadow">
+        <button type="button" data-shadow="none">なし</button><button type="button" data-shadow="soft">ソフト</button><button type="button" data-shadow="crisp">くっきり</button><button type="button" data-shadow="layered">色付き</button>
+      </div></div>
+  </aside>
+
+  <main class="main" id="preview">
+    <nav class="secnav" aria-label="セクション">
+      <a href="#color">カラー</a><a href="#type">文字</a><a href="#shape">余白と形</a><a href="#parts">部品</a><a href="#screen">画面例</a><a href="#export">書き出し</a>
+    </nav>
+    <div class="cur"><strong id="cur-name"></strong><span id="cur-use"></span></div>
+
+    <section class="sec" id="color">
+      <h2>カラー</h2>
+      <p class="lead">色見本はクリックでカラーコードをコピー。枠付きがベース色です。コントラストは現在のプレビューモードで判定します。</p>
+      <div class="ds"><div class="pad">
+        <div class="brand" id="brand"></div>
+        <div id="palette"></div>
+        <div class="semrow" id="semantic"></div>
+        <div class="roles" id="roles"></div>
+        <div style="overflow-x:auto"><table class="ctab" id="ctab"></table></div>
+      </div></div>
+    </section>
+
+    <section class="sec" id="type">
+      <h2>文字</h2>
+      <p class="lead">書体・サイズ階層・本文の読みやすさを確認します。</p>
+      <div class="ds"><div class="pad">
+        <div class="fonts" id="fonts"></div>
+        <div class="tscale" id="tscale"></div>
+        <div class="article">
+          <h3 class="hd" style="font-size:var(--fs-2xl);margin-bottom:var(--space-3)">見積から請求までを、ひとつの画面で</h3>
+          <p>見積書の作成、上長の承認、顧客への送付、請求書の発行までの流れをひとつの画面にまとめました。2026年11月時点で、1件あたりの平均作業時間は18分から6分に短縮されています。</p>
+          <p class="muted" style="font-size:var(--fs-sm)">Zoho CRMやGoogle Workspaceとの連携にも対応。API経由でのデータ取り込み（CSV・JSON）も可能です。<a class="link" href="#type">詳しい連携方法</a></p>
+          <p style="font-size:var(--fs-sm)">設定値の例：<code class="mono" style="background:var(--color-surface-2);padding:1px 6px;border-radius:var(--radius-sm);border:1px solid var(--color-border)">approval_limit = 500000</code></p>
+        </div>
+        <div class="weights" id="weights"></div>
+      </div></div>
+    </section>
+
+    <section class="sec" id="shape">
+      <h2>余白と形</h2>
+      <p class="lead">余白は4pxを基準に密度を掛けた値です。</p>
+      <div class="ds"><div class="pad">
+        <div class="cgrid">
+          <div class="cblock"><p class="clabel">余白</p><div id="spaces"></div></div>
+          <div class="cblock">
+            <p class="clabel">角丸</p><div class="shapes" id="radii"></div>
+            <p class="clabel" style="margin-top:24px">影</p><div class="shapes" id="shadows"></div>
+          </div>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="sec" id="parts">
+      <h2>部品</h2>
+      <p class="lead">よく使うUI部品にトークンを当てた状態です。操作もできます。</p>
+      <div class="ds"><div class="pad">
+        <div class="cgrid">
+          <div class="cblock">
+            <p class="clabel">ボタン</p>
+            <div class="row" style="margin-bottom:12px">
+              <button class="d-btn primary" type="button">保存する</button>
+              <button class="d-btn accent" type="button">見積を作成</button>
+              <button class="d-btn secondary" type="button">キャンセル</button>
+              <button class="d-btn outline" type="button">詳細を見る</button>
+              <button class="d-btn ghost" type="button">あとで</button>
+              <button class="d-btn danger" type="button">削除する</button>
+              <button class="d-btn primary" type="button" disabled>送信中…</button>
+            </div>
+            <div class="row">
+              <button class="d-btn primary sm" type="button">小</button>
+              <button class="d-btn primary" type="button">標準</button>
+              <button class="d-btn primary lg" type="button">大きいボタン</button>
+              <button class="d-btn secondary icon" type="button" aria-label="追加">＋</button>
+            </div>
+
+            <p class="clabel" style="margin-top:28px">バッジ</p>
+            <div class="row">
+              <span class="d-badge b-primary">NEW</span><span class="d-badge b-soft">進行中</span><span class="d-badge b-accent">おすすめ</span>
+              <span class="d-badge b-success">受注</span><span class="d-badge b-warning">要確認</span><span class="d-badge b-danger">失注</span><span class="d-badge b-neutral">下書き</span>
+            </div>
+
+            <p class="clabel" style="margin-top:28px">タブ・切り替え</p>
+            <div class="d-tabs" role="tablist" id="demo-tabs">
+              <button role="tab" aria-selected="true" type="button">概要</button><button role="tab" aria-selected="false" type="button">履歴</button><button role="tab" aria-selected="false" type="button">添付ファイル</button>
+            </div>
+            <div class="d-seg" id="demo-seg"><button type="button" aria-pressed="true">日</button><button type="button" aria-pressed="false">週</button><button type="button" aria-pressed="false">月</button></div>
+
+            <p class="clabel" style="margin-top:28px">ナビゲーション</p>
+            <div class="stack">
+              <div class="crumb"><a href="#parts">ホーム</a><span>／</span><a href="#parts">案件</a><span>／</span><span>山田工業様 見積</span></div>
+              <div class="pager"><button type="button">‹</button><button type="button">1</button><button type="button" aria-current="page">2</button><button type="button">3</button><button type="button">›</button></div>
+            </div>
+          </div>
+
+          <div class="cblock">
+            <p class="clabel">フォーム</p>
+            <div class="field"><label class="d-label" for="f1">会社名<span class="req">必須</span></label><input id="f1" class="d-input" value="株式会社サンプル"></div>
+            <div class="field"><label class="d-label" for="f2">メールアドレス</label><input id="f2" class="d-input invalid" value="info@sample"><p class="d-error">メールアドレスの形式が正しくありません</p></div>
+            <div class="field"><label class="d-label" for="f3">業種</label><select id="f3" class="d-input"><option>製造業</option><option>建設業</option><option>小売業</option></select></div>
+            <div class="field"><label class="d-label" for="f4">相談内容</label><textarea id="f4" class="d-input" rows="3" placeholder="現在の課題をご記入ください"></textarea><p class="d-help">500文字以内で入力してください</p></div>
+            <div class="row">
+              <label class="d-check"><input type="checkbox" checked>利用規約に同意する</label>
+              <label class="d-check"><input type="radio" name="plan" checked>月払い</label>
+              <label class="d-check"><input type="radio" name="plan">年払い</label>
+            </div>
+            <label class="d-switch"><input type="checkbox" checked><span class="track"></span>メール通知を受け取る</label>
+          </div>
+
+          <div class="cblock">
+            <p class="clabel">お知らせ</p>
+            <div class="stack">
+              <div class="d-alert a-info"><div><b>新しいテンプレートを追加しました</b>見積書に「保守契約」の型が使えます。</div></div>
+              <div class="d-alert a-success"><div><b>見積書を送信しました</b>山田工業様に送付済みです。</div></div>
+              <div class="d-alert a-warning"><div><b>承認期限は明日です</b>3件の見積が承認待ちです。</div></div>
+              <div class="d-alert a-danger"><div><b>保存できませんでした</b>必須項目「会社名」を入力してください。</div></div>
+            </div>
+            <p class="clabel" style="margin-top:28px">通知・補足</p>
+            <div class="stack">
+              <div class="d-toast">変更を保存しました<button type="button">元に戻す</button></div>
+              <div><span class="tip">CSVで書き出せます</span></div>
+            </div>
+          </div>
+
+          <div class="cblock">
+            <p class="clabel">カード</p>
+            <div class="d-card">
+              <div class="thumb"></div>
+              <div class="cb">
+                <div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 class="hd" style="font-size:var(--fs-lg)">生成AI実践講座</h4><span class="d-badge b-soft">募集中</span></div>
+                <p class="muted" style="margin:0 0 12px;font-size:var(--fs-sm)">全6回のオンライン講座。業務での活用例をもとに手を動かして学びます。</p>
+                <div class="progress" aria-label="申込状況 72%"><i style="width:72%"></i></div>
+                <p class="d-help" style="margin-top:6px">定員50名中36名が申込済み</p>
+              </div>
+              <div class="cf"><button class="d-btn ghost sm" type="button">資料を見る</button><button class="d-btn primary sm" type="button">申し込む</button></div>
+            </div>
+            <p class="clabel" style="margin-top:28px">アバター</p>
+            <div class="row"><div class="avs"><span class="avatar">吉</span><span class="avatar a2">佐</span><span class="avatar a3">+4</span></div><span class="muted" style="font-size:var(--fs-sm)">6名が編集中</span></div>
+          </div>
+
+          <div class="cblock">
+            <p class="clabel">ダイアログ</p>
+            <div class="modal-bg">
+              <div class="d-modal" role="dialog" aria-label="削除の確認">
+                <h4 class="hd" style="font-size:var(--fs-lg)">この見積を削除しますか？</h4>
+                <p>削除した見積は元に戻せません。関連する承認履歴も削除されます。</p>
+                <div class="row" style="justify-content:flex-end"><button class="d-btn secondary" type="button">キャンセル</button><button class="d-btn danger" type="button">削除する</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="clabel" style="margin-top:32px">テーブル</p>
+        <div class="tbl-wrap">
+          <table class="d-table">
+            <thead><tr><th>案件名</th><th>顧客</th><th>ステータス</th><th class="num">金額</th><th>担当</th><th>更新日</th></tr></thead>
+            <tbody>
+              <tr><td>AI活用研修（全6回）</td><td>山田工業株式会社</td><td><span class="d-badge b-success">受注</span></td><td class="num">¥1,320,000</td><td>吉田</td><td>11/02</td></tr>
+              <tr><td>CRM導入支援</td><td>株式会社ミナト物流</td><td><span class="d-badge b-soft">提案中</span></td><td class="num">¥2,860,000</td><td>佐藤</td><td>10/30</td></tr>
+              <tr><td>見積自動化アプリ</td><td>北浜設備工業</td><td><span class="d-badge b-warning">要確認</span></td><td class="num">¥980,000</td><td>吉田</td><td>10/28</td></tr>
+              <tr><td>日報集計システム</td><td>有限会社さくら建設</td><td><span class="d-badge b-neutral">下書き</span></td><td class="num">¥640,000</td><td>高橋</td><td>10/25</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="sec" id="screen">
+      <h2>画面例</h2>
+      <p class="lead">業務アプリの典型的な画面に当てはめた状態です。</p>
+      <div class="ds">
+        <div class="app">
+          <nav class="side" aria-label="アプリのメニュー">
+            <div class="logo"><i></i>案件ボード</div>
+            <a class="nav" href="#screen" aria-current="page">ダッシュボード</a>
+            <a class="nav" href="#screen">案件<span class="cnt">24</span></a>
+            <a class="nav" href="#screen">顧客</a>
+            <a class="nav" href="#screen">見積・請求<span class="cnt">3</span></a>
+            <a class="nav" href="#screen">レポート</a>
+            <a class="nav" href="#screen">設定</a>
+          </nav>
+          <div class="appmain">
+            <div class="apphead">
+              <div><h3 class="hd" style="font-size:var(--fs-2xl)">ダッシュボード</h3><p class="muted" style="margin:2px 0 0;font-size:var(--fs-sm)">2026年11月の状況</p></div>
+              <div class="row"><input class="d-input" style="width:200px" placeholder="案件・顧客を検索" aria-label="検索"><button class="d-btn primary" type="button">＋ 新規案件</button></div>
+            </div>
+            <div class="kpis">
+              <div class="kpi"><div class="kl">進行中の案件</div><div class="kv">24件</div><div class="kd">先月より +3件</div></div>
+              <div class="kpi"><div class="kl">今月の受注額</div><div class="kv">¥3,480,000</div><div class="kd">目標の87%</div></div>
+              <div class="kpi"><div class="kl">平均リードタイム</div><div class="kv">12日</div><div class="kd">先月より −2日</div></div>
+            </div>
+            <div class="two">
+              <div class="panelc">
+                <div class="row" style="justify-content:space-between"><h4 class="hd" style="font-size:var(--fs-lg)">月別の受注件数</h4><div class="d-seg"><button type="button" aria-pressed="true">件数</button><button type="button" aria-pressed="false">金額</button></div></div>
+                <div class="bars">
+                  <div><i style="height:42%"></i>6月</div><div><i style="height:55%"></i>7月</div><div><i style="height:48%"></i>8月</div>
+                  <div><i style="height:70%"></i>9月</div><div><i style="height:64%"></i>10月</div><div class="now"><i style="height:82%"></i>11月</div>
+                </div>
+              </div>
+              <div class="panelc">
+                <h4 class="hd" style="font-size:var(--fs-lg);margin-bottom:8px">今日のタスク</h4>
+                <div class="todo">
+                  <div><label class="d-check"><input type="checkbox" checked>山田工業様へ見積送付</label></div>
+                  <div><label class="d-check"><input type="checkbox">ミナト物流様 提案資料レビュー</label><span class="d-badge b-warning" style="margin-left:auto">今日</span></div>
+                  <div><label class="d-check"><input type="checkbox">講座アンケートの集計</label></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" id="export">
+      <h2>書き出し</h2>
+      <p class="lead">現在の組み合わせをそのまま貼り付けられる形式で出力します。</p>
+      <div class="exp">
+        <div class="exp-tabs" role="tablist" id="exp-tabs">
+          <button role="tab" type="button" data-fmt="css" aria-selected="true">CSS変数</button>
+          <button role="tab" type="button" data-fmt="tw" aria-selected="false">Tailwind設定</button>
+          <button role="tab" type="button" data-fmt="json" aria-selected="false">JSONトークン</button>
+          <button role="tab" type="button" data-fmt="font" aria-selected="false">フォント読込</button>
+          <button role="tab" type="button" data-fmt="ai" aria-selected="false">AIへの指示文</button>
+        </div>
+        <div class="exp-bar"><span id="exp-desc"></span><button class="ubtn ink" type="button" id="btn-copy">コピー</button></div>
+        <pre id="exp-code" tabindex="0"></pre>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+
+const JP={
+  'Noto Sans JP':{w:[400,500,700,900],k:'sans',l:'Noto Sans JP（標準ゴシック）'},
+  'Zen Kaku Gothic New':{w:[400,500,700,900],k:'sans',l:'Zen Kaku Gothic New（すっきり）'},
+  'IBM Plex Sans JP':{w:[400,500,600,700],k:'sans',l:'IBM Plex Sans JP（理知的）'},
+  'BIZ UDPGothic':{w:[400,700],k:'sans',l:'BIZ UDPGothic（UD・可読性）'},
+  'Murecho':{w:[400,500,700,800],k:'sans',l:'Murecho（モダン）'},
+  'M PLUS 1p':{w:[400,500,700,800],k:'sans',l:'M PLUS 1p（ポップ）'},
+  'Zen Maru Gothic':{w:[400,500,700,900],k:'sans',l:'Zen Maru Gothic（やわらか丸）'},
+  'M PLUS Rounded 1c':{w:[400,500,700,800],k:'sans',l:'M PLUS Rounded 1c（丸ゴシック）'},
+  'Noto Serif JP':{w:[400,600,700],k:'serif',l:'Noto Serif JP（標準明朝）'},
+  'Shippori Mincho':{w:[400,600,700,800],k:'serif',l:'Shippori Mincho（品のある明朝）'}
+};
+const LATIN={
+  'Inter':{w:[400,500,600,700,800],l:'Inter（中立）'},
+  'Plus Jakarta Sans':{w:[400,500,600,700,800],l:'Plus Jakarta Sans（親しみ）'},
+  'Manrope':{w:[400,500,600,700,800],l:'Manrope（端正）'},
+  'DM Sans':{w:[400,500,600,700,800],l:'DM Sans（幾何学的）'},
+  'Outfit':{w:[400,500,600,700,800],l:'Outfit（丸み）'},
+  'Space Grotesk':{w:[400,500,600,700],l:'Space Grotesk（テック）'},
+  'Fraunces':{w:[400,600,700,800],l:'Fraunces（セリフ）'}
+};
+const MONO={'JetBrains Mono':{w:[400,500,700]},'IBM Plex Mono':{w:[400,500,700]}};
+const NEUTRALS={
+  slate:{l:'スレート（青み）',h:215,s:20}, gray:{l:'グレー（標準）',h:220,s:9}, zinc:{l:'ジンク（ほぼ無彩色）',h:240,s:4},
+  stone:{l:'ストーン（温かみ）',h:30,s:8}, warm:{l:'ウォーム（生成り）',h:32,s:16}, cool:{l:'クール（青緑み）',h:195,s:18}
+};
+const NL={50:98,100:95.5,200:90,300:82,400:66,500:50,600:39,700:30,800:21,900:14,950:9};
+const STEPS=[50,100,200,300,400,500,600,700,800,900,950];
+const SHADOW_L={none:'影なし（枠線で区切る）',soft:'ソフト（ぼかし中心）',crisp:'くっきり（オフセット）',layered:'色付き（プライマリで着色）'};
+
+const P=(id,name,use,hL,hJ,bL,bJ,mono,hw,primary,accent,neutral,radius,density,shadow,base,ratio,lh,track)=>({id,name,use,hL,hJ,bL,bJ,mono,hw,primary,accent,neutral,radius,density,shadow,base,ratio,lh,track});
+const PRESETS=[
+  P('corp','コーポレート','企業サイト・社内ポータル','Inter','Noto Sans JP','Inter','Noto Sans JP','JetBrains Mono',700,'#1F5FBF','#E8A317','slate',6,1,'soft',16,1.25,1.75,0.02),
+  P('saas','SaaSモダン','B2B SaaS・管理画面','Plus Jakarta Sans','Noto Sans JP','Inter','Noto Sans JP','JetBrains Mono',700,'#4F46C8','#0FA3A3','zinc',10,1,'layered',15,1.2,1.7,0.01),
+  P('dense','業務システム','基幹系・入力の多い画面','Inter','BIZ UDPGothic','Inter','BIZ UDPGothic','JetBrains Mono',700,'#2F5D8A','#C2410C','slate',3,0.8,'soft',14,1.15,1.6,0),
+  P('ud','ユニバーサル','行政・高齢者向けサービス','','BIZ UDPGothic','','BIZ UDPGothic','IBM Plex Mono',700,'#0B4EA2','#D35400','gray',4,1.1,'crisp',17,1.2,1.8,0.02),
+  P('finance','信頼・堅実','金融・士業・コンサル','DM Sans','Murecho','DM Sans','Noto Sans JP','IBM Plex Mono',700,'#0B3D6B','#2E9E6B','slate',6,1.05,'soft',15,1.25,1.8,0.02),
+  P('tech','テック','開発者向け・分析ツール','Space Grotesk','IBM Plex Sans JP','','IBM Plex Sans JP','IBM Plex Mono',600,'#0F62FE','#24A148','zinc',0,1,'crisp',14,1.2,1.65,0),
+  P('field','現場・製造','製造・建設・物流','Inter','Noto Sans JP','Inter','Noto Sans JP','JetBrains Mono',900,'#F2A900','#1E3A5F','gray',4,1,'crisp',16,1.25,1.7,0.01),
+  P('medical','メディカル','医療・介護・ヘルスケア','Manrope','Noto Sans JP','Manrope','Noto Sans JP','JetBrains Mono',700,'#0E8A8A','#3D7BD9','cool',12,1.1,'soft',16,1.2,1.8,0.02),
+  P('eco','サステナブル','環境・エネルギー','DM Sans','Zen Kaku Gothic New','DM Sans','Zen Kaku Gothic New','JetBrains Mono',700,'#1F7A6B','#E0A800','cool',8,1.05,'soft',16,1.25,1.8,0.02),
+  P('natural','ナチュラル','食品・ウェルネス・EC','Manrope','Zen Kaku Gothic New','Manrope','Zen Kaku Gothic New','IBM Plex Mono',700,'#3F7A4F','#C98A2E','stone',12,1.1,'soft',16,1.25,1.85,0.03),
+  P('wa','和モダン','老舗・旅館・伝統工芸','Fraunces','Shippori Mincho','','Zen Kaku Gothic New','IBM Plex Mono',600,'#8C2F39','#B5913A','warm',2,1.15,'none',16,1.333,1.9,0.05),
+  P('luxury','ラグジュアリー','不動産・ホテル・高級品','Fraunces','Noto Serif JP','','Noto Sans JP','IBM Plex Mono',600,'#1D2A44','#A8844F','warm',0,1.25,'none',16,1.333,1.9,0.06),
+  P('maru','やさしい丸','教育・子育て・自治体','Outfit','Zen Maru Gothic','Outfit','Zen Maru Gothic','JetBrains Mono',700,'#2A9D8F','#F4A23B','cool',16,1.15,'soft',16,1.2,1.85,0.03),
+  P('casual','カジュアル','飲食・美容・予約サービス','Plus Jakarta Sans','M PLUS Rounded 1c','Plus Jakarta Sans','M PLUS Rounded 1c','JetBrains Mono',800,'#D6336C','#2BB3C0','warm',20,1.1,'layered',15,1.2,1.8,0.02),
+  P('pop','ポップ','エンタメ・イベント・若年層','Outfit','M PLUS 1p','Outfit','M PLUS 1p','JetBrains Mono',800,'#7C3AED','#F59E0B','zinc',14,1,'crisp',16,1.25,1.75,0.01),
+  P('mono','モノトーン','ポートフォリオ・メディア','Space Grotesk','Zen Kaku Gothic New','','Zen Kaku Gothic New','JetBrains Mono',700,'#262B33','#3D5AFE','gray',0,1.15,'none',16,1.333,1.85,0.03)
+];
+
+/* ---------- storage ---------- */
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let S=Object.assign({},PRESETS[0],{mode:'light'});
+const saved0=store.get('dslab-current',null);
+if(saved0&&saved0.primary)S=Object.assign(S,saved0);
+let favs=store.get('dslab-favs',[]);
+let fmt='css';
+
+/* ---------- color utils ---------- */
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+function hexToRgb(h){h=String(h).replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255]}
+function rgbToHex(r,g,b){return'#'+[r,g,b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('').toUpperCase()}
+function mix(a,b,t){const A=hexToRgb(a),B=hexToRgb(b);return rgbToHex(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t)}
+function hsl(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return rgbToHex(f(0)*255,f(8)*255,f(4)*255)}
+function lum(hex){const c=hexToRgb(hex).map(v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+function contrast(a,b){const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+function rgba(hex,a){const[r,g,b]=hexToRgb(hex);return`rgba(${r}, ${g}, ${b}, ${Math.round(Math.min(a,1)*100)/100})`}
+function scale(base){const t={50:.92,100:.84,200:.68,300:.48,400:.24},d={600:.15,700:.32,800:.48,900:.62,950:.75},o={};STEPS.forEach(s=>{o[s]=s===500?base.toUpperCase():t[s]!=null?mix(base,'#FFFFFF',t[s]):mix(base,'#000000',d[s])});return o}
+function nScale(k){const n=NEUTRALS[k]||NEUTRALS.gray,o={};STEPS.forEach(s=>o[s]=hsl(n.h,n.s,NL[s]));return o}
+function pick(sc,keys,bg,min){for(const k of keys){if(contrast(sc[k],bg)>=min)return sc[k]}return sc[keys[keys.length-1]]}
+const isHex=v=>/^#?[0-9a-fA-F]{6}$/.test(v);
+
+/* ---------- token build ---------- */
+function fstack(lat,jp){const parts=[];if(lat)parts.push(`"${lat}"`);parts.push(`"${jp}"`);const k=(JP[jp]||{}).k;parts.push(k==='serif'?'"Hiragino Mincho ProN", "Yu Mincho", serif':'"Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif');return parts.join(', ')}
+function build(){
+  const p=scale(S.primary),a=scale(S.accent),n=nScale(S.neutral);
+  const sem={success:'#15803D',warning:'#B45309',danger:'#C62828',info:'#1D6FD1'};
+  const on=c=>contrast(c,'#FFFFFF')>=contrast(c,n[950])?'#FFFFFF':n[950];
+  const L={bg:n[50],surface:'#FFFFFF',surface2:n[100],border:n[200],borderStrong:n[300],text:n[900],textMuted:n[600],textSubtle:n[500],
+    primary:p[500],primaryHover:p[600],onPrimary:on(p[500]),primaryText:pick(p,[500,600,700,800,900],'#FFFFFF',4.5),primarySoft:p[50],primarySoftText:pick(p,[700,800,900,950],p[50],4.5),
+    accent:a[500],accentHover:a[600],onAccent:on(a[500]),accentText:pick(a,[500,600,700,800,900],'#FFFFFF',4.5),accentSoft:a[50],accentSoftText:pick(a,[700,800,900,950],a[50],4.5)};
+  const bgD=n[950],surfD=n[900];
+  const dp=pick(p,[500,400,300,200],bgD,3),da=pick(a,[500,400,300,200],bgD,3);
+  const D={bg:bgD,surface:surfD,surface2:mix(n[900],n[800],.55),border:n[800],borderStrong:n[700],text:n[50],textMuted:n[400],textSubtle:n[500],
+    primary:dp,primaryHover:mix(dp,'#FFFFFF',.14),onPrimary:on(dp),primaryText:pick(p,[400,300,200,100,50],bgD,4.5),primarySoft:mix(p[500],surfD,.78),primarySoftText:p[200],
+    accent:da,accentHover:mix(da,'#FFFFFF',.14),onAccent:on(da),accentText:pick(a,[400,300,200,100,50],bgD,4.5),accentSoft:mix(a[500],surfD,.78),accentSoftText:a[200]};
+  Object.keys(sem).forEach(k=>{
+    L[k]=sem[k];L[k+'Soft']=mix(sem[k],'#FFFFFF',.9);L[k+'Text']=mix(sem[k],'#000000',.18);L['on'+k[0].toUpperCase()+k.slice(1)]=on(sem[k]);
+    const dk=mix(sem[k],'#FFFFFF',.25);D[k]=dk;D[k+'Soft']=mix(sem[k],surfD,.8);D[k+'Text']=mix(sem[k],'#FFFFFF',.5);D['on'+k[0].toUpperCase()+k.slice(1)]=on(dk);
+  });
+  const r=S.ratio,b=S.base;
+  const fs={xs:Math.max(11,Math.round(b/r/r)),sm:Math.max(12,Math.round(b/r)),base:b,lg:Math.round(b*r),xl:Math.round(b*r*r),'2xl':Math.round(b*r**3),'3xl':Math.round(b*r**4),'4xl':Math.round(b*r**5)};
+  const space={};[1,2,3,4,5,6,8,10,12,16].forEach(k=>space[k]=Math.round(4*k*S.density));
+  const R=S.radius,radius={sm:Math.round(R*.5),md:R,lg:Math.round(R*1.5),xl:R*2,full:R===0?0:9999};
+  const font={heading:fstack(S.hL,S.hJ),body:fstack(S.bL,S.bJ),mono:`"${S.mono}", "${S.bJ}", ui-monospace, monospace`};
+  const T={p,a,n,L,D,fs,space,radius,font};
+  T.shL=shadows(T,'light');T.shD=shadows(T,'dark');
+  return T;
+}
+function shadows(T,mode){
+  const ink=mode==='dark'?'#000000':T.n[900],k=mode==='dark'?2.4:1;
+  switch(S.shadow){
+    case 'none':return{sm:'none',md:'none',lg:'none'};
+    case 'crisp':return{sm:`0 1px 0 ${rgba(ink,.10*k)}`,md:`0 2px 0 ${rgba(ink,.12*k)}`,lg:`4px 4px 0 ${mode==='dark'?'#000000':T.n[900]}`};
+    case 'layered':{const c=mode==='dark'?'#000000':T.p[700];return{sm:`0 1px 2px ${rgba(c,.10*k)}`,md:`0 2px 4px ${rgba(c,.06*k)}, 0 8px 20px ${rgba(c,.10*k)}`,lg:`0 4px 8px ${rgba(c,.08*k)}, 0 20px 48px ${rgba(c,.16*k)}`}}
+    default:return{sm:`0 1px 2px ${rgba(ink,.06*k)}, 0 1px 3px ${rgba(ink,.08*k)}`,md:`0 4px 12px ${rgba(ink,.08*k)}`,lg:`0 16px 40px ${rgba(ink,.14*k)}`};
+  }
+}
+const kebab=s=>s.replace(/([A-Z]|\d+)/g,m=>'-'+m.toLowerCase());
+const rem=px=>`${+(px/16).toFixed(4)}rem`;
+function commonVars(T){
+  const v={'--font-heading':T.font.heading,'--font-body':T.font.body,'--font-mono':T.font.mono,'--fw-heading':S.hw,
+    '--lh-body':S.lh,'--lh-heading':S.lh>=1.8?1.45:1.35,'--tracking':S.track+'em'};
+  Object.entries(T.fs).forEach(([k,px])=>v['--fs-'+k]=rem(px));
+  Object.entries(T.space).forEach(([k,px])=>v['--space-'+k]=rem(px));
+  Object.entries(T.radius).forEach(([k,px])=>v['--radius-'+k]=px+'px');
+  [['primary',T.p],['accent',T.a],['neutral',T.n]].forEach(([nm,sc])=>STEPS.forEach(s=>v[`--color-${nm}-${s}`]=sc[s]));
+  return v;
+}
+function roleVars(T,mode){const R=mode==='dark'?T.D:T.L,Sh=mode==='dark'?T.shD:T.shL,v={};Object.entries(R).forEach(([k,c])=>v['--color-'+kebab(k)]=c);Object.entries(Sh).forEach(([k,c])=>v['--shadow-'+k]=c);return v}
+
+/* ---------- render ---------- */
+const tcol=c=>contrast(c,'#FFFFFF')>=contrast(c,'#15181D')?'#FFFFFF':'#15181D';
+const grade=r=>r>=7?['AAA','g-ok']:r>=4.5?['AA','g-ok']:r>=3?['AA（大きい文字のみ）','g-mid']:['不足','g-ng'];
+function apply(){
+  const T=build();
+  const root=$('#preview');
+  const v=Object.assign(commonVars(T),roleVars(T,S.mode));
+  Object.entries(v).forEach(([k,val])=>root.style.setProperty(k,val));
+  const R=S.mode==='dark'?T.D:T.L;
+
+  $('#cur-name').textContent=S.name;$('#cur-use').textContent=S.use||'';
+
+  // brand cards
+  const bc=(label,role,base,on,hover)=>`<button type="button" class="bcard" data-copy="${base}" style="background:${base};color:${on}"><span class="bn">${label}</span><span><span class="bh">${base}</span><br><span style="font-size:var(--fs-xs)">${role}・文字とのコントラスト ${contrast(base,on).toFixed(1)}・ホバー ${hover}</span></span></button>`;
+  $('#brand').innerHTML=bc('プライマリ','主要ボタン・リンク・選択状態',R.primary,R.onPrimary,R.primaryHover)+bc('アクセント','強調・二次アクション・グラフ',R.accent,R.onAccent,R.accentHover)+
+    `<button type="button" class="bcard" data-copy="${R.text}" style="background:${R.surface};color:${R.text};border:1px solid ${R.border}"><span class="bn">ニュートラル</span><span><span class="bh">${R.text} / ${R.bg}</span><br><span style="font-size:var(--fs-xs)">${NEUTRALS[S.neutral].l}</span></span></button>`;
+
+  // scales
+  const row=(label,sc,mark)=>`<div class="sc-row"><div class="sc-label">${label}</div><div class="sc">${STEPS.map(s=>`<button type="button" class="sw${s===mark?' base':''}" style="background:${sc[s]};color:${tcol(sc[s])}" data-copy="${sc[s]}" aria-label="${label} ${s} ${sc[s]}をコピー"><span>${s}</span><span>${sc[s].slice(1)}</span></button>`).join('')}</div></div>`;
+  $('#palette').innerHTML=row('プライマリ',T.p,500)+row('アクセント',T.a,500)+row('ニュートラル',T.n,null);
+
+  // semantic
+  const semL={success:'成功',warning:'注意',danger:'エラー',info:'情報'};
+  $('#semantic').innerHTML=Object.keys(semL).map(k=>`<div class="sem"><div class="s1" style="background:${R[k]};color:${R['on'+k[0].toUpperCase()+k.slice(1)]}">${semL[k]}<br><span class="mono" style="font-size:11px;font-weight:400">${R[k]}</span></div><div style="background:${R[k+'Soft']};color:${R[k+'Text']}">淡色 ${R[k+'Soft']}</div></div>`).join('');
+
+  // roles
+  const roles=[['背景','bg'],['面（カード）','surface'],['面2（くぼみ）','surface2'],['枠線','border'],['枠線（強）','borderStrong'],['本文','text'],['補助テキスト','textMuted'],['弱いテキスト','textSubtle'],['プライマリ','primary'],['プライマリ上の文字','onPrimary'],['リンク文字','primaryText'],['プライマリ淡色','primarySoft'],['アクセント','accent'],['アクセント淡色','accentSoft']];
+  $('#roles').innerHTML=roles.map(([l,k])=>`<button type="button" class="role" data-copy="var(--color-${kebab(k)})" aria-label="${l}の変数名をコピー"><i style="background:${R[k]}"></i><span><b>${l}</b><code>--color-${kebab(k)}</code><br><code>${R[k]}</code></span></button>`).join('');
+
+  // contrast
+  const pairs=[['本文 / 背景',R.text,R.bg],['本文 / 面',R.text,R.surface],['補助テキスト / 面',R.textMuted,R.surface],['リンク文字 / 面',R.primaryText,R.surface],['プライマリボタン',R.onPrimary,R.primary],['アクセントボタン',R.onAccent,R.accent],['淡色バッジ',R.primarySoftText,R.primarySoft],['エラー文字 / 面',R.dangerText,R.surface]];
+  $('#ctab').innerHTML=`<thead><tr><th>組み合わせ</th><th>見本</th><th>比率</th><th>判定</th></tr></thead><tbody>`+pairs.map(([l,f,b])=>{const c=contrast(f,b),g=grade(c);return`<tr><td>${l}</td><td><span class="pv" style="color:${f};background:${b};border:1px solid ${R.border}">あAa</span></td><td class="mono">${c.toFixed(2)} : 1</td><td><span class="grade ${g[1]}">${g[0]}</span></td></tr>`}).join('')+`</tbody>`;
+
+  // fonts
+  const fc=(title,lat,jp,stack,fam,w)=>`<div class="fcard"><div class="fn">${title}</div><div class="big" style="font-family:${fam};font-weight:${w}">永あア Ag</div><div style="font-size:var(--fs-sm);margin-bottom:6px">${lat?lat+' ＋ ':''}${jp||''}</div><div class="fs">${stack}</div></div>`;
+  $('#fonts').innerHTML=fc('見出し',S.hL,S.hJ,T.font.heading,'var(--font-heading)','var(--fw-heading)')+fc('本文',S.bL,S.bJ,T.font.body,'var(--font-body)',400)+fc('等幅',S.mono,'',T.font.mono,'var(--font-mono)',400);
+
+  // type scale
+  const samples={'4xl':'業務を、もっと軽やかに','3xl':'見積から請求までを一画面で','2xl':'今月の案件サマリー','xl':'顧客情報の編集','lg':'担当者メモ・次回アクション','base':'本文テキスト：打ち合わせ内容を記録し、チームで共有します。','sm':'補足：保存すると担当者に通知されます。','xs':'注釈：最終更新 2026/11/04 10:32'};
+  const use={'4xl':'ヒーロー','3xl':'ページ見出し','2xl':'セクション見出し','xl':'カード見出し','lg':'小見出し','base':'本文','sm':'補足・ボタン','xs':'注釈・ラベル'};
+  $('#tscale').innerHTML=['4xl','3xl','2xl','xl','lg','base','sm','xs'].map(k=>{const px=T.fs[k],head=['4xl','3xl','2xl','xl','lg'].includes(k);return`<div class="trow"><div class="tk"><b>--fs-${k}</b><br>${px}px / ${rem(px)}<br>${use[k]}</div><div class="tsample${head?' hd':''}" style="font-size:var(--fs-${k})">${samples[k]}</div></div>`}).join('');
+  const ws=(JP[S.hJ]||{w:[400,700]}).w;
+  $('#weights').innerHTML=ws.map(w=>`<span style="font-weight:${w}">${w} 見出しAa</span>`).join('');
+
+  // space / radius / shadow
+  $('#spaces').innerHTML=Object.entries(T.space).map(([k,px])=>`<div class="sp"><code>--space-${k} ${px}px</code><i style="width:${px}px"></i></div>`).join('');
+  $('#radii').innerHTML=['sm','md','lg','xl','full'].map(k=>`<div class="shape" style="border-radius:var(--radius-${k})">${k} ${k==='full'&&T.radius.full?'9999':T.radius[k]}px</div>`).join('');
+  const Sh=S.mode==='dark'?T.shD:T.shL;
+  $('#shadows').innerHTML=['sm','md','lg'].map(k=>`<div class="shape shadow-box" style="box-shadow:var(--shadow-${k});${S.shadow==='none'?'border:1px solid var(--color-border)':''}">shadow-${k}</div>`).join('')+`<p class="d-help" style="grid-column:1/-1">${SHADOW_L[S.shadow]}</p>`;
+
+  window.__T=T;
+  renderExport();
+  syncPanel();
+  markGallery();
+  store.set('dslab-current',S);
+}
+
+/* ---------- exports ---------- */
+function fontURL(){
+  const fam=[...new Set([S.hL,S.hJ,S.bL,S.bJ,S.mono].filter(Boolean))];
+  const q=fam.map(f=>{const m=JP[f]||LATIN[f]||MONO[f];return'family='+f.replace(/ /g,'+')+':wght@'+m.w.join(';')}).join('&');
+  return'https://fonts.googleapis.com/css2?'+q+'&display=swap';
+}
+function block(o,ind){return Object.entries(o).map(([k,v])=>`${ind}${k}: ${v};`).join('\n')}
+function exportCSS(T){
+  return`/* ${S.name} デザインシステム（${S.use||'カスタム'}） */
+/* フォントは「フォント読込」タブの<link>を<head>に追加してください */
+
+:root {
+  color-scheme: light;
+${block(commonVars(T),'  ')}
+${block(roleVars(T,'light'),'  ')}
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+${block(roleVars(T,'dark'),'    ')}
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+${block(roleVars(T,'dark'),'  ')}
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+  letter-spacing: var(--tracking);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  font-weight: var(--fw-heading);
+  line-height: var(--lh-heading);
+}
+
+code, pre, kbd { font-family: var(--font-mono); }
+
+a { color: var(--color-primary-text); }
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+}
+.btn-primary:hover { background: var(--color-primary-hover); }
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+`;
+}
+function exportTW(T){
+  const sc=(o)=>{const r={};STEPS.forEach(s=>r[s]=o[s]);r.DEFAULT=o[500];return r};
+  const split=s=>s.split(',').map(x=>x.trim().replace(/"/g,''));
+  const cfg={darkMode:['selector','[data-theme="dark"]'],theme:{extend:{
+    colors:{primary:sc(T.p),accent:sc(T.a),neutral:(()=>{const r={};STEPS.forEach(s=>r[s]=T.n[s]);return r})(),
+      success:T.L.success,warning:T.L.warning,danger:T.L.danger,info:T.L.info,
+      bg:'var(--color-bg)',surface:'var(--color-surface)','surface-2':'var(--color-surface-2)',line:'var(--color-border)',
+      fg:'var(--color-text)','fg-muted':'var(--color-text-muted)','on-primary':'var(--color-on-primary)'},
+    fontFamily:{heading:split(T.font.heading),body:split(T.font.body),mono:split(T.font.mono)},
+    fontSize:Object.fromEntries(Object.entries(T.fs).map(([k,px])=>[k,rem(px)])),
+    borderRadius:{sm:T.radius.sm+'px',DEFAULT:T.radius.md+'px',md:T.radius.md+'px',lg:T.radius.lg+'px',xl:T.radius.xl+'px'},
+    boxShadow:T.shL,
+    lineHeight:{body:String(S.lh)},letterSpacing:{jp:S.track+'em'}
+  }}};
+  return`/** ${S.name} — tailwind.config.js */
+/** bg・surface などの役割色はCSS変数を参照するため、「CSS変数」タブの:rootも読み込んでください */
+/** @type {import('tailwindcss').Config} */
+module.exports = ${JSON.stringify(cfg,null,2)};
+`;
+}
+function exportJSON(T){
+  const o={name:S.name,use:S.use,
+    font:{heading:{latin:S.hL||null,japanese:S.hJ,weight:S.hw,stack:T.font.heading},body:{latin:S.bL||null,japanese:S.bJ,stack:T.font.body},mono:{family:S.mono,stack:T.font.mono},googleFonts:fontURL()},
+    typography:{baseSize:S.base,ratio:S.ratio,lineHeight:S.lh,letterSpacing:S.track+'em',sizes:T.fs},
+    color:{primary:T.p,accent:T.a,neutral:T.n,neutralKey:S.neutral,light:T.L,dark:T.D},
+    spacing:T.space,density:S.density,radius:T.radius,shadow:{style:S.shadow,light:T.shL,dark:T.shD}};
+  return JSON.stringify(o,null,2);
+}
+function exportFont(T){
+  return`<!-- <head>内に追加 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="${fontURL()}" rel="stylesheet">
+
+/* CSSで@importする場合 */
+@import url('${fontURL()}');
+
+/* font-family */
+--font-heading: ${T.font.heading};
+--font-body: ${T.font.body};
+--font-mono: ${T.font.mono};
+`;
+}
+function exportAI(T){
+  const L=T.L,D=T.D,fs=T.fs;
+  return`以下のデザインシステムに沿ってUIを作成してください。
+
+【コンセプト】${S.name}（${S.use||'カスタム'}）
+
+【フォント】Google Fontsを読み込む：${fontURL()}
+- 見出し：${T.font.heading}（太さ ${S.hw}）
+- 本文：${T.font.body}
+- 等幅：${T.font.mono}
+
+【カラー（ライト）】
+- 背景 ${L.bg}／カード面 ${L.surface}／くぼみ面 ${L.surface2}／枠線 ${L.border}
+- 本文 ${L.text}／補助テキスト ${L.textMuted}
+- プライマリ ${L.primary}（上の文字 ${L.onPrimary}、ホバー ${L.primaryHover}、リンク文字 ${L.primaryText}、淡色 ${L.primarySoft}）
+- アクセント ${L.accent}（強調・二次アクション・グラフの注目値に限定して使う）
+- 成功 ${L.success}／注意 ${L.warning}／エラー ${L.danger}／情報 ${L.info}
+
+【カラー（ダーク）】
+- 背景 ${D.bg}／カード面 ${D.surface}／枠線 ${D.border}／本文 ${D.text}／補助 ${D.textMuted}
+- プライマリ ${D.primary}（上の文字 ${D.onPrimary}）／アクセント ${D.accent}
+
+【文字サイズ】基準 ${S.base}px・比率 ${S.ratio}
+- xs ${fs.xs} / sm ${fs.sm} / base ${fs.base} / lg ${fs.lg} / xl ${fs.xl} / 2xl ${fs['2xl']} / 3xl ${fs['3xl']} / 4xl ${fs['4xl']}（px）
+- 本文の行間 ${S.lh}、字間 ${S.track}em、見出しの行間 ${S.lh>=1.8?1.45:1.35}
+
+【余白】4px基準×密度${S.density}：${Object.entries(T.space).map(([k,v])=>`${k}=${v}px`).join(', ')}
+【角丸】sm ${T.radius.sm}px / md ${T.radius.md}px / lg ${T.radius.lg}px / xl ${T.radius.xl}px
+【影】${SHADOW_L[S.shadow]}：md = ${T.shL.md}
+
+【ルール】
+- 色・サイズ・余白はCSS変数（--color-*, --fs-*, --space-*, --radius-*）で指定し、カラーコードを直接散らさない
+- 1画面の主要アクションはプライマリボタン1つに絞る
+- 本文と背景のコントラストはWCAG AA（4.5:1）以上を保つ
+- 和文の本文は1行あたり全角35〜40字程度に収める
+- ライト／ダーク両方で表示が崩れないようにする
+`;
+}
+const EXP={css:['CSS変数（ライト／ダーク両対応）',exportCSS],tw:['tailwind.config.js（Tailwind CSS v3）',exportTW],json:['デザイントークン（Figma・他ツール連携用）',exportJSON],font:['Google Fontsの読み込みタグ',exportFont],ai:['Claude・Geminiなどに渡す指示文',exportAI]};
+function renderExport(){const T=window.__T;$('#exp-desc').textContent=EXP[fmt][0];$('#exp-code').textContent=EXP[fmt][1](T)}
+
+/* ---------- panel ---------- */
+function opts(sel,map,withNone){sel.innerHTML=(withNone?'<option value="">なし（和文書体の欧文）</option>':'')+Object.keys(map).map(k=>`<option value="${k}">${map[k].l||k}</option>`).join('')}
+opts($('#c-hL'),LATIN,true);opts($('#c-bL'),LATIN,true);opts($('#c-hJ'),JP);opts($('#c-bJ'),JP);opts($('#c-mono'),MONO);opts($('#c-neutral'),NEUTRALS);
+function syncPanel(){
+  $$('[data-k]').forEach(el=>{const k=el.dataset.k;if(document.activeElement===el&&el.type!=='color')return;el.value=String(S[k])});
+  $$('[data-hex]').forEach(el=>{if(document.activeElement!==el)el.value=S[el.dataset.hex].toUpperCase()});
+  $('[data-out="base"]').textContent=S.base+'px';$('[data-out="lh"]').textContent=(+S.lh).toFixed(2);
+  $('[data-out="track"]').textContent=(+S.track).toFixed(2)+'em';$('[data-out="radius"]').textContent=S.radius+'px';$('[data-out="density"]').textContent='×'+(+S.density).toFixed(2);
+  $$('#seg-shadow button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.shadow===S.shadow)));
+  $$('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===S.mode)));
+}
+function custom(){if(S.id!=='custom'){S.id='custom';S.name=S.name.replace(/（調整中）$/,'')+'（調整中）'}}
+$$('[data-k]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.k;S[k]=el.dataset.num?parseFloat(el.value):el.value;custom();apply()}));
+$$('[data-hex]').forEach(el=>el.addEventListener('change',()=>{let v=el.value.trim();if(!isHex(v)){showToast('6桁のカラーコードを入力してください（例：#1F5FBF）');el.value=S[el.dataset.hex];return}if(v[0]!=='#')v='#'+v;S[el.dataset.hex]=v.toUpperCase();custom();apply()}));
+$$('#seg-shadow button').forEach(b=>b.addEventListener('click',()=>{S.shadow=b.dataset.shadow;custom();apply()}));
+$$('[data-mode]').forEach(b=>b.addEventListener('click',()=>{S.mode=b.dataset.mode;apply()}));
+
+/* ---------- gallery ---------- */
+function gcard(p,i,isFav){
+  const pr=scale(p.primary),n=nScale(p.neutral);
+  const hf=fstack(p.hL,p.hJ);
+  return`<div class="gcard" role="button" tabindex="0" data-${isFav?'fav':'preset'}="${i}" aria-current="false" style="background:${n[50]};color:${n[900]};border-color:${n[200]}">
+    ${isFav?`<button class="gdel" type="button" data-del="${i}" aria-label="${p.name}を削除" style="color:${n[600]}">×</button>`:''}
+    <span class="gname" style="font-family:${hf.replace(/"/g,"'")}">${p.name}</span>
+    <span class="guse" style="color:${n[600]}">${p.use||''}</span>
+    <span class="gspec" style="font-family:${hf.replace(/"/g,"'")};font-weight:${p.hw};color:${pr[500]===pr[500]&&contrast(pr[500],n[50])<3?pr[700]:pr[500]}">あAa 見出し</span>
+    <span class="gsw"><i style="background:${p.primary}"></i><i style="background:${p.accent}"></i><i style="background:${n[200]}"></i><i style="background:${n[800]}"></i></span>
+    <span class="gbtn" style="background:${p.primary};color:${contrast(p.primary,'#FFFFFF')>=contrast(p.primary,n[950])?'#FFFFFF':n[950]};border-radius:${p.radius}px;font-family:${fstack(p.bL,p.bJ).replace(/"/g,"'")}">ボタン</span>
+  </div>`;
+}
+function renderGallery(){
+  $('#gal-presets').innerHTML=PRESETS.map((p,i)=>gcard(p,i,false)).join('');
+  $('#gal-saved').innerHTML=favs.length?favs.map((p,i)=>gcard(p,i,true)).join(''):'';
+  $('#gal-saved').style.display=favs.length?'':'none';
+  let e=$('#saved-empty');
+  if(!favs.length){if(!e){e=document.createElement('p');e.id='saved-empty';e.className='empty-saved';e.textContent='まだありません。気に入った組み合わせは「この組み合わせを保存」で残せます。';$('#gal-saved').after(e)}}else if(e)e.remove();
+  markGallery();
+}
+function markGallery(){
+  $$('[data-preset]').forEach(c=>c.setAttribute('aria-current',String(PRESETS[c.dataset.preset].id===S.id)));
+  $$('[data-fav]').forEach(c=>c.setAttribute('aria-current',String(favs[c.dataset.fav]&&favs[c.dataset.fav].id===S.id)));
+}
+function choose(c){
+  if(c.dataset.preset!=null)S=Object.assign({},PRESETS[c.dataset.preset],{mode:S.mode});
+  else S=Object.assign({},favs[c.dataset.fav],{mode:S.mode});
+  apply();
+}
+['#gal-presets','#gal-saved'].forEach(id=>{
+  const g=$(id);
+  g.addEventListener('click',e=>{
+    const d=e.target.closest('[data-del]');
+    if(d){e.stopPropagation();const i=+d.dataset.del,nm=favs[i].name;favs.splice(i,1);store.set('dslab-favs',favs);renderGallery();showToast(`「${nm}」を削除しました`);return}
+    const c=e.target.closest('.gcard');if(c)choose(c);
+  });
+  g.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('gcard')){e.preventDefault();choose(e.target)}});
+});
+
+$('#btn-save').addEventListener('click',()=>{
+  const d=new Date(),stamp=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const base=S.name.replace(/（調整中）$/,'');
+  const item=Object.assign({},S,{id:'fav-'+Date.now(),name:`${base} ${stamp}`,use:S.use||'保存した組み合わせ'});
+  delete item.mode;
+  favs.unshift(item);store.set('dslab-favs',favs);
+  S.id=item.id;S.name=item.name;
+  renderGallery();apply();showToast('保存しました');
+});
+
+/* ---------- random ---------- */
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+$('#btn-random').addEventListener('click',()=>{
+  const jpk=Object.keys(JP),lk=Object.keys(LATIN);
+  const hJ=rnd(jpk);
+  const bJ=JP[hJ].k==='serif'?rnd(jpk.filter(k=>JP[k].k==='sans')):(Math.random()<.7?hJ:rnd(jpk.filter(k=>JP[k].k==='sans')));
+  const hL=Math.random()<.85?rnd(lk):'';
+  const bL=hL&&LATIN[hL].l.includes('セリフ')?'':(Math.random()<.6?hL:rnd(['',...lk.filter(k=>k!=='Fraunces')]));
+  const h=Math.floor(Math.random()*360),ah=(h+rnd([30,150,180,200,-40]))%360;
+  S=Object.assign({},S,{id:'custom',name:'ランダム',use:'ランダムに生成した組み合わせ',hJ,bJ,hL,bL,mono:rnd(Object.keys(MONO)),hw:rnd([600,700,700,800]),
+    primary:hsl(h,55+Math.random()*25,36+Math.random()*12),accent:hsl((ah+360)%360,65+Math.random()*25,45+Math.random()*10),
+    neutral:rnd(Object.keys(NEUTRALS)),radius:rnd([0,2,4,6,8,10,12,16,20]),density:rnd([.9,1,1,1.1,1.2]),shadow:rnd(['none','soft','soft','crisp','layered']),
+    base:rnd([14,15,16,16]),ratio:rnd([1.15,1.2,1.25,1.333]),lh:rnd([1.65,1.75,1.8,1.9]),track:rnd([0,.01,.02,.03,.04])});
+  apply();
+});
+
+/* ---------- copy ---------- */
+function showToast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>el.classList.remove('show'),1600)}
+async function copy(text,label){
+  try{await navigator.clipboard.writeText(text);showToast(label||'コピーしました')}
+  catch(e){try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast(label||'コピーしました')}catch(_){showToast('コピーできませんでした。手動で選択してください')}}
+}
+document.addEventListener('click',e=>{const c=e.target.closest('[data-copy]');if(c)copy(c.dataset.copy,`${c.dataset.copy} をコピーしました`)});
+$('#btn-copy').addEventListener('click',()=>copy($('#exp-code').textContent,`${EXP[fmt][0]}をコピーしました`));
+$$('#exp-tabs button').forEach(b=>b.addEventListener('click',()=>{fmt=b.dataset.fmt;$$('#exp-tabs button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));renderExport()}));
+
+/* demo interactions */
+$$('#demo-tabs button').forEach(b=>b.addEventListener('click',()=>$$('#demo-tabs button').forEach(x=>x.setAttribute('aria-selected',String(x===b)))));
+$$('.ds .d-seg').forEach(g=>g.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))))));
+$$('.ds .pager button').forEach(b=>b.addEventListener('click',()=>{if(!/^\d+$/.test(b.textContent))return;$$('.ds .pager button').forEach(x=>x.removeAttribute('aria-current'));b.setAttribute('aria-current','page')}));
+
+renderGallery();
+apply();
+})();
+</script>
+<!-- 一覧へ戻るボタン（ai-slides共通。ヘッダーのボタンと重ならないよう左下に配置） -->
+<a href="../../" class="aislides-back" aria-label="スライド一覧へ戻る">← 一覧</a>
+<style>
+.aislides-back{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:calc(14px + env(safe-area-inset-left,0px));z-index:9999;
+  font:700 13px/1 "Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;letter-spacing:.02em;
+  color:#1C2430;background:rgba(255,255,255,.92);border:1px solid rgba(28,36,48,.18);border-radius:999px;padding:12px 16px;
+  text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.12);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:.9;transition:opacity .2s}
+.aislides-back:hover{opacity:1}
+.aislides-back:focus-visible{outline:3px solid #F2C230;outline-offset:2px;opacity:1}
+@media print{.aislides-back{display:none}}
+</style>
+</body>
+</html>
