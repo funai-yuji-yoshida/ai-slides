@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>シンプソンのパラドックス　全体で見ると、結論が逆になる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+
+/* simpson */
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 16px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.brow{display:grid;grid-template-columns:8em 1fr;gap:6px 12px;align-items:center;margin:10px 0}
+.brow .tr{height:22px;background:var(--indigo-soft);border-radius:4px;overflow:hidden}
+.brow .tr i{display:block;height:100%;background:var(--sub);border-radius:4px}
+.brow .tr i.win{background:var(--indigo)}
+.brow .bv{grid-column:2;font-variant-numeric:tabular-nums;font-size:.95em}
+@media (max-width:620px){.brow{grid-template-columns:1fr}.brow .bv{grid-column:1}}
+input[type=range]{accent-color:var(--indigo)}
+.mails th{width:6em;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="シンプソンのパラドックス　全体で見ると、結論が逆になる">
+ <div class="inner">
+  <h1>シンプソンのパラドックス</h1>
+  <p class="sub">全体で見ると、結論が逆になる</p>
+  <div class="rule"></div>
+  <p>グループ別に見ると、どちらもAが勝っている。なのに、全部まとめるとBが勝つ。そんな不思議なことが、実際のデータでは起こることがあります。架空のキャンペーンデータで体験し、AIに集計を頼むときの注意点まで考えます。</p>
+  <p class="note">本ページの事例・数値は、説明のための架空の例です。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="体験：全体で見ると、Bが勝つ">
+ <div class="inner">
+  <span class="tag">体験 1</span>
+  <h2>どちらのキャンペーンが、効果的？</h2>
+  <p class="def">架空の会社が、2つの営業キャンペーン（A・B）を、それぞれ350件のお客様に実施しました。成約した割合（成約率）を比べます。切り替えて、見え方の違いを確かめてください。</p>
+  <div class="seg" id="segView" role="group" aria-label="見方">
+   <button type="button" data-v="all" aria-pressed="true">全体で見る</button>
+   <button type="button" data-v="old" aria-pressed="false">既存のお客様だけ</button>
+   <button type="button" data-v="nw" aria-pressed="false">新規のお客様だけ</button>
+  </div>
+  <div class="panel">
+   <div id="bars" aria-live="polite"></div>
+  </div>
+  <div class="result" id="viewRes"></div>
+  <p class="note">架空のデータです。「成約」は、契約に至った件数を表します。</p>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="なぜ逆転するのか：件数の偏り">
+ <div class="inner">
+  <span class="tag">仕組み</span>
+  <h2>なぜ逆転するのか：件数の偏り</h2>
+  <p class="def">Aは、どちらのお客様でもBより成約率が高いのに、全体ではBに負けました。理由は、Aが担当したお客様の中身にあります。</p>
+  <table class="mails" id="mixTbl">
+   <thead><tr><th></th><th>既存のお客様</th><th>新規のお客様</th><th>全体</th></tr></thead>
+   <tbody>
+    <tr><th>A</th><td>81 / 87件（93%）</td><td>192 / 263件（73%）</td><td>273 / 350件（78%）</td></tr>
+    <tr><th>B</th><td>234 / 270件（87%）</td><td>55 / 80件（69%）</td><td>289 / 350件（83%）</td></tr>
+   </tbody>
+  </table>
+  <div class="cols" style="margin-top:14px">
+   <div class="panel"><h3>ポイント</h3>
+    <p>新規のお客様は、もともと成約しにくい。Aは、その新規のお客様を263件（75%）も担当していました。Bは80件（23%）だけです。</p>
+    <p>「成約しにくいお客様」を多く引き受けた分、Aの全体の成約率は下がって見えます。</p></div>
+   <div class="panel"><h3>動かして確かめる</h3>
+    <p class="note" style="margin-bottom:4px">各お客様タイプの成約率は、そのまま（A：既存93%・新規73%）。Aが担当する「新規」の割合だけを動かします。Bは、新規が23%のままです。</p>
+    <label for="share" style="font-weight:700">Aの新規の割合：<span id="shareV"></span></label>
+    <input type="range" id="share" min="0" max="100" step="5" value="75" style="width:100%">
+    <div class="pre" id="shareOut" style="margin-top:8px"></div></div>
+  </div>
+  <div class="result" id="shareRes"></div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="原因：隠れた条件（交絡）">
+ <div class="inner">
+  <span class="tag">考え方</span>
+  <h2>原因は「隠れた条件」</h2>
+  <p class="def">この例では、「お客様のタイプ」が、キャンペーンの割り当てと、成約率の両方に影響しています。このような条件を「交絡（こうらく）因子」と呼びます。</p>
+  <div class="cards">
+   <div class="card"><div class="n">① 割り当てに影響</div><h3>お客様のタイプ</h3><p>Aは新規が多く、Bは既存が多い。どちらを使うかが、お客様のタイプと結びついている。</p></div>
+   <div class="card"><div class="n">② 結果に影響</div><h3>成約のしやすさ</h3><p>新規のお客様は、もともと成約しにくい傾向がある。キャンペーンの効果とは別の理由。</p></div>
+   <div class="card"><div class="n">③ すると…</div><h3>全体の比較がゆがむ</h3><p>キャンペーンの良し悪しと、お客様の違いが混ざる。全体の平均だけでは、見分けられない。</p></div>
+  </div>
+  <p class="msg">平均や合計は、中身の違いを<mark>ならして隠す</mark>ことがある。</p>
+  <p class="note">他にも、大学の入試データなどで、同じ形の現象が報告されています（例：1973年のカリフォルニア大学バークレー校の大学院入試の分析）。</p>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="どちらを信じる？ 状況で変わる">
+ <div class="inner">
+  <span class="tag">判断</span>
+  <h2>では、全体と別々、どちらを信じる？</h2>
+  <p class="def">「いつも別々に見るのが正しい」とは限りません。データが、どのようにできたかで変わります。状況を選んで、考え方を確認しましょう。</p>
+  <div class="steps" id="scen" role="group" aria-label="状況"></div>
+  <div class="panel" id="scenBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="AIにデータ分析を頼むときの注意">
+ <div class="inner">
+  <span class="tag">AI活用</span>
+  <h2>AIに集計を頼むときの注意</h2>
+  <p class="def">AIは、頼まれた集計を、そのとおりに出してくれます。ただし、「どう切り分けるか」までは、頼まなければ考えないことがあります。</p>
+  <div class="seg" id="segAsk" role="group" aria-label="頼み方">
+   <button type="button" data-a="0" aria-pressed="true">そのまま頼む</button>
+   <button type="button" data-a="1" aria-pressed="false">切り口も指定して頼む</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>AIへの頼み方</h3><div class="pre" id="askIn"></div></div>
+   <div class="panel"><h3>返ってきそうな答え</h3><div class="pre" id="askOut"></div></div>
+  </div>
+  <div class="result" id="askRes"></div>
+  <ul class="checks" style="margin-top:14px">
+   <li><span>✓</span><div><b>切り口ごとの集計も出してもらう</b>お客様タイプ・地域・時期・担当者など、結果に影響しそうな項目で。</div></li>
+   <li><span>✓</span><div><b>件数も一緒に出してもらう</b>割合だけでなく、母数（件数）を見ると、偏りに気づける。</div></li>
+   <li><span>✓</span><div><b>全体と別々で結論が違ったら、立ち止まる</b>データのでき方（誰が、どちらを選んだか）を確認する。</div></li>
+  </ul>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="確認クイズ">
+ <div class="inner">
+  <span class="tag">確認</span>
+  <h2>確認クイズ</h2>
+  <p class="note" id="qNo"></p>
+  <div class="panel" style="margin-bottom:12px"><p id="qText" style="margin:0;font-weight:700"></p></div>
+  <div class="opts" id="qOpts"></div>
+  <div class="result" id="qRes" aria-live="polite"></div>
+  <div class="row-btns" style="margin-top:12px"><button class="btn" id="qNext" type="button" hidden>次の問題へ</button><button class="btn ghost" id="qRetry" type="button" hidden>もう一度</button></div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <ul class="checks">
+   <li><span>1</span><div><b>シンプソンのパラドックスとは</b>グループ別に見ると同じ向きなのに、まとめると逆の向きになる現象。</div></li>
+   <li><span>2</span><div><b>原因は、件数の偏りと隠れた条件</b>割り当てや件数が偏っていると、全体の平均が中身の違いをならして隠すことがある。</div></li>
+   <li><span>3</span><div><b>どちらが正しいかは、データのでき方しだい</b>全体が正しいときも、別々が正しいときもある。決めつけない。</div></li>
+   <li><span>4</span><div><b>AIには、切り口と件数も頼む</b>「顧客タイプ別にも、件数つきで集計して」のように指定する。</div></li>
+  </ul>
+  <p class="msg">平均だけで<mark>結論を出さない</mark>。中身を、切り分けて見る。</p>
+  <p class="note">本ページの事例・数値は、説明のための架空の例です。</p>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  const pct=(a,b)=>Math.round(a/b*1000)/10;
+
+  /* 2: the data (fictional) */
+  const D={A:{old:[81,87],nw:[192,263]},B:{old:[234,270],nw:[55,80]}};
+  function sum(k,v){if(v==='all')return[D[k].old[0]+D[k].nw[0],D[k].old[1]+D[k].nw[1]];return D[k][v]}
+  function showView(v){
+    const a=sum('A',v),b=sum('B',v),ra=pct(a[0],a[1]),rb=pct(b[0],b[1]);
+    const box=$('bars');box.innerHTML='';
+    [['キャンペーンA',a,ra,ra>rb],['キャンペーンB',b,rb,rb>ra]].forEach(x=>{
+      const row=document.createElement('div');row.className='brow';
+      row.innerHTML='<b></b><div class="tr"><i></i></div><span class="bv"></span>';
+      row.querySelector('b').textContent=x[0];
+      const i=row.querySelector('i');i.style.width=x[2]+'%';if(x[3])i.classList.add('win');
+      row.querySelector('.bv').textContent=x[2].toFixed(1)+'%（'+x[1][0]+' / '+x[1][1]+'件）'+(x[3]?'　◎':'');
+      box.appendChild(row);});
+    if(v==='all')res($('viewRes'),'bad','全体では、Bの方が高く見えます（A '+ra.toFixed(1)+'% ／ B '+rb.toFixed(1)+'%）。「Bの勝ち」と判断したくなります。');
+    else res($('viewRes'),'good',(v==='old'?'既存のお客様':'新規のお客様')+'だけで見ると、Aの方が高くなります（A '+ra.toFixed(1)+'% ／ B '+rb.toFixed(1)+'%）。全体とは、逆の結論です。');
+  }
+  seg($('segView'),b=>showView(b.dataset.v));showView('all');
+
+  /* 3: mix slider */
+  const rOld=81/87,rNew=192/263,bAll=289/350;
+  function showShare(){
+    const s=+$('share').value,nn=Math.round(350*s/100),no=350-nn;
+    const got=no*rOld+nn*rNew,rate=got/350*100;
+    $('shareV').textContent='新規 '+nn+'件（'+s+'%）／既存 '+no+'件';
+    $('shareOut').textContent='Aの全体の成約率\n= （既存 '+no+'件×93% ＋ 新規 '+nn+'件×73%）÷350件\n= '+rate.toFixed(1)+'%\nBの全体の成約率 = 82.6%';
+    const win=rate>bAll*100;
+    res($('shareRes'),win?'good':'bad',win?'Aの全体の成約率が、Bを上回りました。新規の割合が小さいと、Aの強さが全体にも表れます。':'Aの全体の成約率が、Bを下回っています。各タイプではAが高いのに、新規の割合が大きいため、全体では低く見えます。');
+  }
+  $('share').addEventListener('input',showShare);showShare();
+
+  /* 5: scenarios */
+  const SC=[
+    {t:'営業担当が、案件を見て選んだ',s:'難しそうな案件にAを使う、など',h:'割り当てに、偏りが生じやすい',d:'担当者の判断で割り当てると、「お客様のタイプ」のような隠れた条件が、キャンペーンと結びつきやすくなります。',n:'全体の平均だけで決めず、お客様タイプなどで切り分けた比較も確認します。'},
+    {t:'くじ引きで、割り当てた',s:'ランダムに、AかBかを決める',h:'偏りが、起きにくい',d:'ランダムに決めると、お客様のタイプが、AとBに同じように混ざりやすくなります。そのため、全体の比較を、信頼しやすくなります。',n:'ただし、偶然の偏りもあり得ます。件数が少ないときは、切り分けた結果も確かめます。'},
+    {t:'時期や担当者が、AとBで違った',s:'Aは春、Bは秋に実施、など',h:'別の隠れた条件が、混ざる',d:'時期・担当者・地域など、キャンペーン以外の違いも、結果に影響することがあります。',n:'結果に影響しそうな条件を挙げ、その条件ごとに分けて見る。それでも、因果関係は慎重に判断します。'}
+  ];
+  const scEl=$('scen'),scB=$('scenBody');
+  SC.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+    b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent='状況 '+(i+1);b.querySelector('span').textContent=x.t;
+    b.onclick=()=>{[...scEl.children].forEach(c=>c.setAttribute('aria-pressed',c===b));
+      scB.innerHTML='<h3></h3><p></p><p class="note"></p><p style="margin:0;font-weight:700"></p>';
+      const ps=scB.querySelectorAll('h3,p');ps[0].textContent=x.s+'：'+x.h;ps[1].textContent=x.d;ps[2].textContent='※ 状況の例は、説明のための架空の例です。';ps[3].textContent='→ '+x.n;};
+    scEl.appendChild(b);});
+  scEl.children[0].click();
+
+  /* 6: ask AI */
+  const ASK=[
+    {i:'添付のCSV（キャンペーン別の成約結果）を集計して、AとBのどちらが効果的か教えてください。',o:'全体の成約率は、A：78.0%、B：82.6%です。\nBの方が効果的と考えられます。',r:'bad',m:'頼まれた集計（全体）には答えていますが、お客様タイプ別の違いには触れていません。逆の結論が隠れていても、気づけないことがあります。'},
+    {i:'添付のCSV（キャンペーン別の成約結果）を集計して、AとBのどちらが効果的か教えてください。全体だけでなく、顧客タイプ（新規・既存）別にも、件数つきで集計してください。全体と結論が違う場合は、理由も説明してください。',o:'【全体】A：78.0%、B：82.6%\n【既存】A：93.1%（81/87）、B：86.7%（234/270）\n【新規】A：73.0%（192/263）、B：68.8%（55/80）\n全体ではBが高いが、タイプ別ではAが高い。Aは成約しにくい新規が多いため、全体では低く出ている可能性がある。',r:'good',m:'切り口と件数を指定したことで、結論が逆になる点と、その理由の手がかりが見えました。（AIの回答は一例です。数値は、必ず元データで確認します。）'}
+  ];
+  function showAsk(k){const a=ASK[k];$('askIn').textContent=a.i;$('askOut').textContent=a.o;res($('askRes'),a.r,a.m);}
+  seg($('segAsk'),b=>showAsk(+b.dataset.a));showAsk(0);
+
+  /* 7: quiz */
+  const QS=[
+    {q:'全体ではBの成約率が高い。ところが、お客様タイプ別に見ると、どのタイプでもAの方が高い。この現象の名前は？',o:['シンプソンのパラドックス','ハルシネーション','過学習'],a:0,e:'グループ別と全体で、結論が逆になる現象を、シンプソンのパラドックスと呼びます。'},
+    {q:'この現象が起きたとき、まず疑いたいのは？',o:['AとBで、お客様タイプの件数に偏りがないか','計算機が壊れていないか','Bの方が、必ず優れていると決めてよいか'],a:0,e:'割り当てや件数の偏りが、全体の平均をゆがめていることがあります。まず、中身の内訳を確認します。'},
+    {q:'AIにデータの集計を頼むときの、よい頼み方は？',o:['「どちらが良いか、結論だけ教えて」','「タイプ別にも、件数つきで集計して」','「平均だけ出して」'],a:1,e:'切り口と件数を指定すると、全体の平均に隠れた違いに気づきやすくなります。'}
+  ];
+  let qi=0,score=0,answered=false;
+  function drawQ(){
+    answered=false;const Q=QS[qi];$('qNo').textContent='第 '+(qi+1)+' 問 / '+QS.length;$('qText').textContent=Q.q;
+    const o=$('qOpts');o.innerHTML='';
+    Q.o.forEach((t,i)=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=t;
+      b.onclick=()=>{if(answered)return;answered=true;const ok=i===Q.a;if(ok)score++;
+        [...o.children].forEach((c,j)=>{c.disabled=true;if(j===Q.a)c.setAttribute('aria-pressed','true')});
+        res($('qRes'),ok?'good':'bad',(ok?'正解です。':'正解は「'+Q.o[Q.a]+'」です。')+Q.e);
+        if(qi<QS.length-1){$('qNext').hidden=false}else{$('qRetry').hidden=false;$('qRes').textContent+='　結果：'+score+' / '+QS.length+' 問正解';}};
+      o.appendChild(b);});
+    res($('qRes'),'','');$('qNext').hidden=true;$('qRetry').hidden=true;
+  }
+  $('qNext').onclick=()=>{qi++;drawQ()};
+  $('qRetry').onclick=()=>{qi=0;score=0;drawQ()};
+  drawQ();
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
