@@ -14,6 +14,7 @@
 
 | スライド | 内容 |
 |---|---|
+| [ソーカル事件　それっぽい文章を、見抜けるか](https://funai-yuji-yoshida.github.io/ai-slides/slides/sokal-hoax/) | 1996年、物理学者が中身のない論文を学術誌に投稿し、掲載された事件。通った理由と見方の分かれ目、生成AIの時代にも通じる教訓を、体験しながら学ぶ |
 | [シンプソンのパラドックス　全体で見ると、結論が逆になる](https://funai-yuji-yoshida.github.io/ai-slides/slides/simpsons-paradox/) | グループ別ではAが勝つのに、全体ではBが勝つ。逆転が起きる理由を、架空のキャンペーンデータで体験し、AIに集計を頼むときの注意点を知る |
 | [デザインシステム検討ツール](https://funai-yuji-yoshida.github.io/ai-slides/slides/design-system-tool/) | フォント・色・文字サイズ・角丸・影を選んで、部品や画面例で確認。気に入った組み合わせをCSS変数やAIへの指示文として書き出せるツール（サンプルは架空のデータ） |
 | [Webの3つの攻撃：XSS・CSRF・SQLインジェクション](https://funai-yuji-yoshida.github.io/ai-slides/slides/web-attacks/) | XSSとCSRFを、たとえ話と体験で理解し、SQLインジェクションと比べる。あぶないコードと安全なコードを見分け、AIが作ったアプリを確認できるようになる（デモは安全なシミュレーション・架空のデータ） |
