@@ -291,19 +291,6 @@ input[type=range]{accent-color:var(--indigo)}
 </section>
 
 <!-- 8 -->
-<section class="slide" data-title="確認クイズ">
- <div class="inner">
-  <span class="tag">確認</span>
-  <h2>確認クイズ</h2>
-  <p class="note" id="qNo"></p>
-  <div class="panel" style="margin-bottom:12px"><p id="qText" style="margin:0;font-weight:700"></p></div>
-  <div class="opts" id="qOpts"></div>
-  <div class="result" id="qRes" aria-live="polite"></div>
-  <div class="row-btns" style="margin-top:12px"><button class="btn" id="qNext" type="button" hidden>次の問題へ</button><button class="btn ghost" id="qRetry" type="button" hidden>もう一度</button></div>
- </div>
-</section>
-
-<!-- 9 -->
 <section class="slide" data-title="まとめ">
  <div class="inner">
   <span class="tag">まとめ</span>
@@ -420,28 +407,6 @@ input[type=range]{accent-color:var(--indigo)}
   const qb=$('qsBody');
   btnList($('qs'),QA,(x,i)=>'質問 '+(i+1),x=>x.t,x=>{qb.innerHTML='<h3></h3><div class="pre"></div><p style="margin-top:10px;margin-bottom:0"></p>';
     qb.querySelector('h3').textContent='AIや文章に、こう問いかける';qb.querySelector('.pre').textContent=x.q;qb.querySelector('p').textContent=x.d;});
-
-  /* 8 quiz */
-  const QS=[
-    {q:'ソーカル事件で、ソーカルが投稿した論文の中身は？',o:['意味のない、でたらめな内容','新しい物理法則の発見','他の研究者の論文の写し'],a:0,e:'科学用語を並べた、意味のない論文を、あえて投稿しました。'},
-    {q:'この事件から言える、適切な教訓は？',o:['専門用語が多い文章は、正しい','自分の考えに合う話ほど、確かめる','人文学は、すべて信頼できない'],a:1,e:'好みに合う話ほど疑いが弱くなります。なお、1例で分野全体を評価することは、避けます。'},
-    {q:'生成AIの回答を使うときに、あてはまる行動は？',o:['流れるような文章なら、そのまま使う','具体的な根拠や出典を、自分で確かめる','専門用語が多いほど、信頼する'],a:1,e:'文章が「それっぽい」ことと、「正しい」ことは別です。重要な内容は、根拠や出典を確かめます。'}
-  ];
-  let qi=0,score=0,answered=false;
-  function drawQ(){
-    answered=false;const Q=QS[qi];$('qNo').textContent='第 '+(qi+1)+' 問 / '+QS.length;$('qText').textContent=Q.q;
-    const o=$('qOpts');o.innerHTML='';
-    Q.o.forEach((t,i)=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=t;
-      b.onclick=()=>{if(answered)return;answered=true;const ok=i===Q.a;if(ok)score++;
-        [...o.children].forEach((c,j)=>{c.disabled=true;if(j===Q.a)c.setAttribute('aria-pressed','true')});
-        res($('qRes'),ok?'good':'bad',(ok?'正解です。':'正解は「'+Q.o[Q.a]+'」です。')+Q.e);
-        if(qi<QS.length-1){$('qNext').hidden=false}else{$('qRetry').hidden=false;$('qRes').textContent+='　結果：'+score+' / '+QS.length+' 問正解';}};
-      o.appendChild(b);});
-    res($('qRes'),'','');$('qNext').hidden=true;$('qRetry').hidden=true;
-  }
-  $('qNext').onclick=()=>{qi++;drawQ()};
-  $('qRetry').onclick=()=>{qi=0;score=0;drawQ()};
-  drawQ();
 
   const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
 })();
