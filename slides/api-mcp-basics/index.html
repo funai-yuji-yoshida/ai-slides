@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIとMCP　つなぎ方と、守り方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+
+/* simpson */
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 16px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.brow{display:grid;grid-template-columns:8em 1fr;gap:6px 12px;align-items:center;margin:10px 0}
+.brow .tr{height:22px;background:var(--indigo-soft);border-radius:4px;overflow:hidden}
+.brow .tr i{display:block;height:100%;background:var(--sub);border-radius:4px}
+.brow .tr i.win{background:var(--indigo)}
+.brow .bv{grid-column:2;font-variant-numeric:tabular-nums;font-size:.95em}
+@media (max-width:620px){.brow{grid-template-columns:1fr}.brow .bv{grid-column:1}}
+input[type=range]{accent-color:var(--indigo)}
+.mails th{width:6em;white-space:nowrap}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps5{grid-template-columns:1fr}}
+.checks li[role=checkbox][aria-checked=true]{border-color:var(--ok);background:var(--ok-soft)}
+.checks li[role=checkbox]:hover{border-color:var(--indigo)}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="APIとMCP　つなぎ方と守り方">
+ <div class="inner">
+  <h1>APIとMCP</h1>
+  <p class="sub">つなぎ方と、守り方</p>
+  <div class="rule"></div>
+  <p>AIに社内システムや外部サービスをつなぐとき、必ず出てくる言葉があります。API、MCP、エンドポイント、認証。違いと仕組みを整理し、セキュリティ面で気をつけることを、動かしながら確認します。</p>
+  <p class="note">本ページの事例・URL・キーは、説明のための架空の例です。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="APIとは：ソフトどうしの窓口">
+ <div class="inner">
+  <span class="tag">API</span>
+  <h2>APIとは：ソフトどうしの「窓口」</h2>
+  <p class="def">API（Application Programming Interface）は、あるソフトが、別のソフトの機能やデータを使うための「決まった窓口」です。レストランにたとえると、注文を受ける窓口にあたります。</p>
+  <div class="cards">
+   <div class="card"><div class="n">お客さん</div><h3>あなたのアプリ</h3><p>「顧客の一覧がほしい」と、決められた書き方で頼む。</p></div>
+   <div class="card"><div class="n">窓口</div><h3>API</h3><p>頼み方（書き方）のルールを決めている。ルールどおりでなければ、受け付けない。</p></div>
+   <div class="card"><div class="n">厨房</div><h3>サービス本体</h3><p>データや機能を持っている。窓口を通してだけ、やりとりする。</p></div>
+  </div>
+  <p class="msg">中身（厨房）を知らなくても、<mark>窓口のルールを守れば使える</mark>。</p>
+  <p class="note">いまの業務で使われるAPIは、インターネット経由でやりとりする「Web API」が中心です。</p>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="エンドポイント：窓口の住所と、頼み方">
+ <div class="inner">
+  <span class="tag">エンドポイント</span>
+  <h2>エンドポイント：窓口の「住所」と「頼み方」</h2>
+  <p class="def">エンドポイントは、APIの窓口の住所（URL）です。「どの住所に（URL）」「どう頼むか（メソッド）」の組み合わせで、できることが決まります。選んで確かめましょう。</p>
+  <div class="cols">
+   <div class="panel">
+    <h3>1. 住所（何に対して）</h3>
+    <div class="seg" id="segRes" role="group" aria-label="対象"></div>
+    <h3>2. 頼み方（何をする）</h3>
+    <div class="seg" id="segMeth" role="group" aria-label="メソッド"></div>
+   </div>
+   <div class="panel"><h3>実際に送る内容（架空）</h3><div class="pre" id="reqOut"></div></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><h3>返ってくる内容（例）</h3><div class="pre" id="resOut"></div></div>
+  <div class="result" id="epRes" aria-live="polite"></div>
+  <p class="note">example.com は、説明用に予約されたドメインです。キーは架空（demo-）で、実在しません。</p>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="MCPとは：AI向けの共通コネクタ">
+ <div class="inner">
+  <span class="tag">MCP</span>
+  <h2>MCPとは：AI向けの「共通コネクタ」</h2>
+  <p class="def">MCP（Model Context Protocol）は、AIアプリと、外部のツールやデータをつなぐための共通の決まりです。Anthropic社が2024年に公開した、オープンな規格です。</p>
+  <div class="cols">
+   <div class="panel"><h3>MCPがないと</h3><p>つなぎたいサービスごとに、AIアプリ側で、個別のつなぎ込みを作る必要がある。</p></div>
+   <div class="panel"><h3>MCPがあると</h3><p>サービス側が「MCPサーバー」を用意すれば、MCPに対応したAIアプリから、同じ作法でつなげる。</p></div>
+  </div>
+  <div class="cards" style="margin-top:14px">
+   <div class="card"><div class="n">① クライアント</div><h3>AIアプリ側</h3><p>Claude などの、MCPに対応したアプリ。</p></div>
+   <div class="card"><div class="n">② サーバー</div><h3>ツールを提供する側</h3><p>「使える道具の一覧」と「使い方」をAIに教える。</p></div>
+   <div class="card"><div class="n">③ 道具</div><h3>ツール・データ</h3><p>検索、ファイル読み取り、予定の登録など。</p></div>
+  </div>
+  <p class="msg">AIにとっての、<mark>USB-Cのような共通の差し込み口</mark>。</p>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="APIとMCPの違い">
+ <div class="inner">
+  <span class="tag">違い</span>
+  <h2>APIとMCPの違い</h2>
+  <p class="def">MCPは、APIを置き換えるものではありません。多くの場合、MCPサーバーの裏側で、APIが呼ばれています。観点を選んで、比べましょう。</p>
+  <div class="steps steps5" id="cmp" role="group" aria-label="観点"></div>
+  <div class="panel" id="cmpBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="認証と認可">
+ <div class="inner">
+  <span class="tag">認証</span>
+  <h2>認証と認可：「誰か」と「何ができるか」</h2>
+  <p class="def">APIは、誰でも自由に使えるわけではありません。「誰からの依頼か」を確かめ（認証）、「何をしてよいか」を決めます（認可）。代表的な方式を比べましょう。</p>
+  <div class="steps" id="auth" role="group" aria-label="認証の方式"></div>
+  <div class="panel" id="authBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="体験：キーの置き場所は安全？">
+ <div class="inner">
+  <span class="tag">セキュリティ 1</span>
+  <h2>APIキーを、どこに置く？</h2>
+  <p class="def">APIキーは、持っている人が、その権限で使えてしまう「合い鍵」です。置き場所を選んで、安全かどうか確かめましょう。（キーは架空の例です）</p>
+  <div class="pre" style="margin-bottom:12px">api_key = "demo-key-3f9a1c7e…"</div>
+  <div class="opts" id="place"></div>
+  <div class="result" id="placeRes" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="MCPならではのリスク">
+ <div class="inner">
+  <span class="tag">セキュリティ 2</span>
+  <h2>MCPならではのリスク</h2>
+  <p class="def">MCPは、AIが自分で道具を選んで使うため、APIとは違う注意点があります。選んで、対策を確認しましょう。</p>
+  <div class="steps" id="risk" role="group" aria-label="リスク"></div>
+  <div class="panel" id="riskBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="気をつけることチェックリスト">
+ <div class="inner">
+  <span class="tag">チェック</span>
+  <h2>つなぐ前の、チェックリスト</h2>
+  <p class="def">項目をクリックして、チェックを入れましょう。</p>
+  <ul class="checks" id="chk"></ul>
+  <div class="result" id="chkRes" aria-live="polite" style="margin-top:12px"></div>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <ul class="checks">
+   <li><span>1</span><div><b>APIは、ソフトどうしの窓口</b>エンドポイント（URL）とメソッドの組み合わせで、できることが決まる。</div></li>
+   <li><span>2</span><div><b>MCPは、AI向けの共通コネクタ</b>APIを置き換えるのではなく、AIが道具を使いやすくする決まり。</div></li>
+   <li><span>3</span><div><b>認証と認可を、分けて考える</b>誰かを確かめ、必要最小限の権限だけを渡す。</div></li>
+   <li><span>4</span><div><b>キーは「合い鍵」として扱う</b>コードや公開の場所に置かず、定期的に入れ替える。</div></li>
+   <li><span>5</span><div><b>MCPは、信頼できるものだけを、最小の権限で</b>変更・削除は、人が確認してから実行する。</div></li>
+  </ul>
+  <p class="msg">便利さと<mark>権限の広さ</mark>は、セットで考える。</p>
+  <p class="note">本ページの事例・URL・キーは、説明のための架空の例です。</p>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[0].click();
+  }
+  function rows(box,pairs){box.innerHTML='<table class="mails"><tbody></tbody></table>';const tb=box.querySelector('tbody');
+    pairs.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];tb.appendChild(tr);});}
+
+  /* 3 endpoint builder */
+  const RS=[
+    {k:'customers',l:'顧客',path:'/v1/customers',list:{customers:[{id:1,name:'架空商事'},{id:2,name:'サンプル工業'}]}},
+    {k:'orders',l:'注文',path:'/v1/orders',list:{orders:[{id:101,customer_id:1,amount:12000},{id:102,customer_id:2,amount:8500}]}}
+  ];
+  const MS=[
+    {k:'GET',l:'GET（取得）',tgt:r=>r.path,body:null,st:'200 OK',msg:'読み取るだけ。データは変わらない。比較的、安全な頼み方。',cls:'good'},
+    {k:'POST',l:'POST（作成）',tgt:r=>r.path,body:'{"name":"新規サンプル"}',st:'201 Created',msg:'新しいデータを作る。実行すると、データが増える。',cls:''},
+    {k:'DELETE',l:'DELETE（削除）',tgt:r=>r.path+'/1',body:null,st:'204 No Content',msg:'データを消す。元に戻せないことがある。AIに任せるときは、特に注意。',cls:'bad'}
+  ];
+  let ri=0,mi=0;
+  function drawEp(){
+    const r=RS[ri],m=MS[mi];
+    $('reqOut').textContent=m.k+' https://api.example.com'+m.tgt(r)+'\nAuthorization: Bearer demo-token-8d21…'+(m.body?'\nContent-Type: application/json\n\n'+m.body:'');
+    $('resOut').textContent=m.st+(m.k==='GET'?'\n'+JSON.stringify(r.list,null,2):(m.k==='POST'?'\n{"id":3,"created":true}':''));
+    res($('epRes'),m.cls,m.msg);
+  }
+  RS.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed',i===0);b.textContent=x.l+'　'+x.path;$('segRes').appendChild(b);});
+  MS.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed',i===0);b.textContent=x.l;$('segMeth').appendChild(b);});
+  seg($('segRes'),b=>{ri=[...$('segRes').children].indexOf(b);drawEp()});
+  seg($('segMeth'),b=>{mi=[...$('segMeth').children].indexOf(b);drawEp()});
+  drawEp();
+
+  /* 5 API vs MCP */
+  const CMP=[
+    {t:'誰が使う？',a:'人（開発者）が、仕様書を読んで、呼び出すコードを書く。',m:'AIが、使える道具の一覧を見て、必要なものを自分で選んで呼び出す。'},
+    {t:'つなぎ方',a:'サービスごとに、URLや書き方がバラバラ。つなぐたびに、個別に作る。',m:'共通の決まりに沿う。対応したAIアプリなら、同じ作法でつなげる。'},
+    {t:'使い方の説明',a:'仕様書（ドキュメント）。読むのは、主に人。',m:'道具の名前・説明・入力の形を、AIが読める形で、サーバーが提供する。'},
+    {t:'得意なこと',a:'システム間の、決まりきった連携。処理の流れを、人が決めて作る。',m:'AIが状況に応じて、道具を組み合わせる使い方。流れは、AIが判断する。'},
+    {t:'関係',a:'MCPサーバーの裏側で、呼ばれていることが多い。',m:'APIを置き換えるものではなく、APIの上に載る「AI向けの窓口」になることが多い。'}
+  ];
+  const cb=$('cmpBody');
+  btnList($('cmp'),CMP,(x,i)=>'観点 '+(i+1),x=>x.t,x=>{rows(cb,[['API',x.a],['MCP',x.m]]);});
+
+  /* 6 auth */
+  const AU=[
+    {t:'APIキー',s:'合い鍵のような文字列',r:[['仕組み','サービスが発行した長い文字列を、リクエストに付けて送る。'],['良い点','簡単。サーバー間の連携で、よく使われる。'],['注意','持っている人は、誰でも使える。漏れたら、すぐ無効にして作り直す。']]},
+    {t:'OAuth（トークン）',s:'本人の許可をもらう',r:[['仕組み','利用者が「このアプリに、これだけ許可する」と同意し、期限つきのトークンを受け取る。'],['良い点','パスワードを渡さずに済む。許可する範囲（スコープ）や期限を、絞れる。'],['注意','広すぎる範囲を許可しない。不要になった連携は、取り消す。']]},
+    {t:'認証と認可',s:'この2つは別もの',r:[['認証','「誰か」を確かめる。（例：このキーは、ある担当者のもの）'],['認可','「何をしてよいか」を決める。（例：顧客の閲覧だけ可、削除は不可）'],['ポイント','認証できても、何でもできるとは限らない。必要最小限の権限だけを渡す。']]}
+  ];
+  const ab=$('authBody');
+  btnList($('auth'),AU,(x,i)=>'方式 '+(i+1),x=>x.t,x=>{rows(ab,x.r);});
+
+  /* 7 key places */
+  const PL=[
+    {t:'ソースコードに、直接書く',ok:false,m:'コードを共有したり、保存したりした先に、キーが残ります。キーは、コードの外で管理します。'},
+    {t:'公開リポジトリに、アップする',ok:false,m:'公開された場所では、第三者に見つかるおそれがあります。誤って載せたら、すぐキーを無効にして、作り直します。'},
+    {t:'ブラウザ側のJavaScriptに、入れる',ok:false,m:'ブラウザに送られるコードは、利用者が中身を見られます。キーは、サーバー側で持ちます。'},
+    {t:'AIへのプロンプトに、貼り付ける',ok:false,m:'入力した内容が、サービスの外へ送られます。キーそのものは、貼り付けません。'},
+    {t:'環境変数やシークレット管理に、置く',ok:true,m:'コードと分けて管理でき、権限や入れ替えも、管理しやすくなります。加えて、権限を最小にし、定期的に入れ替えます。'}
+  ];
+  const pl=$('place');
+  PL.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed','false');b.textContent=x.t;
+    b.onclick=()=>{[...pl.children].forEach(c=>c.setAttribute('aria-pressed',c===b));res($('placeRes'),x.ok?'good':'bad',(x.ok?'比較的、安全な置き場所です。':'避けたい置き場所です。')+x.m);};pl.appendChild(b);});
+  res($('placeRes'),'','置き場所を選んでください。');
+
+  /* 8 MCP risks */
+  const RK=[
+    {t:'信頼できないサーバー',r:[['リスク','出どころの分からないMCPサーバーを入れると、意図しない動作や、情報の流出につながるおそれがある。'],['対策','提供元を確かめる。社内で、使ってよいMCPを決めておく。']]},
+    {t:'説明文への指示の混入',r:[['リスク','道具の説明やデータの中に、AIへの「隠れた指示」が紛れ込み、AIが従ってしまうことがある。（プロンプトインジェクションの一種）'],['対策','外部から取り込んだ内容は、そのまま信用しない。重要な操作の前に、人が確認する。']]},
+    {t:'権限の広すぎ',r:[['リスク','全データの読み書き・削除ができる権限を渡すと、AIの誤りが、大きな被害になりやすい。'],['対策','読み取り専用から始める。必要な範囲だけ許可する。']]},
+    {t:'勝手な書き込み・削除',r:[['リスク','AIが、意図と違う内容を送信したり、データを消したりすることがある。'],['対策','変更・削除・送信は、実行前に人が確認する。ログを残し、元に戻せる準備をする。']]}
+  ];
+  const rb=$('riskBody');
+  btnList($('risk'),RK,(x,i)=>'リスク '+(i+1),x=>x.t,x=>{rows(rb,x.r);});
+
+  /* 9 checklist */
+  const CK=[
+    ['つなぐ相手は、提供元を確認した','公式のもの、または社内で許可されたものか。'],
+    ['認証方式と、渡す権限を決めた','必要最小限か。まずは、読み取り専用で足りないか。'],
+    ['キーは、コードや公開の場所に置いていない','環境変数・シークレット管理で、コードと分ける。'],
+    ['変更・削除・送信は、人が確認してから実行する','AIの自動実行に、任せきりにしない。'],
+    ['AIに渡るデータの範囲を、確認した','個人情報・機密情報が、外部に送られていないか。'],
+    ['ログを残し、定期的に見直す','いつ、何が実行されたかを、後から追える。キーの入れ替えも、定期的に。']
+  ];
+  const ck=$('chk');let done=0;
+  function upd(){res($('chkRes'),done===CK.length?'good':'',done===CK.length?'すべて確認できました。それでも、運用を始めたあとも、定期的に見直します。':done+' / '+CK.length+' 項目を確認しました。');}
+  CK.forEach((x,i)=>{const li=document.createElement('li');li.innerHTML='<span>□</span><div><b></b></div>';
+    li.querySelector('b').textContent=x[0];li.querySelector('div').appendChild(document.createTextNode(x[1]));
+    li.style.cursor='pointer';li.tabIndex=0;li.setAttribute('role','checkbox');li.setAttribute('aria-checked','false');
+    const t=()=>{const on=li.getAttribute('aria-checked')!=='true';li.setAttribute('aria-checked',on);li.querySelector('span').textContent=on?'☑':'□';done+=on?1:-1;upd();};
+    li.onclick=t;li.onkeydown=e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();t()}};ck.appendChild(li);});
+  upd();
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
