@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>回帰分析とは　データ分析の基礎知識</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+
+/* simpson */
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 16px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.brow{display:grid;grid-template-columns:8em 1fr;gap:6px 12px;align-items:center;margin:10px 0}
+.brow .tr{height:22px;background:var(--indigo-soft);border-radius:4px;overflow:hidden}
+.brow .tr i{display:block;height:100%;background:var(--sub);border-radius:4px}
+.brow .tr i.win{background:var(--indigo)}
+.brow .bv{grid-column:2;font-variant-numeric:tabular-nums;font-size:.95em}
+@media (max-width:620px){.brow{grid-template-columns:1fr}.brow .bv{grid-column:1}}
+input[type=range]{accent-color:var(--indigo)}
+.mails th{width:6em;white-space:nowrap}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps5{grid-template-columns:1fr}}
+.checks li[role=checkbox][aria-checked=true]{border-color:var(--ok);background:var(--ok-soft)}
+.checks li[role=checkbox]:hover{border-color:var(--indigo)}
+.chart{width:100%;height:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;display:block}
+.chart text{fill:var(--sub);font-size:12px;font-family:inherit}
+.chart .ax{stroke:var(--sub);stroke-width:1}
+.chart .gr{stroke:var(--line);stroke-width:1}
+.chart .pt{fill:var(--indigo);stroke:var(--surface);stroke-width:1.5}
+.chart .pt.out{fill:var(--ng)}
+.chart .pt.hol{fill:transparent;stroke:var(--indigo);stroke-width:2}
+.chart .ln{stroke:var(--mark);stroke-width:3.5;stroke-linecap:round}
+.chart .ln.dash{stroke:var(--sub);stroke-width:2;stroke-dasharray:6 5}
+.chart .cv{fill:none;stroke:var(--mark);stroke-width:3.5;stroke-linejoin:round}
+.chart.fig{background:var(--surface)}
+.chart .fgsq{fill:var(--sub);fill-opacity:.22;stroke:var(--sub);stroke-width:1.5}
+.chart .fgln{stroke:var(--ink);stroke-width:5;stroke-linecap:round}
+.chart .fgrs{stroke:var(--ink);stroke-width:4}
+.chart .fgpt{fill:var(--ink)}
+.chart .fgax{stroke:var(--ink);stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.chart .fgtx{fill:var(--sub);font-size:24px;font-weight:700}
+.chart .fgttl{fill:var(--ink);font-size:28px;font-weight:900}
+.chart .fgpill{fill:var(--surface);stroke:var(--ink);stroke-width:4}
+.chart .sq{fill:var(--ng);fill-opacity:.2;stroke:var(--ng);stroke-width:1}
+.chart .rs{stroke:var(--ng);stroke-width:2;opacity:.75}
+.mails th{width:6em}
+.steps-list{margin:0 0 12px;padding-left:1.2em}
+.steps-list li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="回帰分析とデータ分析の基礎知識">
+ <div class="inner">
+  <h1>回帰分析とは</h1>
+  <p class="sub">データ分析の基礎知識とあわせて</p>
+  <div class="rule"></div>
+  <p>「広告費を増やすと、売上はどれだけ増える？」。数字の関係を、1本の式で表して予測するのが回帰分析です。動かしながら仕組みを確かめ、結果を読み違えないための基礎知識まで整理します。</p>
+  <p class="note">本ページのデータは、説明のために作った架空のものです。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="回帰分析とは：データに線を引く">
+ <div class="inner">
+  <span class="tag">回帰分析 1</span>
+  <h2>回帰分析とは：データに「線」を引く</h2>
+  <p class="def">12店舗の「広告費」と「売上」（架空）です。点の並びに合う線を引ければ、広告費から売上を予測できます。線の傾きと位置を動かして、いちばん合う線を探してみましょう。</p>
+  <div class="cols">
+   <div>
+    <svg id="chart1" class="chart" viewBox="0 0 600 320" role="img" aria-label="広告費と売上の散布図"></svg>
+    <div class="seg" id="segResid" role="group" aria-label="誤差の表示" style="margin-top:10px">
+     <button type="button" data-r="0" aria-pressed="false">ずれを隠す</button>
+     <button type="button" data-r="1" aria-pressed="false">ずれ（線）</button>
+     <button type="button" data-r="2" aria-pressed="true">ずれの正方形</button>
+    </div>
+   </div>
+   <div class="panel">
+    <label for="sA" style="font-weight:700">傾き：<span id="vA"></span></label>
+    <input type="range" id="sA" min="0" max="6" step="0.1" value="1" style="width:100%">
+    <label for="sB" style="font-weight:700">切片：<span id="vB"></span></label>
+    <input type="range" id="sB" min="0" max="200" step="5" value="200" style="width:100%">
+    <div class="pre" id="sseOut" style="margin:10px 0"></div>
+    <button class="btn" id="btnBest" type="button">いちばん合う線に合わせる</button>
+   </div>
+  </div>
+  <div class="result" id="res2" aria-live="polite"></div>
+  <div class="panel" style="margin-top:14px">
+   <h3>補足：線は、どう決める？　最小二乗法</h3>
+   <p><b>ひとことで言うと：</b>「ずれの正方形の、面積の合計が、いちばん小さくなる線」を選ぶ方法です。</p>
+   <svg id="figLs" class="chart fig" viewBox="0 0 820 580" role="img" aria-label="誤差を2乗して全部足す図：点と線の縦のずれを1辺とする正方形を描き、その面積を足す"></svg>
+   <p class="note" style="margin:6px 0 12px">黒い縦線が「ずれ（誤差）」、灰色の正方形が「ずれの2乗」です。正方形の面積を全部足したものが、「誤差の合計」になります。</p>
+   <ol class="steps-list">
+    <li><b>① 点と線のずれを見る</b>　それぞれの点が、線から縦にどれだけ離れているか。（赤い線）</li>
+    <li><b>② ずれを1辺とする正方形を作る</b>　ずれが大きいほど、大きな正方形になる。（上の「ずれの正方形」）</li>
+    <li><b>③ 正方形の面積の合計を、最小にする</b>　合計がいちばん小さくなる線が、「いちばん合う線」。</li>
+   </ol>
+   <p style="margin-bottom:6px"><b>やってみよう</b></p>
+   <ul style="margin:0 0 10px;padding-left:1.3em">
+    <li>線をわざとずらすと、正方形が大きくなり、右の「誤差の合計」も増える。</li>
+    <li>「いちばん合う線に合わせる」を押すと、正方形が小さくなり、合計が最小になる。</li>
+   </ul>
+   <p style="margin-bottom:6px"><b>なぜ「正方形」＝2乗なの？</b></p>
+   <table class="mails" style="margin-bottom:8px">
+    <thead><tr><th>ずれ</th><td>1</td><td>2</td><td>3</td><td>10</td></tr></thead>
+    <tbody><tr><th>正方形の面積（2乗）</th><td>1</td><td>4</td><td>9</td><td>100</td></tr></tbody>
+   </table>
+   <ul style="margin:0 0 6px;padding-left:1.3em">
+    <li>ずれが2倍になると、面積は4倍。<b>大きなずれほど、強く嫌われる</b>ので、線は大きく外れた点に近づこうとする。</li>
+    <li>2乗すると、すべて正の値になる。線より上（＋）と下（−）のずれが、<b>打ち消し合わない</b>。</li>
+   </ul>
+   <p class="note" style="margin:0">そのため、極端な外れ値が1つあると、線が大きく引っぱられます（6ページ目で確認できます）。</p>
+  </div>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="重回帰：要因を増やすと？">
+ <div class="inner">
+  <span class="tag">回帰分析 2</span>
+  <h2>単回帰と重回帰：要因を増やすと？</h2>
+  <p class="def">要因が1つなら「単回帰」、複数なら「重回帰」です。30店舗の売上（架空）を、要因を選んで説明してみましょう。どれが効いているか、確かめます。</p>
+  <div class="cols">
+   <div class="panel">
+    <h3>説明に使う要因</h3>
+    <div class="opts" id="mrVars"></div>
+    <p class="note">「店長の誕生月」は、売上と関係のない、でたらめな値（架空）です。</p>
+   </div>
+   <div class="panel"><h3>結果</h3><div class="pre" id="mrOut"></div></div>
+  </div>
+  <div class="result" id="mrRes" aria-live="polite"></div>
+  <p class="note">R²（決定係数）は、「データのばらつきの何割を、式で説明できたか」の目安です。0〜1の値で、大きいほど、手元のデータによく合っています。</p>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="相関と因果は別もの">
+ <div class="inner">
+  <span class="tag">基礎知識 1</span>
+  <h2>相関と因果は、別もの</h2>
+  <p class="def">相関は「いっしょに動く」関係です。「片方が原因」とは限りません。例を選んで、相関係数（r）と、隠れた条件を確認しましょう。（データは架空）</p>
+  <div class="steps" id="corr" role="group" aria-label="例"></div>
+  <div class="cols">
+   <svg id="chart4" class="chart" viewBox="0 0 600 320" role="img" aria-label="散布図"></svg>
+   <div class="panel" id="corrBody" aria-live="polite"></div>
+  </div>
+  <p class="note">相関係数 r は、−1〜1の値です。1に近いほど右上がり、−1に近いほど右下がりの関係が強く、0に近いと、直線的な関係は弱いことを表します。</p>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="体験：当てはめすぎ（過学習）">
+ <div class="inner">
+  <span class="tag">基礎知識 2</span>
+  <h2>当てはめすぎると、予測が外れる（過学習）</h2>
+  <p class="def">曲がりくねった線ほど、手元の点にはぴったり合います。でも、新しいデータでは外れることがあります。線の複雑さを変えて、「練習用」と「新しいデータ」の誤差を比べましょう。（データは架空）</p>
+  <svg id="chart5" class="chart" viewBox="0 0 600 320" role="img" aria-label="多項式の当てはめ"></svg>
+  <div class="cols" style="margin-top:12px">
+   <div class="panel">
+    <label for="deg" style="font-weight:700">線の複雑さ（次数）：<span id="degV"></span></label>
+    <input type="range" id="deg" min="1" max="8" step="1" value="1" style="width:100%">
+    <p class="note" style="margin:6px 0 0">● 練習用データ（線を引くのに使う）　○ 新しいデータ（検証用）</p>
+   </div>
+   <div class="panel"><div class="pre" id="fitOut"></div></div>
+  </div>
+  <div class="result" id="fitRes" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="外れ値の影響">
+ <div class="inner">
+  <span class="tag">基礎知識 3</span>
+  <h2>外れ値は、線を引っぱる</h2>
+  <p class="def">1つだけ、極端な値が混ざると、線の傾きは大きく変わります。切り替えて確かめましょう。（データは、2ページ目と同じ架空の店舗に、1店舗を加えたもの）</p>
+  <div class="seg" id="segOut" role="group" aria-label="外れ値">
+   <button type="button" data-o="0" aria-pressed="true">ふつうのデータ</button>
+   <button type="button" data-o="1" aria-pressed="false">極端な1店舗を加える</button>
+  </div>
+  <div class="cols">
+   <svg id="chart6" class="chart" viewBox="0 0 600 320" role="img" aria-label="外れ値の影響"></svg>
+   <div class="panel"><div class="pre" id="outOut"></div></div>
+  </div>
+  <div class="result" id="outRes" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="平均だけで見ない">
+ <div class="inner">
+  <span class="tag">基礎知識 4</span>
+  <h2>平均だけで見ない：平均・中央値・ばらつき</h2>
+  <p class="def">10人の年収（架空）です。極端に高い人が1人いるかどうかで、「平均」は大きく変わります。「中央値」と比べてみましょう。</p>
+  <div class="seg" id="segMean" role="group" aria-label="データ">
+   <button type="button" data-m="0" aria-pressed="true">10人（極端に高い1人を含む）</button>
+   <button type="button" data-m="1" aria-pressed="false">その1人を除いた9人</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>データ（万円）</h3><div class="pre" id="meanData"></div></div>
+   <div class="panel"><h3>要約値</h3><div class="pre" id="meanOut"></div></div>
+  </div>
+  <div class="result" id="meanRes" aria-live="polite"></div>
+  <p class="note">中央値は、大きさの順に並べたときの、真ん中の値です。標準偏差は、データのばらつきの大きさの目安です。</p>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="知っておきたい分析の知識">
+ <div class="inner">
+  <span class="tag">知識マップ</span>
+  <h2>ほかに、知っておきたい分析の知識</h2>
+  <p class="def">結果を読み違えないために、押さえたい8つの項目です。選んで、確認しましょう。</p>
+  <div class="steps" id="kmap" role="group" aria-label="知識"></div>
+  <div class="panel" id="kBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="AIに分析を頼むとき">
+ <div class="inner">
+  <span class="tag">AI活用</span>
+  <h2>AIに、データ分析を頼むとき</h2>
+  <p class="def">AIは、回帰分析のコードを書いたり、結果をそれらしく説明したりできます。ただし、結果が正しいか、解釈が妥当かは、人が確かめる必要があります。</p>
+  <div class="seg" id="segAsk" role="group" aria-label="頼み方">
+   <button type="button" data-a="0" aria-pressed="true">そのまま頼む</button>
+   <button type="button" data-a="1" aria-pressed="false">確認事項も指定して頼む</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>AIへの頼み方</h3><div class="pre" id="askIn"></div></div>
+   <div class="panel"><h3>得られそうな答え（例）</h3><div class="pre" id="askOut"></div></div>
+  </div>
+  <div class="result" id="askRes" aria-live="polite"></div>
+  <p class="note">関連：全体と別々で結論が逆になる例は、<a href="../simpsons-paradox/">シンプソンのパラドックス</a>のスライドで確認できます。</p>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <ul class="checks">
+   <li><span>1</span><div><b>回帰分析は、データに「式」を当てはめて予測する</b>傾きは、「要因が1増えたとき、結果がどれだけ変わる傾向があるか」を表す。</div></li>
+   <li><span>2</span><div><b>R²は、手元のデータへの合い具合</b>要因を増やせば上がるので、調整済みR²や、新しいデータでの確認も見る。</div></li>
+   <li><span>3</span><div><b>相関は、因果とは限らない</b>隠れた条件（交絡）がないか、考える。</div></li>
+   <li><span>4</span><div><b>外れ値・偏り・平均に、注意する</b>グラフで形を見て、中央値やばらつきも確かめる。</div></li>
+   <li><span>5</span><div><b>AIの分析結果は、確認事項を指定して、人が検証する</b>前提、データ数、検証方法、解釈の限界まで、説明してもらう。</div></li>
+  </ul>
+  <p class="msg">式は便利な<mark>要約</mark>。真実そのものではない。</p>
+  <p class="note">本ページのデータは、説明のために作った架空のものです。</p>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[0].click();
+  }
+  function rows(box,pairs){box.innerHTML='<table class="mails"><tbody></tbody></table>';const tb=box.querySelector('tbody');
+    pairs.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];tb.appendChild(tr);});}
+
+  /* ---- math helpers ---- */
+  function lcg(seed){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296}}
+  function gauss(r){let t=0;for(let i=0;i<12;i++)t+=r();return t-6}
+  function solve(A,b){const n=b.length,M=A.map((r,i)=>r.concat([b[i]]));
+    for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];
+      for(let r=c+1;r<n;r++){const f=M[r][c]/M[c][c];for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k]}}
+    const x=new Array(n).fill(0);for(let i=n-1;i>=0;i--){let t=M[i][n];for(let k=i+1;k<n;k++)t-=M[i][k]*x[k];x[i]=t/M[i][i]}return x}
+  function ols(X,y){const p=X[0].length,A=[],b=[];
+    for(let i=0;i<p;i++){A.push([]);let t=0;for(let k=0;k<X.length;k++)t+=X[k][i]*y[k];b.push(t);
+      for(let j=0;j<p;j++){let s=0;for(let k=0;k<X.length;k++)s+=X[k][i]*X[k][j];A[i].push(s)}}
+    return solve(A,b)}
+  const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+  function sd(a){const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)*(v-m),0)/a.length)}
+  function median(a){const s=a.slice().sort((x,y)=>x-y),n=s.length;return n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2}
+  function corr(x,y){const mx=mean(x),my=mean(y);let a=0,b=0,c=0;for(let i=0;i<x.length;i++){a+=(x[i]-mx)*(y[i]-my);b+=(x[i]-mx)**2;c+=(y[i]-my)**2}return a/Math.sqrt(b*c)}
+  function line(pts){const x=pts.map(p=>p[0]),y=pts.map(p=>p[1]),b=ols(x.map(v=>[1,v]),y);return{b:b[0],a:b[1]}}
+  const fmt=(v,d)=>(+v).toFixed(d===undefined?1:d);
+
+  /* ---- svg chart ---- */
+  const NS='http://www.w3.org/2000/svg';
+  function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+  function chart(svg,o){
+    svg.innerHTML='';const L=52,R=14,T=14,B=44,W=600,H=320;
+    const X=v=>L+(v-o.xr[0])/(o.xr[1]-o.xr[0])*(W-L-R),Y=v=>H-B-(v-o.yr[0])/(o.yr[1]-o.yr[0])*(H-B-T);
+    el('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,class:'ax'},svg);el('line',{x1:L,y1:T,x2:L,y2:H-B,class:'ax'},svg);
+    const tx=(x,y,t,anc)=>{const e=el('text',{x,y,'text-anchor':anc||'middle'},svg);e.textContent=t};
+    for(let i=0;i<=4;i++){const xv=o.xr[0]+(o.xr[1]-o.xr[0])*i/4,yv=o.yr[0]+(o.yr[1]-o.yr[0])*i/4;
+      tx(X(xv),H-B+16,Math.round(xv*100)/100);tx(L-6,Y(yv)+4,Math.round(yv*100)/100,'end');
+      el('line',{x1:L,y1:Y(yv),x2:W-R,y2:Y(yv),class:'gr'},svg);}
+    tx((L+W-R)/2,H-6,o.xl);const yl=el('text',{x:12,y:(T+H-B)/2,'text-anchor':'middle',transform:'rotate(-90 12 '+((T+H-B)/2)+')'},svg);yl.textContent=o.yl;
+    (o.lines||[]).forEach(l=>{el('line',{x1:X(o.xr[0]),y1:Y(l.a*o.xr[0]+l.b),x2:X(o.xr[1]),y2:Y(l.a*o.xr[1]+l.b),class:'ln'+(l.dash?' dash':'')},svg)});
+    if(o.curve){let d='';for(let i=0;i<=120;i++){const xv=o.xr[0]+(o.xr[1]-o.xr[0])*i/120,yv=Math.max(o.yr[0]-50,Math.min(o.yr[1]+50,o.curve(xv)));d+=(i?'L':'M')+X(xv).toFixed(1)+' '+Y(yv).toFixed(1)}
+      el('path',{d,class:'cv'},svg)}
+    if(o.squares&&o.lines&&o.lines[0]){const l=o.lines[0];o.pts.forEach(p=>{const y1=Y(p[1]),y2=Y(l.a*p[0]+l.b),h=Math.abs(y1-y2);if(h>0.5)el('rect',{x:X(p[0]),y:Math.min(y1,y2),width:h,height:h,class:'sq'},svg)})}
+    if(o.resid&&o.lines&&o.lines[0]){const l=o.lines[0];o.pts.forEach(p=>el('line',{x1:X(p[0]),y1:Y(p[1]),x2:X(p[0]),y2:Y(l.a*p[0]+l.b),class:'rs'},svg))}
+    o.pts.forEach(p=>el('circle',{cx:X(p[0]),cy:Y(p[1]),r:5,class:'pt'+(p[2]?' '+p[2]:'')},svg));
+  }
+
+  /* ---- 2: simple regression ---- */
+  const AD=[10,15,20,25,30,35,40,45,50,55,60,65],SL=[130,140,170,165,200,195,235,225,260,280,270,305];
+  const P2=AD.map((x,i)=>[x,SL[i]]);const best=line(P2);
+  const sse=(pts,a,b)=>pts.reduce((s,p)=>s+(p[1]-(a*p[0]+b))**2,0);
+  const bestSSE=sse(P2,best.a,best.b);
+  let rmode=2;
+  function draw2(){
+    const a=+$('sA').value,b=+$('sB').value;$('vA').textContent=fmt(a,1)+'（広告費が1万円増えると、売上が約'+fmt(a,1)+'万円増える）';$('vB').textContent=b+'（広告費0のときの売上）';
+    chart($('chart1'),{xr:[0,70],yr:[0,350],xl:'広告費（万円）',yl:'売上（万円）',pts:P2,lines:[{a,b}],resid:rmode>=1,squares:rmode===2});
+    const s=sse(P2,a,b);
+    $('sseOut').textContent='いまの誤差の合計：'+Math.round(s)+'\n最小になる線の誤差：'+Math.round(bestSSE)+'\n（誤差＝点と線のずれを2乗して合計）';
+    const ok=s<=bestSSE*1.03;
+    res($('res2'),ok?'good':'',ok?'ほぼ、いちばん合う線です。この線は「最小二乗法」で求められ、傾き'+fmt(best.a,2)+'・切片'+fmt(best.b,1)+'です。':'まだ、ずれが大きい線です。傾きと切片を動かして、誤差の合計を小さくしてみましょう。');
+  }
+  $('sA').addEventListener('input',draw2);$('sB').addEventListener('input',draw2);
+  $('btnBest').onclick=()=>{$('sA').value=Math.round(best.a*10)/10;$('sB').value=Math.round(best.b/5)*5;draw2()};
+  seg($('segResid'),b=>{rmode=+b.dataset.r;draw2()});draw2();
+
+  /* ---- 3: multiple regression (fictional 30 stores) ---- */
+  const r3=lcg(20261113),ST=[];
+  for(let i=0;i<30;i++){const ad=10+50*r3(),area=20+60*r3(),dist=1+14*r3(),bm=1+Math.floor(12*r3());
+    ST.push({ad,area,dist,bm,y:50+2.5*ad+1.2*area-6*dist+25*gauss(r3)/1.0})}
+  const VARS=[{k:'ad',l:'広告費'},{k:'area',l:'店舗面積'},{k:'dist',l:'駅からの距離'},{k:'bm',l:'店長の誕生月'}];
+  const on3={ad:true,area:false,dist:false,bm:false};
+  function draw3(){
+    const ks=VARS.filter(v=>on3[v.k]);
+    if(!ks.length){$('mrOut').textContent='要因を1つ以上、選んでください。';res($('mrRes'),'','');return}
+    const X=ST.map(s=>[1].concat(ks.map(v=>s[v.k]))),y=ST.map(s=>s.y),b=ols(X,y),my=mean(y);
+    let se=0,st=0;X.forEach((r,i)=>{const p=r.reduce((s,v,j)=>s+v*b[j],0);se+=(y[i]-p)**2;st+=(y[i]-my)**2});
+    const n=y.length,p=ks.length,r2=1-se/st,adj=1-(1-r2)*(n-1)/(n-p-1);
+    $('mrOut').textContent=ks.map((v,i)=>v.l+'の係数：'+fmt(b[i+1],2)).join('\n')+'\n切片：'+fmt(b[0],1)+'\nR²：'+fmt(r2,3)+'\n調整済みR²：'+fmt(adj,3);
+    res($('mrRes'),on3.bm?'bad':'',on3.bm?'関係のない「店長の誕生月」を加えても、R²は上がることがあります。要因を増やすと、手元のデータには合いやすくなるためです。調整済みR²（要因の数を考慮した値）も、あわせて見ます。':(ks.length===1?'要因が1つ（単回帰）です。他の要因も加えて、R²がどう変わるか、見てみましょう。':'要因が複数（重回帰）です。他の要因の影響を考慮したうえで、それぞれの係数を読みます。'));
+  }
+  const mv=$('mrVars');
+  VARS.forEach(v=>{const b=document.createElement('button');b.type='button';b.className='el';b.setAttribute('aria-pressed',String(on3[v.k]));b.textContent=v.l;
+    b.onclick=()=>{on3[v.k]=!on3[v.k];b.setAttribute('aria-pressed',String(on3[v.k]));draw3()};mv.appendChild(b)});
+  draw3();
+
+  /* ---- 4: correlation vs causation ---- */
+  function gen4(seed,nx,ny){const r=lcg(seed),pts=[];for(let i=0;i<40;i++){const h=r();pts.push([h*100+nx*gauss(r),h*100+ny*gauss(r)])}return pts}
+  const CR=[
+    {t:'アイスの売上 と 水難事故',xl:'アイスの売上（指数）',yl:'水難事故の件数（指数）',hid:'気温（暑い日は、どちらも増える）',seed:11,nx:12,ny:14,m:'アイスを食べると、水難事故が増えるわけではありません。「気温」という共通の原因が、両方を動かしていると考えられます。'},
+    {t:'靴のサイズ と 漢字テストの点',xl:'靴のサイズ（指数）',yl:'漢字テストの点（指数）',hid:'年齢（学年が上がると、どちらも大きくなる）',seed:22,nx:16,ny:16,m:'足が大きいから、漢字が得意になるのではありません。「年齢（学年）」が、両方に関わっていると考えられます。'},
+    {t:'広告費 と 売上',xl:'広告費（指数）',yl:'売上（指数）',hid:'店の規模や立地（大きい店ほど、どちらも多い）',seed:33,nx:18,ny:22,m:'広告が売上を押し上げている可能性はあります。ただ、規模の大きい店が、広告も売上も多いだけかもしれません。広告費を変える実験や、店の規模をそろえた比較で確かめます。'}
+  ];
+  const cb4=$('corrBody');
+  btnList($('corr'),CR,(x,i)=>'例 '+(i+1),x=>x.t,x=>{
+    const pts=gen4(x.seed,x.nx,x.ny),r=corr(pts.map(p=>p[0]),pts.map(p=>p[1])),l=line(pts);
+    chart($('chart4'),{xr:[-20,120],yr:[-20,120],xl:x.xl,yl:x.yl,pts,lines:[{a:l.a,b:l.b}]});
+    cb4.innerHTML='<h3></h3><p></p><p class="note"></p><p style="margin:0;font-weight:700"></p>';const e=cb4.children;
+    e[0].textContent='相関係数 r ＝ '+fmt(r,2);e[1].textContent='いっしょに動く関係（相関）が見られます。';e[2].textContent='隠れた条件：'+x.hid;e[3].textContent=x.m;});
+
+  /* ---- 5: overfitting ---- */
+  const TF=x=>2+3*Math.sin(3*x),r5=lcg(77),TR=[],TE=[];
+  for(let i=0;i<10;i++){const x=(i+0.5)/10;TR.push([x,TF(x)+0.6*gauss(r5)])}
+  for(let i=0;i<20;i++){const x=r5();TE.push([x,TF(x)+0.6*gauss(r5)])}
+  function polyfit(pts,d){const X=pts.map(p=>{const t=2*p[0]-1,r=[];for(let k=0;k<=d;k++)r.push(t**k);return r});return ols(X,pts.map(p=>p[1]))}
+  const polyval=(b,x)=>{const t=2*x-1;return b.reduce((s,c,k)=>s+c*t**k,0)};
+  const rmse=(pts,f)=>Math.sqrt(mean(pts.map(p=>(p[1]-f(p[0]))**2)));
+  function draw5(){
+    const d=+$('deg').value,b=polyfit(TR,d),f=x=>polyval(b,x);
+    $('degV').textContent=d;
+    const svg=$('chart5');
+    chart(svg,{xr:[0,1],yr:[-2,8],xl:'x',yl:'y',pts:TR,curve:f});
+    // test points (hollow)
+    const L=52,R=14,T=14,B=44,W=600,H=320;
+    TE.forEach(p=>{if(p[1]<-2||p[1]>8)return;el('circle',{cx:L+p[0]*(W-L-R),cy:H-B-(p[1]+2)/10*(H-B-T),r:5,class:'pt hol'},svg)});
+    const tr=rmse(TR,f),te=rmse(TE,f);
+    $('fitOut').textContent='次数：'+d+'\n練習用データの誤差：'+fmt(tr,2)+'\n新しいデータの誤差：'+fmt(te,2);
+    res($('fitRes'),d<=2?'':(d>=6?'bad':'good'),d<=2?'線が単純すぎて、データの曲がりを捉えきれていません（当てはめ不足）。次数を上げてみましょう。':(d>=6?'練習用データにはよく合う（誤差が小さい）のに、新しいデータでは、誤差が大きいままです。細かい「ノイズ」まで覚えてしまう、過学習です。練習用との差に注目しましょう。':'練習用と新しいデータの誤差が、どちらも小さくなっています。ちょうどよい複雑さです。'));
+  }
+  $('deg').addEventListener('input',draw5);draw5();
+
+  /* ---- 6: outlier ---- */
+  let outl=false;
+  function draw6(){
+    const pts=outl?P2.concat([[60,60,'out']]):P2,l0=best,l1=line(pts);
+    chart($('chart6'),{xr:[0,70],yr:[0,350],xl:'広告費（万円）',yl:'売上（万円）',pts,lines:outl?[{a:l1.a,b:l1.b},{a:l0.a,b:l0.b,dash:true}]:[{a:l0.a,b:l0.b}]});
+    $('outOut').textContent=(outl?'外れ値を加えた後の傾き：'+fmt(l1.a,2)+'\n（点線：加える前の傾き '+fmt(l0.a,2)+'）':'傾き：'+fmt(l0.a,2))+'\n決定係数R²：'+fmt(Math.pow(corr(pts.map(p=>p[0]),pts.map(p=>p[1])),2),3);
+    res($('outRes'),outl?'bad':'','');
+    $('outRes').textContent=outl?'1店舗が加わっただけで、傾きが '+fmt(l0.a,2)+' から '+fmt(l1.a,2)+' に変わりました。外れ値は、入力ミスか、特別な事情かを確かめます。むやみに消さず、理由を確認してから扱いを決めます。':'点の並びに沿った線です。';
+  }
+  seg($('segOut'),b=>{outl=b.dataset.o==='1';draw6()});draw6();
+
+  /* ---- 7: mean/median ---- */
+  const INC=[320,350,380,400,420,450,480,520,600,5000];
+  function draw7(k){
+    const d=k?INC.slice(0,9):INC;
+    $('meanData').textContent=d.join('　');
+    $('meanOut').textContent='平均　　　：'+fmt(mean(d),0)+' 万円\n中央値　　：'+fmt(median(d),0)+' 万円\n標準偏差　：'+fmt(sd(d),0)+' 万円';
+    res($('meanRes'),k?'good':'bad',k?'極端な1人を除くと、平均と中央値が近づきました。ふつうの人の感覚に近いのは、この場合、中央値です。':'平均は約'+fmt(mean(d),0)+'万円ですが、10人中9人は、これより低い年収です。平均だけだと、実態とずれて見えることがあります。');
+  }
+  seg($('segMean'),b=>draw7(+b.dataset.m));draw7(0);
+
+  /* ---- 8: knowledge map ---- */
+  const KM=[
+    {t:'欠損値',r:[['何か','データの一部が、空欄になっていること。'],['なぜ大事','空欄を0とみなしたり、そのまま計算したりすると、結果が変わる。'],['気をつける','なぜ欠けたのかを確かめ、除く・補うなどの扱いを、理由つきで決める。']]},
+    {t:'外れ値',r:[['何か','他と大きく離れた値。'],['なぜ大事','平均や回帰の線を、大きく引っぱる。'],['気をつける','入力ミスか、実際に起きたことか確認する。むやみに削除しない。']]},
+    {t:'標準化',r:[['何か','単位や大きさが違うデータを、同じものさしにそろえること。'],['なぜ大事','「円」と「人数」のように単位が違うと、係数の大きさを、そのまま比べられない。'],['気をつける','何をそろえたか（平均を引く、標準偏差で割る等）を、記録する。']]},
+    {t:'層別・交絡',r:[['何か','グループ（層）に分けて見ること。結果に影響する隠れた条件が交絡。'],['なぜ大事','全体では見えない違いや、逆の結論が見えることがある。'],['気をつける','お客様タイプ・地域・時期などで分けて、確認する。（関連：シンプソンのパラドックス）']]},
+    {t:'過学習と検証',r:[['何か','手元のデータに合わせすぎて、新しいデータで外れること。'],['なぜ大事','「当てはまりが良い」だけでは、予測が当たる保証にならない。'],['気をつける','データを「練習用」と「検証用」に分けて、検証用で確かめる。']]},
+    {t:'p値と信頼区間',r:[['何か','「偶然でも、この程度の差は起こりうるか」の目安がp値。推定の幅を示すのが信頼区間。'],['なぜ大事','「差がありそう」が、偶然の範囲かどうかを判断する材料になる。'],['気をつける','p値が小さくても、差が大きい・重要だとは限らない。数字だけで、白黒を決めつけない。']]},
+    {t:'サンプルの偏り',r:[['何か','集めたデータが、知りたい全体を代表していないこと。'],['なぜ大事','偏ったデータからは、偏った結論が出る。'],['気をつける','誰の、いつの、どんなデータかを確認する。アンケートの回答者だけ、などに注意。']]},
+    {t:'データリーク',r:[['何か','予測したい答えの情報が、予測に使うデータに、紛れ込むこと。'],['なぜ大事','検証では高い精度が出るのに、実際の運用では当たらなくなる。'],['気をつける','予測する時点では、まだ分からない情報を、使っていないか確認する。']]}
+  ];
+  const kb=$('kBody');
+  btnList($('kmap'),KM,(x,i)=>'項目 '+(i+1),x=>x.t,x=>{rows(kb,x.r);});
+
+  /* ---- 9: ask AI ---- */
+  const ASK=[
+    {i:'添付のCSVで回帰分析をして、売上を予測する式を教えてください。',o:'売上 ＝ 3.1 × 広告費 ＋ 98\nR² ＝ 0.97\n広告費を増やせば、売上が伸びると考えられます。',r:'bad',m:'式とR²は出ましたが、データ数、外れ値、検証方法、相関と因果の違いが、触れられていません。「広告費を増やせば伸びる」と言い切るのは、早すぎます。'},
+    {i:'添付のCSVで回帰分析をして、売上を予測する式を教えてください。次の点も教えてください。\n・データ数と欠損値の扱い\n・外れ値の有無\n・練習用と検証用に分けた誤差\n・この結果から、言えることと言えないこと',o:'データ数：12件（欠損なし）\n外れ値：目立つものなし\n検証：データが少ないため、分割した検証は不安定\n言えること：広告費と売上に、正の関係がある\n言えないこと：広告が原因で売上が増えたとは、このデータだけでは断定できない',r:'good',m:'前提と限界が見えました。（AIの回答は一例です。数値や結論は、必ず元データと計算で確かめます。）'}
+  ];
+  function showAsk(k){const a=ASK[k];$('askIn').textContent=a.i;$('askOut').textContent=a.o;res($('askRes'),a.r,a.m);}
+  seg($('segAsk'),b=>showAsk(+b.dataset.a));showAsk(0);
+
+  /* ---- 2b: static explanatory figure ---- */
+  (function(){
+    const svg=$('figLs'),ly=x=>440-0.434*(x-30);
+    const PT=[[107,55],[182,126],[220,24],[293,84],[368,5],[405,95],[480,17],[555,58],[593,-30],[668,32]];
+    const A=(t,a)=>{const e=el('path',{d:t,class:'fgax'},svg)};
+    PT.forEach(q=>{const x=q[0],yl=ly(x),yp=yl+q[1],h=Math.abs(q[1]),left=x>=368;
+      el('rect',{x:left?x-h:x,y:Math.min(yl,yp),width:h,height:h,class:'fgsq'},svg)});
+    A('M30 560 L30 40 M14 62 L30 40 L46 62');A('M30 540 L790 540 M768 524 L790 540 L768 556');
+    el('line',{x1:30,y1:440,x2:745,y2:ly(745),class:'fgln'},svg);
+    PT.forEach(q=>{const x=q[0],yl=ly(x);el('line',{x1:x,y1:yl,x2:x,y2:yl+q[1],class:'fgrs'},svg);el('circle',{cx:x,cy:yl+q[1],r:11,class:'fgpt'},svg)});
+    el('rect',{x:190,y:14,width:440,height:62,rx:31,class:'fgpill'},svg);
+    const t=(x,y,c,tx,an)=>{const e=el('text',{x,y,class:c,'text-anchor':an||'middle'},svg);e.textContent=tx};
+    t(410,56,'fgttl','誤差を2乗して、全部足す');t(56,96,'fgtx','売上','start');t(740,574,'fgtx','広告費 →','end');
+  })();
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
