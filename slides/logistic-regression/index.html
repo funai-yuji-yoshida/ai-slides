@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ロジスティック回帰とは　はい・いいえを確率で予測する</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+
+/* simpson */
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 16px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.brow{display:grid;grid-template-columns:8em 1fr;gap:6px 12px;align-items:center;margin:10px 0}
+.brow .tr{height:22px;background:var(--indigo-soft);border-radius:4px;overflow:hidden}
+.brow .tr i{display:block;height:100%;background:var(--sub);border-radius:4px}
+.brow .tr i.win{background:var(--indigo)}
+.brow .bv{grid-column:2;font-variant-numeric:tabular-nums;font-size:.95em}
+@media (max-width:620px){.brow{grid-template-columns:1fr}.brow .bv{grid-column:1}}
+input[type=range]{accent-color:var(--indigo)}
+.mails th{width:6em;white-space:nowrap}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps5{grid-template-columns:1fr}}
+.checks li[role=checkbox][aria-checked=true]{border-color:var(--ok);background:var(--ok-soft)}
+.checks li[role=checkbox]:hover{border-color:var(--indigo)}
+.chart{width:100%;height:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;display:block}
+.chart text{fill:var(--sub);font-size:12px;font-family:inherit}
+.chart .ax{stroke:var(--sub);stroke-width:1}
+.chart .gr{stroke:var(--line);stroke-width:1}
+.chart .pt{fill:var(--indigo);stroke:var(--surface);stroke-width:1.5}
+.chart .pt.out{fill:var(--ng)}
+.chart .pt.hol{fill:transparent;stroke:var(--indigo);stroke-width:2}
+.chart .ln{stroke:var(--mark);stroke-width:3.5;stroke-linecap:round}
+.chart .ln.dash{stroke:var(--sub);stroke-width:2;stroke-dasharray:6 5}
+.chart .cv{fill:none;stroke:var(--mark);stroke-width:3.5;stroke-linejoin:round}
+.chart.fig{background:var(--surface)}
+.chart .fgsq{fill:var(--sub);fill-opacity:.22;stroke:var(--sub);stroke-width:1.5}
+.chart .fgln{stroke:var(--ink);stroke-width:5;stroke-linecap:round}
+.chart .fgrs{stroke:var(--ink);stroke-width:4}
+.chart .fgpt{fill:var(--ink)}
+.chart .fgax{stroke:var(--ink);stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.chart .fgtx{fill:var(--sub);font-size:24px;font-weight:700}
+.chart .fgttl{fill:var(--ink);font-size:28px;font-weight:900}
+.chart .fgpill{fill:var(--surface);stroke:var(--ink);stroke-width:4}
+.chart .sq{fill:var(--ng);fill-opacity:.2;stroke:var(--ng);stroke-width:1}
+.chart .rs{stroke:var(--ng);stroke-width:2;opacity:.75}
+.mails th{width:6em}
+.steps-list{margin:0 0 12px;padding-left:1.2em}
+.steps-list li{margin-bottom:4px}
+.bigword{font-size:clamp(28px,5vw,56px);font-weight:900;min-height:1.6em;line-height:1.5;margin:6px 0;overflow-wrap:anywhere}
+.ta{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:6px}
+.poscells{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+@media (max-width:620px){.poscells{grid-template-columns:repeat(3,1fr)}}
+.pc{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:.9em}
+.pc b{display:block;font-size:12px;color:var(--sub)}
+.pc.ok{background:var(--ok-soft);border-color:var(--ok)}.pc.ng{background:var(--ng-soft);border-color:var(--ng)}
+.chart .cv.b{stroke:var(--sub);stroke-dasharray:8 6}
+.chart .lb{fill:var(--indigo);font-weight:700;font-size:13px}
+.btn:disabled{opacity:.4;cursor:default}
+#chartLr .cv,#chartSg .cv{stroke:var(--indigo)}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="ロジスティック回帰とは　はい・いいえを確率で予測する">
+ <div class="inner">
+  <h1>ロジスティック回帰とは</h1>
+  <p class="sub">「はい・いいえ」を、確率で予測する</p>
+  <div class="rule"></div>
+  <p>「このお客様は、成約するか？」「この顧客は、解約するか？」。結果が「はい／いいえ」のとき、回帰分析の考え方を使って、確率を予測するのがロジスティック回帰です。仕組み、判定のしかた、結果の読み方を、動かしながら確かめます。</p>
+  <p class="note">本ページのデータは、説明のために作った架空のものです。回帰分析の基本は、<a href="../regression-basics/">「回帰分析とは」</a>のスライドで確認できます。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="直線ではうまくいかない理由">
+ <div class="inner">
+  <span class="tag">仕組み 1</span>
+  <h2>直線では、なぜうまくいかない？</h2>
+  <p class="def">24人のお客様について、「訪問回数」と「成約したか（する＝1、しない＝0）」の関係を見ます（架空）。ふつうの回帰直線を引くと、どうなるでしょうか。訪問回数を動かして、予測値を確かめましょう。</p>
+  <div class="cols">
+   <svg id="chartLr" class="chart" viewBox="0 0 600 320" role="img" aria-label="訪問回数と成約の散布図に、直線とS字曲線を重ねた図"></svg>
+   <div class="panel">
+    <label for="lrX" style="font-weight:700">訪問回数：<span id="lrXv"></span></label>
+    <input type="range" id="lrX" min="0" max="14" step="1" value="12" style="width:100%">
+    <div class="pre" id="lrOut" style="margin-top:10px"></div>
+   </div>
+  </div>
+  <div class="result" id="lrRes" aria-live="polite"></div>
+  <p class="note">黄色い直線がふつうの回帰、青い曲線がロジスティック回帰です。点は、実際の結果（上が成約、下が不成約）です。</p>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="S字曲線：確率に変える">
+ <div class="inner">
+  <span class="tag">仕組み 2</span>
+  <h2>S字曲線で、「確率」に変える</h2>
+  <p class="def">ロジスティック回帰は、S字の曲線（シグモイド曲線）を使います。どんな値でも、0〜1（0%〜100%）の間に収まるのが特徴です。傾きと中心を動かして、点によく合う曲線を探しましょう。</p>
+  <div class="cols">
+   <svg id="chartSg" class="chart" viewBox="0 0 600 320" role="img" aria-label="S字曲線の当てはめ"></svg>
+   <div class="panel">
+    <label for="sgK" style="font-weight:700">傾き（変わり方の急さ）：<span id="sgKv"></span></label>
+    <input type="range" id="sgK" min="0" max="2" step="0.05" value="0.2" style="width:100%">
+    <label for="sgC" style="font-weight:700">中心（確率が50%になる訪問回数）：<span id="sgCv"></span></label>
+    <input type="range" id="sgC" min="0" max="12" step="0.5" value="2" style="width:100%">
+    <div class="pre" id="sgOut" style="margin:10px 0"></div>
+    <button class="btn" id="sgBest" type="button">いちばん合う曲線に合わせる</button>
+   </div>
+  </div>
+  <div class="result" id="sgRes" aria-live="polite"></div>
+  <div class="panel" style="margin-top:14px">
+   <h3>補足：曲線は、どう決める？　最尤法</h3>
+   <p>線形回帰は「ずれの2乗の合計を最小」にしました（最小二乗法）。ロジスティック回帰は、「実際の結果が起きる確率を、全員分かけ合わせた値が、いちばん大きくなる曲線」を選びます。これが最尤法です。</p>
+   <ul style="margin:0;padding-left:1.3em">
+    <li>成約した人には、高い確率を。成約しなかった人には、低い確率を、つけた曲線ほど、良いと評価される。</li>
+    <li>右上の「当てはまりの良さ」は、その度合いの目安（対数尤度）。大きい（0に近い）ほど、よく合っている。</li>
+   </ul>
+  </div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="しきい値：確率を「判定」に変える">
+ <div class="inner">
+  <span class="tag">判定</span>
+  <h2>しきい値：確率を「判定」に変える</h2>
+  <p class="def">出てくるのは、確率です。「成約する」「しない」の判定にするには、しきい値（境目）を決めます。しきい値を動かして、判定と間違いの変化を確かめましょう。</p>
+  <div class="cols">
+   <svg id="chartTh" class="chart" viewBox="0 0 600 320" role="img" aria-label="24人の予測確率としきい値"></svg>
+   <div class="panel">
+    <label for="thT" style="font-weight:700">しきい値：<span id="thV"></span></label>
+    <input type="range" id="thT" min="0.1" max="0.9" step="0.05" value="0.5" style="width:100%">
+    <div id="thTbl" style="margin-top:8px"></div>
+    <div class="pre" id="thOut" style="margin-top:8px"></div>
+   </div>
+  </div>
+  <div class="result" id="thRes" aria-live="polite"></div>
+  <p class="note">図：横軸は、モデルが出した「成約する確率」。塗りつぶし＝実際に成約、白抜き＝実際は不成約。線より右が「成約する」と判定された人です。</p>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="評価：正解率のわな">
+ <div class="inner">
+  <span class="tag">評価</span>
+  <h2>評価：「正解率」だけでは、見誤る</h2>
+  <p class="def">判定の結果は、4つに分けて数えます（混同行列）。見る数字は、目的で変わります。次の3つのケース（架空）を比べましょう。</p>
+  <div class="steps" id="evalSteps" role="group" aria-label="ケース"></div>
+  <div class="cols">
+   <div class="panel" id="evalTbl"></div>
+   <div class="panel"><div class="pre" id="evalOut"></div><div class="result" id="evalRes" aria-live="polite" style="margin-top:8px"></div></div>
+  </div>
+  <p class="note">正解率＝当たった割合。適合率＝「成約」と判定した人のうち、実際に成約した割合。再現率＝実際に成約した人のうち、見つけられた割合。</p>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="係数の読み方：オッズ">
+ <div class="inner">
+  <span class="tag">結果の読み方</span>
+  <h2>係数の読み方：確率ではなく「オッズ」</h2>
+  <p class="def">ロジスティック回帰の係数は、確率そのものではなく、「オッズ」（成約する確率 ÷ しない確率）に結びついています。訪問回数を動かして、確率とオッズの関係を確かめましょう。</p>
+  <div class="cols">
+   <div class="panel">
+    <label for="odX" style="font-weight:700">訪問回数：<span id="odXv"></span></label>
+    <input type="range" id="odX" min="0" max="12" step="1" value="4" style="width:100%">
+    <div class="pre" id="odOut" style="margin-top:10px"></div>
+   </div>
+   <div class="panel"><h3>読み方のコツ</h3>
+    <ul style="margin:0;padding-left:1.3em">
+     <li>オッズ1は「五分五分」（確率50%）。</li>
+     <li>訪問が1回増えると、オッズが<b id="odRatio"></b>倍になる、という読み方をする。</li>
+     <li>確率が同じだけ上がるわけではない。確率の変化は、S字のカーブのため、場所によって違う。</li>
+    </ul></div>
+  </div>
+  <div class="result" id="odRes" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="気をつけること">
+ <div class="inner">
+  <span class="tag">注意</span>
+  <h2>使うときに、気をつけること</h2>
+  <p class="def">結果を読み違えないための注意点です。選んで確認しましょう。</p>
+  <div class="steps" id="caution" role="group" aria-label="注意点"></div>
+  <div class="panel" id="cautionBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <ul class="checks">
+   <li><span>1</span><div><b>「はい／いいえ」を、確率で予測する</b>結果が0か1のとき、直線ではなく、S字曲線を使う。</div></li>
+   <li><span>2</span><div><b>曲線は、最尤法で決める</b>実際の結果が起きる確率が、いちばん高くなるように選ぶ。</div></li>
+   <li><span>3</span><div><b>確率を「判定」にするには、しきい値を決める</b>しきい値を動かすと、見逃しと空振りが、入れ替わる。</div></li>
+   <li><span>4</span><div><b>正解率だけで評価しない</b>適合率・再現率も見る。特に、「はい」が少ないデータでは、注意する。</div></li>
+   <li><span>5</span><div><b>係数は、オッズで読む。因果とは限らない</b>「訪問が増えると成約しやすい傾向がある」までが、言える範囲。</div></li>
+  </ul>
+  <p class="msg">確率は、判断の<mark>材料</mark>。判断そのものではない。</p>
+  <p class="note">本ページのデータは、説明のために作った架空のものです。</p>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[0].click();
+  }
+  function rows(box,pairs){box.innerHTML='<table class="mails"><tbody></tbody></table>';const tb=box.querySelector('tbody');
+    pairs.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];tb.appendChild(tr);});}
+
+  /* ---- math helpers ---- */
+  function lcg(seed){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296}}
+  function gauss(r){let t=0;for(let i=0;i<12;i++)t+=r();return t-6}
+  function solve(A,b){const n=b.length,M=A.map((r,i)=>r.concat([b[i]]));
+    for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];
+      for(let r=c+1;r<n;r++){const f=M[r][c]/M[c][c];for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k]}}
+    const x=new Array(n).fill(0);for(let i=n-1;i>=0;i--){let t=M[i][n];for(let k=i+1;k<n;k++)t-=M[i][k]*x[k];x[i]=t/M[i][i]}return x}
+  function ols(X,y){const p=X[0].length,A=[],b=[];
+    for(let i=0;i<p;i++){A.push([]);let t=0;for(let k=0;k<X.length;k++)t+=X[k][i]*y[k];b.push(t);
+      for(let j=0;j<p;j++){let s=0;for(let k=0;k<X.length;k++)s+=X[k][i]*X[k][j];A[i].push(s)}}
+    return solve(A,b)}
+  const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+  function sd(a){const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)*(v-m),0)/a.length)}
+  function median(a){const s=a.slice().sort((x,y)=>x-y),n=s.length;return n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2}
+  function corr(x,y){const mx=mean(x),my=mean(y);let a=0,b=0,c=0;for(let i=0;i<x.length;i++){a+=(x[i]-mx)*(y[i]-my);b+=(x[i]-mx)**2;c+=(y[i]-my)**2}return a/Math.sqrt(b*c)}
+  function line(pts){const x=pts.map(p=>p[0]),y=pts.map(p=>p[1]),b=ols(x.map(v=>[1,v]),y);return{b:b[0],a:b[1]}}
+  const fmt=(v,d)=>(+v).toFixed(d===undefined?1:d);
+
+  /* ---- svg chart ---- */
+  const NS='http://www.w3.org/2000/svg';
+  function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+  function chart(svg,o){
+    svg.innerHTML='';const L=52,R=14,T=14,B=44,W=600,H=320;
+    const X=v=>L+(v-o.xr[0])/(o.xr[1]-o.xr[0])*(W-L-R),Y=v=>H-B-(v-o.yr[0])/(o.yr[1]-o.yr[0])*(H-B-T);
+    el('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,class:'ax'},svg);el('line',{x1:L,y1:T,x2:L,y2:H-B,class:'ax'},svg);
+    const tx=(x,y,t,anc)=>{const e=el('text',{x,y,'text-anchor':anc||'middle'},svg);e.textContent=t};
+    for(let i=0;i<=4;i++){const xv=o.xr[0]+(o.xr[1]-o.xr[0])*i/4,yv=o.yr[0]+(o.yr[1]-o.yr[0])*i/4;
+      tx(X(xv),H-B+16,Math.round(xv*100)/100);tx(L-6,Y(yv)+4,Math.round(yv*100)/100,'end');
+      el('line',{x1:L,y1:Y(yv),x2:W-R,y2:Y(yv),class:'gr'},svg);}
+    tx((L+W-R)/2,H-6,o.xl);const yl=el('text',{x:12,y:(T+H-B)/2,'text-anchor':'middle',transform:'rotate(-90 12 '+((T+H-B)/2)+')'},svg);yl.textContent=o.yl;
+    (o.lines||[]).forEach(l=>{el('line',{x1:X(o.xr[0]),y1:Y(l.a*o.xr[0]+l.b),x2:X(o.xr[1]),y2:Y(l.a*o.xr[1]+l.b),class:'ln'+(l.dash?' dash':'')},svg)});
+    if(o.curve){let d='';for(let i=0;i<=120;i++){const xv=o.xr[0]+(o.xr[1]-o.xr[0])*i/120,yv=Math.max(o.yr[0]-50,Math.min(o.yr[1]+50,o.curve(xv)));d+=(i?'L':'M')+X(xv).toFixed(1)+' '+Y(yv).toFixed(1)}
+      el('path',{d,class:'cv'},svg)}
+    if(o.resid&&o.lines&&o.lines[0]){const l=o.lines[0];o.pts.forEach(p=>el('line',{x1:X(p[0]),y1:Y(p[1]),x2:X(p[0]),y2:Y(l.a*p[0]+l.b),class:'rs'},svg))}
+    o.pts.forEach(p=>el('circle',{cx:X(p[0]),cy:Y(p[1]),r:5,class:'pt'+(p[2]?' '+p[2]:'')},svg));
+  }
+
+  /* ---- data (fictional): visits -> closed (1) or not (0) ---- */
+  const DATA=[[1,0],[1,0],[2,0],[2,0],[2,1],[3,0],[3,0],[3,1],[4,0],[4,1],[5,0],[5,1],[5,1],[6,0],[6,1],[7,1],[7,1],[7,0],[8,1],[8,1],[9,1],[10,1],[10,1],[11,1]];
+  const sig=z=>1/(1+Math.exp(-z));
+  function logfit(pts){let b0=0,b1=0;
+    for(let it=0;it<40;it++){let g0=0,g1=0,h00=0,h01=0,h11=0;
+      pts.forEach(q=>{const x=q[0],y=q[1],p=sig(b0+b1*x),w=p*(1-p);g0+=y-p;g1+=(y-p)*x;h00+=w;h01+=w*x;h11+=w*x*x});
+      const d=solve([[h00,h01],[h01,h11]],[g0,g1]);b0+=d[0];b1+=d[1]}
+    return{b0,b1}}
+  const FIT=logfit(DATA),LIN=(function(){const b=ols(DATA.map(q=>[1,q[0]]),DATA.map(q=>q[1]));return{b:b[0],a:b[1]}})();
+  const ll=(b0,b1)=>DATA.reduce((s,q)=>{const p=Math.min(1-1e-12,Math.max(1e-12,sig(b0+b1*q[0])));return s+(q[1]?Math.log(p):Math.log(1-p))},0);
+  const bestLL=ll(FIT.b0,FIT.b1);
+  const probs=DATA.map(q=>sig(FIT.b0+FIT.b1*q[0]));
+
+  /* ---- 2: why not a line ---- */
+  function draw2(){
+    const x=+$('lrX').value,lin=LIN.a*x+LIN.b,lg=sig(FIT.b0+FIT.b1*x);
+    $('lrXv').textContent=x+' 回';
+    chart($('chartLr'),{xr:[0,14],yr:[-0.5,1.5],xl:'訪問回数（回）',yl:'成約（1）／不成約（0）',pts:DATA,lines:[{a:LIN.a,b:LIN.b}],curve:z=>sig(FIT.b0+FIT.b1*z)});
+    $('lrOut').textContent='直線の予測値　　　：'+fmt(lin,2)+'\nロジスティック回帰：'+fmt(lg*100,1)+' %（確率）';
+    const out=lin<0||lin>1;
+    res($('lrRes'),out?'bad':'','');
+    $('lrRes').textContent=out?'直線の予測値が '+fmt(lin,2)+' になりました。「確率」としては、0〜1の範囲を超えていて、意味をなしません。ロジスティック回帰は、どこでも0〜100%に収まります。':'この範囲では、直線の予測値も0〜1に収まっています。訪問回数を、0回や12回以上にして、確かめてみましょう。';
+  }
+  $('lrX').addEventListener('input',draw2);draw2();
+
+  /* ---- 3: sigmoid fit ---- */
+  function draw3(){
+    const k=+$('sgK').value,c=+$('sgC').value,b0=-k*c,b1=k;
+    $('sgKv').textContent=fmt(k,2);$('sgCv').textContent=fmt(c,1)+' 回';
+    chart($('chartSg'),{xr:[0,14],yr:[-0.1,1.1],xl:'訪問回数（回）',yl:'成約する確率',pts:DATA,curve:z=>sig(b0+b1*z)});
+    const l=ll(b0,b1);
+    $('sgOut').textContent='当てはまりの良さ（対数尤度）：'+fmt(l,2)+'\n最もよく合う曲線の値　　　　：'+fmt(bestLL,2);
+    const ok=l>=bestLL-0.8;
+    res($('sgRes'),ok?'good':'','');
+    $('sgRes').textContent=ok?'ほぼ、いちばん合う曲線です。最尤法で求めた値は、傾き '+fmt(FIT.b1,2)+'、中心 '+fmt(-FIT.b0/FIT.b1,1)+' 回です。':'まだ、合っていません。傾きと中心を動かして、数値を大きく（0に近く）してみましょう。';
+  }
+  $('sgK').addEventListener('input',draw3);$('sgC').addEventListener('input',draw3);
+  $('sgBest').onclick=()=>{$('sgK').value=Math.round(FIT.b1*20)/20;$('sgC').value=Math.round(-FIT.b0/FIT.b1*2)/2;draw3()};draw3();
+
+  /* ---- 4: threshold ---- */
+  function conf(t){let tp=0,fp=0,fn=0,tn=0;DATA.forEach((q,i)=>{const pr=probs[i]>=t;if(q[1]&&pr)tp++;else if(!q[1]&&pr)fp++;else if(q[1]&&!pr)fn++;else tn++});return{tp,fp,fn,tn}}
+  function matrixHTML(box,c,lab){box.innerHTML='<table class="mails"><thead><tr><th></th><th>実際：成約</th><th>実際：不成約</th></tr></thead><tbody></tbody></table>';
+    const tb=box.querySelector('tbody');[[lab[0],c.tp,c.fp],[lab[1],c.fn,c.tn]].forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1]+' 人';tr.children[2].textContent=r[2]+' 人';tb.appendChild(tr)})}
+  function metrics(c){const n=c.tp+c.fp+c.fn+c.tn,acc=(c.tp+c.tn)/n,pre=c.tp+c.fp?c.tp/(c.tp+c.fp):null,rec=c.tp+c.fn?c.tp/(c.tp+c.fn):null;return{acc,pre,rec}}
+  const pc=v=>v===null?'―':fmt(v*100,0)+' %';
+  function draw4(){
+    const t=+$('thT').value;$('thV').textContent=fmt(t,2);
+    const svg=$('chartTh');svg.innerHTML='';const L=20,R=14,T=14,B=44,W=600,H=320;
+    const X=v=>L+v*(W-L-R);
+    el('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,class:'ax'},svg);
+    [0,0.25,0.5,0.75,1].forEach(v=>{const tx=el('text',{x:X(v),y:H-B+16,'text-anchor':'middle'},svg);tx.textContent=Math.round(v*100)+'%';el('line',{x1:X(v),y1:T,x2:X(v),y2:H-B,class:'gr'},svg)});
+    const tl=el('text',{x:(L+W-R)/2,y:H-6,'text-anchor':'middle'},svg);tl.textContent='モデルが出した「成約する確率」';
+    const order=DATA.map((q,i)=>i).sort((a,b)=>probs[a]-probs[b]);
+    order.forEach((idx,r)=>{const y=T+10+r*((H-B-T-20)/(order.length-1));el('circle',{cx:X(probs[idx]),cy:y,r:6,class:'pt'+(DATA[idx][1]?'':' hol')},svg)});
+    el('line',{x1:X(t),y1:T,x2:X(t),y2:H-B,class:'ln'},svg);
+    const a=el('text',{x:Math.max(X(t)-6,60),y:T+12,'text-anchor':'end',class:'lb'},svg);a.textContent='しない判定';
+    const b=el('text',{x:Math.min(X(t)+6,W-60),y:T+12,'text-anchor':'start',class:'lb'},svg);b.textContent='成約する判定';
+    const c=conf(t),m=metrics(c);
+    matrixHTML($('thTbl'),c,['判定：成約する','判定：しない']);
+    $('thOut').textContent='正解率：'+pc(m.acc)+'\n適合率：'+pc(m.pre)+'\n再現率：'+pc(m.rec);
+    res($('thRes'),'','');
+    $('thRes').textContent=t<=0.3?'しきい値が低いと、成約しそうな人を、広く拾えます（再現率が高い）。代わりに、成約しない人まで混ざります（適合率が下がる）。':(t>=0.7?'しきい値が高いと、「成約する」と判定された人は、当たりやすくなります（適合率が高い）。代わりに、見逃しが増えます（再現率が下がる）。':'中くらいのしきい値です。「見逃したくない」か「空振りを減らしたいか」という目的で、動かして決めます。');
+  }
+  $('thT').addEventListener('input',draw4);draw4();
+
+  /* ---- 5: evaluation cases (fictional) ---- */
+  const EV=[
+    {t:'均衡データ',s:'成約が半分ほど',c:{tp:400,fp:100,fn:100,tn:400},m:'成約も不成約も、同じくらいのデータ。正解率も再現率も、実態と合っています。'},
+    {t:'偏りデータ・何もしない',s:'全員を「しない」と判定',c:{tp:0,fp:0,fn:50,tn:950},m:'正解率は95%と高いのに、成約する50人を1人も見つけられていません（再現率0%）。「はい」が少ないと、正解率は、あてになりません。'},
+    {t:'偏りデータ・モデルあり',s:'成約を見つけようとする',c:{tp:35,fp:80,fn:15,tn:870},m:'正解率は下がっても、成約する50人のうち35人を見つけられています。目的が「見つけること」なら、再現率と適合率を見ます。'}
+  ];
+  btnList($('evalSteps'),EV,(x,i)=>'ケース '+(i+1),x=>x.t+'（'+x.s+'）',(x,i)=>{
+    matrixHTML($('evalTbl'),x.c,['判定：成約する','判定：しない']);const m=metrics(x.c);
+    $('evalOut').textContent='1000人中（架空）\n正解率：'+pc(m.acc)+'\n適合率：'+pc(m.pre)+'\n再現率：'+pc(m.rec);
+    res($('evalRes'),i===1?'bad':'',x.m);});
+
+  /* ---- 6: odds ---- */
+  const OR=Math.exp(FIT.b1);
+  $('odRatio').textContent='約'+fmt(OR,1);
+  function draw6(){
+    const x=+$('odX').value,p=sig(FIT.b0+FIT.b1*x),odds=p/(1-p);
+    $('odXv').textContent=x+' 回';
+    $('odOut').textContent='成約する確率　：'+fmt(p*100,1)+' %\nオッズ　　　　：'+fmt(odds,2)+'（＝ 成約 ÷ 不成約）\n1回増えたあと　：オッズは '+fmt(odds*OR,2)+'（'+fmt(OR,1)+'倍）';
+    const p2=sig(FIT.b0+FIT.b1*(x+1));
+    res($('odRes'),'','訪問が'+x+'回から'+(x+1)+'回に増えると、確率は '+fmt(p*100,1)+'% から '+fmt(p2*100,1)+'% に変わり、上がり幅は '+fmt((p2-p)*100,1)+' ポイントです。オッズは、どこでも約'+fmt(OR,1)+'倍ですが、確率の上がり幅は、場所によって違います。');
+  }
+  $('odX').addEventListener('input',draw6);draw6();
+
+  /* ---- 7: cautions ---- */
+  const CA=[
+    {t:'「はい」が少ない',r:[['問題','成約や不良品など、まれなできごとは、データの大半が「いいえ」になる。'],['影響','全員「いいえ」と予測しても、正解率が高くなる。'],['対策','適合率・再現率を見る。データの偏りをならす方法（重み付けなど）を使う。']]},
+    {t:'しきい値の決め方',r:[['問題','0.5を、自動的に境目にしてしまう。'],['影響','見逃したくない場面でも、見逃しが多くなる。'],['対策','見逃しと空振りの、どちらの損失が大きいかで、目的に合わせて決める。']]},
+    {t:'確率は、あくまで見込み',r:[['問題','「70%」を、「確実に近い」と読んでしまう。'],['影響','10人中3人は、外れる計算になる。'],['対策','確率は、優先順位づけの材料として使う。結果だけで、個人を決めつけない。']]},
+    {t:'因果とは限らない',r:[['問題','係数が大きい要因を、「原因」と考える。'],['影響','隠れた条件（交絡）が、見えなくなる。'],['対策','「関係がある傾向」までを言う範囲とする。必要なら、実験や層別で確かめる。']]},
+    {t:'検証用データ',r:[['問題','学習に使ったデータで、成績を測る。'],['影響','過学習に気づけない。'],['対策','練習用と検証用に分けて、検証用で評価する。']]},
+    {t:'AIに頼むとき',r:[['問題','「ロジスティック回帰をして」とだけ頼む。'],['影響','正解率だけが返り、偏りやしきい値が、確認されない。'],['対策','データの内訳、適合率・再現率、しきい値の考え方、検証方法、言えることと言えないことを、あわせて説明してもらう。']]}
+  ];
+  const cb=$('cautionBody');
+  btnList($('caution'),CA,(x,i)=>'注意 '+(i+1),x=>x.t,x=>{rows(cb,x.r);});
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
