@@ -14,6 +14,7 @@
 
 | スライド | 内容 |
 |---|---|
+| [系列位置効果とDRMパラダイム　覚えやすい位置と、ないはずの記憶](https://funai-yuji-yoshida.github.io/ai-slides/slides/memory-effects/) | 最初と最後が残りやすい系列位置効果と、見ていない言葉を「見た」と思う虚記憶（DRMパラダイム）。2つの記憶の実験を自分で体験し、仕事とAI活用への示唆を考える |
 | [回帰分析とは　データ分析の基礎知識](https://funai-yuji-yoshida.github.io/ai-slides/slides/regression-basics/) | データに線を引いて予測する回帰分析を、動かしながら理解する。相関と因果、過学習、外れ値、平均と中央値など、結果を読み違えないための基礎知識もあわせて学ぶ（データは架空） |
 | [APIとMCP　つなぎ方と、守り方](https://funai-yuji-yoshida.github.io/ai-slides/slides/api-mcp-basics/) | APIとMCPの違い、エンドポイント、認証と認可、キーの扱い、MCPならではのリスクを、操作しながら整理する。外部サービスをつなぐ前のチェックリスト付き（URL・キーは架空） |
 | [ソーカル事件　それっぽい文章を、見抜けるか](https://funai-yuji-yoshida.github.io/ai-slides/slides/sokal-hoax/) | 1996年、物理学者が中身のない論文を学術誌に投稿し、掲載された事件。通った理由と見方の分かれ目、生成AIの時代にも通じる教訓を、体験しながら学ぶ |

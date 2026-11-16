@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>系列位置効果とDRMパラダイム　覚えやすい位置と、ないはずの記憶</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+
+/* simpson */
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 16px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.brow{display:grid;grid-template-columns:8em 1fr;gap:6px 12px;align-items:center;margin:10px 0}
+.brow .tr{height:22px;background:var(--indigo-soft);border-radius:4px;overflow:hidden}
+.brow .tr i{display:block;height:100%;background:var(--sub);border-radius:4px}
+.brow .tr i.win{background:var(--indigo)}
+.brow .bv{grid-column:2;font-variant-numeric:tabular-nums;font-size:.95em}
+@media (max-width:620px){.brow{grid-template-columns:1fr}.brow .bv{grid-column:1}}
+input[type=range]{accent-color:var(--indigo)}
+.mails th{width:6em;white-space:nowrap}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps5{grid-template-columns:1fr}}
+.checks li[role=checkbox][aria-checked=true]{border-color:var(--ok);background:var(--ok-soft)}
+.checks li[role=checkbox]:hover{border-color:var(--indigo)}
+.chart{width:100%;height:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;display:block}
+.chart text{fill:var(--sub);font-size:12px;font-family:inherit}
+.chart .ax{stroke:var(--sub);stroke-width:1}
+.chart .gr{stroke:var(--line);stroke-width:1}
+.chart .pt{fill:var(--indigo);stroke:var(--surface);stroke-width:1.5}
+.chart .pt.out{fill:var(--ng)}
+.chart .pt.hol{fill:transparent;stroke:var(--indigo);stroke-width:2}
+.chart .ln{stroke:var(--mark);stroke-width:3.5;stroke-linecap:round}
+.chart .ln.dash{stroke:var(--sub);stroke-width:2;stroke-dasharray:6 5}
+.chart .cv{fill:none;stroke:var(--mark);stroke-width:3.5;stroke-linejoin:round}
+.chart.fig{background:var(--surface)}
+.chart .fgsq{fill:var(--sub);fill-opacity:.22;stroke:var(--sub);stroke-width:1.5}
+.chart .fgln{stroke:var(--ink);stroke-width:5;stroke-linecap:round}
+.chart .fgrs{stroke:var(--ink);stroke-width:4}
+.chart .fgpt{fill:var(--ink)}
+.chart .fgax{stroke:var(--ink);stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.chart .fgtx{fill:var(--sub);font-size:24px;font-weight:700}
+.chart .fgttl{fill:var(--ink);font-size:28px;font-weight:900}
+.chart .fgpill{fill:var(--surface);stroke:var(--ink);stroke-width:4}
+.chart .sq{fill:var(--ng);fill-opacity:.2;stroke:var(--ng);stroke-width:1}
+.chart .rs{stroke:var(--ng);stroke-width:2;opacity:.75}
+.mails th{width:6em}
+.steps-list{margin:0 0 12px;padding-left:1.2em}
+.steps-list li{margin-bottom:4px}
+.bigword{font-size:clamp(28px,5vw,56px);font-weight:900;min-height:1.6em;line-height:1.5;margin:6px 0;overflow-wrap:anywhere}
+.ta{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:6px}
+.poscells{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+@media (max-width:620px){.poscells{grid-template-columns:repeat(3,1fr)}}
+.pc{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:.9em}
+.pc b{display:block;font-size:12px;color:var(--sub)}
+.pc.ok{background:var(--ok-soft);border-color:var(--ok)}.pc.ng{background:var(--ng-soft);border-color:var(--ng)}
+.chart .cv.b{stroke:var(--sub);stroke-dasharray:8 6}
+.chart .lb{fill:var(--indigo);font-weight:700;font-size:13px}
+.btn:disabled{opacity:.4;cursor:default}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="系列位置効果とDRMパラダイム　記憶の思い込み">
+ <div class="inner">
+  <h1>系列位置効果とDRM</h1>
+  <p class="sub">覚えやすい位置と、ないはずの記憶</p>
+  <div class="rule"></div>
+  <p>長い話を聞いたとき、覚えているのは最初と最後。見ていない言葉を「見た」と思い込む。人の記憶は、録画のようには働きません。2つの心理学の古典的な実験を、自分で体験しながら、仕事とAI活用への示唆まで考えます。</p>
+  <p class="note">体験の単語・データは、説明のための架空・簡易のものです。結果には個人差があり、1回の体験で、典型的な結果になるとは限りません。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="記憶のしくみ：短期記憶と長期記憶">
+ <div class="inner">
+  <span class="tag">基礎</span>
+  <h2>記憶のしくみ：短期と長期</h2>
+  <p class="def">記憶は、一度に全部が保存されるわけではありません。大まかに、次の流れで考えます。</p>
+  <div class="cards">
+   <div class="card"><div class="n">① 入ってくる</div><h3>見聞きした情報</h3><p>目や耳から入る情報の多くは、すぐに消える。注意を向けたものだけが、次に進む。</p></div>
+   <div class="card"><div class="n">② 短期記憶</div><h3>数十秒の作業台</h3><p>一度に持てる量に、限りがある（数個〜7個前後と言われる）。他のことをすると、消えやすい。</p></div>
+   <div class="card"><div class="n">③ 長期記憶</div><h3>長く残る倉庫</h3><p>くり返し思い出す・意味づけすることで、移りやすくなる。</p></div>
+  </div>
+  <p class="msg">記憶は、<mark>再生ではなく、再構成</mark>。思い出すたびに、作り直している。</p>
+  <p class="note">「意味でつなぐ」「くり返す」と残りやすく、「他のことに気を取られる」と消えやすい。この性質が、次の2つの現象に表れます。</p>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="体験1：15個の単語を覚える">
+ <div class="inner">
+  <span class="tag">体験 1　系列位置効果</span>
+  <h2>15個の単語を、覚えて思い出す</h2>
+  <p class="def">1語ずつ、順番に表示されます。メモはせず、見ながら覚えてください。そのあと、思い出せた単語を、順不同で書き出します。</p>
+  <div class="seg" id="segMode" role="group" aria-label="思い出すタイミング">
+   <button type="button" data-m="0" aria-pressed="true">表示のあと、すぐ思い出す</button>
+   <button type="button" data-m="1" aria-pressed="false">計算をしてから、思い出す</button>
+  </div>
+  <div class="panel" style="text-align:center">
+   <div class="bigword" id="spWord" aria-live="polite">準備ができたら「始める」を押してください</div>
+   <p class="note" id="spCount" style="margin:0 0 10px"></p>
+   <button class="btn" id="spStart" type="button">始める</button>
+  </div>
+  <div class="panel" id="spTest" style="margin-top:12px" hidden>
+   <label for="spIn" style="font-weight:700">思い出せた単語を、書き出してください（1語ずつ、改行かスペースで区切る）</label>
+   <textarea id="spIn" rows="4" class="ta" placeholder="例：りんご 机 …"></textarea>
+   <div class="row-btns" style="margin-top:8px"><button class="btn" id="spCheck" type="button">答え合わせ</button></div>
+   <p class="note">ひらがな・カタカナ・漢字は、どれで書いても構いません。</p>
+  </div>
+  <div class="panel" id="spResult" style="margin-top:12px" hidden>
+   <h3>あなたの結果</h3>
+   <div class="poscells" id="spCells"></div>
+   <div class="pre" id="spSum" style="margin-top:10px"></div>
+   <div class="result" id="spRes" aria-live="polite"></div>
+  </div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="系列位置効果：最初と最後が残る">
+ <div class="inner">
+  <span class="tag">解説 1</span>
+  <h2>系列位置効果：最初と最後が、残りやすい</h2>
+  <p class="def">リストの位置ごとに、思い出せる割合を見ると、「U字」の形になることが多く報告されています。これが、系列位置効果です。</p>
+  <div class="seg" id="segCurve" role="group" aria-label="曲線">
+   <button type="button" data-c="0" aria-pressed="true">すぐ思い出す</button>
+   <button type="button" data-c="1" aria-pressed="false">計算をしてから、思い出す</button>
+   <button type="button" data-c="2" aria-pressed="false">両方を重ねる</button>
+  </div>
+  <div class="cols">
+   <svg id="chartSp" class="chart" viewBox="0 0 600 320" role="img" aria-label="系列位置曲線の模式図"></svg>
+   <div class="panel" id="curveBody" aria-live="polite"></div>
+  </div>
+  <p class="note">図は、報告されている典型的な形を表した模式図です。実測値ではありません。</p>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="体験2：12個の単語を覚える（DRM）">
+ <div class="inner">
+  <span class="tag">体験 2　DRMパラダイム</span>
+  <h2>12個の単語を覚えて、「見たか」答える</h2>
+  <p class="def">1語ずつ表示されます。覚えてください。そのあと、単語を1つずつ見せます。「さっきの中にあった」か、「なかった」かを答えます。</p>
+  <div class="panel" style="text-align:center">
+   <div class="bigword" id="drWord" aria-live="polite">準備ができたら「始める」を押してください</div>
+   <p class="note" id="drCount" style="margin:0 0 10px"></p>
+   <button class="btn" id="drStart" type="button">始める</button>
+  </div>
+  <div class="panel" id="drTest" style="margin-top:12px" hidden>
+   <p class="note" id="drNo" style="margin:0"></p>
+   <div class="bigword" id="drQ"></div>
+   <div class="row-btns" style="justify-content:center"><button class="btn" id="drYes" type="button">あった（見た）</button><button class="btn ghost" id="drNoBtn" type="button">なかった</button></div>
+  </div>
+  <div class="panel" id="drResult" style="margin-top:12px" hidden>
+   <h3>あなたの結果</h3>
+   <div class="pre" id="drSum"></div>
+   <div class="result" id="drRes" aria-live="polite"></div>
+   <div class="row-btns" style="margin-top:10px"><button class="btn ghost" id="drAgain" type="button">もう一度</button></div>
+  </div>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="DRMパラダイム：ないはずの記憶">
+ <div class="inner">
+  <span class="tag">解説 2</span>
+  <h2>DRMパラダイム：「ないはずの記憶」</h2>
+  <p class="def">先ほどのリストは、「睡眠」という言葉を、あえて入れずに作られていました。それでも、「睡眠があった」と答えやすいことが知られています。項目を選んで確認しましょう。</p>
+  <div class="steps" id="drSteps" role="group" aria-label="DRM"></div>
+  <div class="panel" id="drBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="仕事とAI活用への示唆">
+ <div class="inner">
+  <span class="tag">活用</span>
+  <h2>仕事とAI活用への示唆</h2>
+  <p class="def">2つの現象は、人の記憶の特徴を表しています。仕事の場面と、AIとの付き合い方に、どうつなげられるでしょうか。</p>
+  <div class="steps" id="useSteps" role="group" aria-label="場面"></div>
+  <div class="panel" id="useBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <ul class="checks">
+   <li><span>1</span><div><b>系列位置効果：最初と最後が、残りやすい</b>最初は長期記憶に、最後は短期記憶に、残りやすいと説明されます。</div></li>
+   <li><span>2</span><div><b>他のことをすると、最後の記憶は薄れる</b>計算などを挟むと、終わりの方の記憶（新近効果）が弱まることが、報告されています。</div></li>
+   <li><span>3</span><div><b>DRM：見ていないものを「見た」と思う</b>関連する言葉がそろうと、リストにない言葉を、もっともらしく思い出すことがあります。</div></li>
+   <li><span>4</span><div><b>記憶は、再構成。確かな感覚でも、誤りうる</b>「はっきり覚えている」は、「正しい」の保証ではありません。</div></li>
+   <li><span>5</span><div><b>仕事では、記録と構成で補う</b>重要点を最初と最後に置き、決定事項は書いて残す。AIの出力も、元の資料で確かめる。</div></li>
+  </ul>
+  <p class="msg">記憶に頼らず、<mark>記録で確かめる</mark>。</p>
+  <p class="note">体験の単語・データは、説明のための架空・簡易のものです。</p>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[0].click();
+  }
+  function rows(box,pairs){box.innerHTML='<table class="mails"><tbody></tbody></table>';const tb=box.querySelector('tbody');
+    pairs.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];tb.appendChild(tr);});}
+  const toHira=s=>s.replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[\s　]/g,'');
+  const pct=(a,b)=>Math.round(a/b*100);
+
+  /* ---- 3: serial position experiment ---- */
+  const SW=[['りんご',['りんご','林檎']],['机',['つくえ','机']],['ほうき',['ほうき','箒']],['車',['くるま','車']],['猫',['ねこ','猫']],['鏡',['かがみ','鏡']],['時計',['とけい','時計']],['魚',['さかな','魚']],['風船',['ふうせん','風船']],['卵',['たまご','卵']],['かばん',['かばん','鞄']],['帽子',['ぼうし','帽子']],['電話',['でんわ','電話']],['はさみ',['はさみ','鋏']],['すいか',['すいか','西瓜']]];
+  let spMode=0,spRunning=false;const spRes=[null,null];
+  seg($('segMode'),b=>{if(spRunning)return;spMode=+b.dataset.m;});
+  $('spStart').onclick=()=>{
+    if(spRunning)return;spRunning=true;$('spStart').disabled=true;$('spTest').hidden=true;$('spResult').hidden=true;$('spIn').value='';
+    $('segMode').querySelectorAll('button').forEach(b=>b.disabled=true);
+    let i=0;
+    const next=()=>{
+      if(i<SW.length){$('spWord').textContent=SW[i][0];$('spCount').textContent=(i+1)+' / '+SW.length;i++;setTimeout(()=>{$('spWord').textContent='';setTimeout(next,250)},1000)}
+      else if(spMode===1){let t=15;$('spCount').textContent='';
+        const tick=()=>{if(t>0){$('spWord').textContent='100から7を、くり返し引いていく（93、86、…）　残り '+t+' 秒';t--;setTimeout(tick,1000)}else finish()};tick()}
+      else finish();
+    };
+    const finish=()=>{$('spWord').textContent='思い出した単語を、書き出してください';$('spCount').textContent='';spRunning=false;$('spStart').disabled=false;$('spStart').textContent='もう一度（最初から）';
+      $('segMode').querySelectorAll('button').forEach(b=>b.disabled=false);$('spTest').hidden=false;$('spIn').focus()};
+    $('spWord').textContent='';setTimeout(next,600);
+  };
+  $('spCheck').onclick=()=>{
+    const ans=$('spIn').value.split(/[\n\s　,、]+/).map(toHira).filter(Boolean);
+    const hit=SW.map(w=>w[1].some(v=>ans.includes(toHira(v))));
+    spRes[spMode]=hit;
+    const cells=$('spCells');cells.innerHTML='';
+    hit.forEach((h,i)=>{const d=document.createElement('div');d.className='pc'+(h?' ok':' ng');d.innerHTML='<b></b><span></span>';d.querySelector('b').textContent=i+1;d.querySelector('span').textContent=(h?'○ ':'× ')+SW[i][0];cells.appendChild(d)});
+    const sum=(a,b)=>hit.slice(a,b).filter(Boolean).length;
+    const f=sum(0,3),m=sum(3,12),l=sum(12,15);
+    $('spSum').textContent='モード：'+(spMode?'計算をしてから':'すぐ')+'\n合計：'+hit.filter(Boolean).length+' / 15\n最初の3語：'+f+' / 3\n真ん中の9語：'+m+' / 9\n最後の3語：'+l+' / 3';
+    let msg;
+    if(f/3>m/9&&l/3>m/9)msg='最初と最後の方が、真ん中より思い出せています。系列位置効果の典型的な形です。';
+    else if(f/3>m/9)msg='最初の方が、よく思い出せています（初頭効果）。最後は、あまり出ませんでした。';
+    else if(l/3>m/9)msg='最後の方が、よく思い出せています（新近効果）。';
+    else msg='今回は、典型的な形にはなりませんでした。個人差や、覚え方（意味づけなど）で変わります。何度か試すと、傾向が見えやすくなります。';
+    if(spRes[0]&&spRes[1]){const L=h=>h.slice(12,15).filter(Boolean).length;msg+='　【比較】最後の3語：すぐ '+L(spRes[0])+'/3、計算のあと '+L(spRes[1])+'/3。';}
+    res($('spRes'),'',msg);$('spResult').hidden=false;
+  };
+
+  /* ---- 4: curves (schematic) ---- */
+  const C0=[85,70,55,40,32,28,26,25,26,28,32,40,55,75,92],C1=[80,62,48,38,30,26,25,24,24,24,25,25,26,26,27];
+  const NS='http://www.w3.org/2000/svg';
+  function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+  function drawCurve(k){
+    const svg=$('chartSp');svg.innerHTML='';const L=52,R=14,T=14,B=44,W=600,H=320;
+    const X=v=>L+(v-1)/14*(W-L-R),Y=v=>H-B-v/100*(H-B-T);
+    el('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,class:'ax'},svg);el('line',{x1:L,y1:T,x2:L,y2:H-B,class:'ax'},svg);
+    [0,25,50,75,100].forEach(v=>{el('line',{x1:L,y1:Y(v),x2:W-R,y2:Y(v),class:'gr'},svg);const t=el('text',{x:L-6,y:Y(v)+4,'text-anchor':'end'},svg);t.textContent=v+'%'});
+    [1,5,10,15].forEach(v=>{const t=el('text',{x:X(v),y:H-B+16,'text-anchor':'middle'},svg);t.textContent=v});
+    const t1=el('text',{x:(L+W-R)/2,y:H-6,'text-anchor':'middle'},svg);t1.textContent='リストの中での位置（何番目に出たか）';
+    const t2=el('text',{x:12,y:(T+H-B)/2,'text-anchor':'middle',transform:'rotate(-90 12 '+((T+H-B)/2)+')'},svg);t2.textContent='思い出せた割合（模式）';
+    const path=(c,cls)=>el('path',{d:c.map((v,i)=>(i?'L':'M')+X(i+1).toFixed(1)+' '+Y(v).toFixed(1)).join(''),class:cls},svg);
+    if(k!==1)path(C0,'cv');if(k!==0)path(C1,'cv b');
+    const lab=(x,y,txt)=>{const t=el('text',{x,y,'text-anchor':'middle',class:'lb'},svg);t.textContent=txt};
+    if(k!==1){lab(X(2),Y(95),'初頭効果');lab(X(14),Y(99),'新近効果')}
+    const b=$('curveBody');
+    rows(b,k===0?[['初頭効果','最初の方が、思い出しやすい。くり返し唱える時間が多く、長期記憶に移りやすいため、と説明される。'],['新近効果','最後の方が、思い出しやすい。短期記憶に、まだ残っているため、と説明される。'],['真ん中','どちらにも当てはまりにくく、思い出しにくい。']]:
+      k===1?[['初頭効果','残る。（長期記憶に移った分）'],['新近効果','弱まる。計算などで、短期記憶の中身が押し出されるため、と説明される。（Glanzer と Cunitz が1960年代に報告）'],['ポイント','「最後の方がよく覚えている」のは、時間がたつと、あてにならなくなる。']]:
+      [['重ねて見ると','太い線（すぐ）と、点線（計算のあと）で、最後の部分の差が大きい。'],['読み取れること','最初の方の高さは、あまり変わらない。最後の方の高さが、大きく下がる。'],['意味','「最初」と「最後」は、別の仕組みで残っていると考えられている。']]);
+  }
+  seg($('segCurve'),b=>drawCurve(+b.dataset.c));drawCurve(0);
+
+  /* ---- 5: DRM ---- */
+  const DL=['ベッド','休息','目覚め','疲れ','夢','起きる','昼寝','毛布','うとうと','いびき','まくら','布団'];
+  const SEEN=['ベッド','夢','昼寝','毛布','いびき','布団'],UNREL=['電車','机','海','野菜','地図'],LURE='睡眠';
+  let drItems=[],drI=0,drScore={hit:0,fa:0,lure:null};
+  function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+  $('drStart').onclick=()=>{
+    $('drStart').disabled=true;$('drTest').hidden=true;$('drResult').hidden=true;let i=0;
+    const next=()=>{if(i<DL.length){$('drWord').textContent=DL[i];$('drCount').textContent=(i+1)+' / '+DL.length;i++;setTimeout(()=>{$('drWord').textContent='';setTimeout(next,250)},1300)}
+      else{$('drWord').textContent='ここから、テストです';$('drCount').textContent='';startTest()}};
+    $('drWord').textContent='';setTimeout(next,600);
+  };
+  function startTest(){
+    drItems=shuffle(SEEN.map(w=>({w,k:'seen'})).concat(UNREL.map(w=>({w,k:'unrel'})),[{w:LURE,k:'lure'}]));drI=0;drScore={hit:0,fa:0,lure:null};
+    $('drTest').hidden=false;showQ();
+  }
+  function showQ(){$('drNo').textContent='第 '+(drI+1)+' 問 / '+drItems.length;$('drQ').textContent=drItems[drI].w}
+  function answer(yes){
+    const it=drItems[drI];
+    if(it.k==='seen'&&yes)drScore.hit++;if(it.k==='unrel'&&yes)drScore.fa++;if(it.k==='lure')drScore.lure=yes;
+    drI++;if(drI<drItems.length)showQ();else showDr();
+  }
+  $('drYes').onclick=()=>answer(true);$('drNoBtn').onclick=()=>answer(false);
+  function showDr(){
+    $('drTest').hidden=true;$('drResult').hidden=false;$('drStart').disabled=false;$('drStart').textContent='もう一度（最初から）';
+    $('drSum').textContent='見た語を「あった」：'+drScore.hit+' / '+SEEN.length+'\n無関係な語を「あった」（誤り）：'+drScore.fa+' / '+UNREL.length+'\n「'+LURE+'」（実際には、出ていない）：'+(drScore.lure?'「あった」と答えた':'「なかった」と答えた');
+    res($('drRes'),drScore.lure?'bad':'good',drScore.lure?'「睡眠」は、リストに出ていません。それでも「あった」と感じたなら、DRMパラダイムで典型的に起きる、虚記憶（作られた記憶）です。無関係な語（電車・机など）は退けられても、関連する語は、通ってしまいやすいのが特徴です。':'「睡眠」は出ていない、と正しく判断できました。ただ、この課題では、多くの人が「あった」と答えやすいことが知られています。覚え方や集中の度合いで、結果は変わります。');
+  }
+  $('drAgain').onclick=()=>{$('drResult').hidden=true;$('drWord').textContent='準備ができたら「始める」を押してください';$('drStart').click()};
+
+  /* ---- 6: DRM explain ---- */
+  const DE=[
+    {t:'何が起きる？',r:[['リスト','ベッド・休息・目覚め・疲れ・夢…。どれも「睡眠」に関連するが、「睡眠」そのものは入っていない。'],['テスト','「睡眠」を見せると、「あった」と答える人が、少なくない。'],['特徴','「あった」と答えたとき、はっきり思い出せたような感覚を伴うこともある。']]},
+    {t:'なぜ起きる？',r:[['意味のつながり','関連する言葉を見ると、その中心にある言葉（睡眠）も、頭の中で活性化される、と説明される。'],['要点で覚える','細かい言葉より、「眠りの話だった」という要点（ジスト）で記憶する。'],['出どころの混同','「頭に浮かんだ」ことと、「実際に見た」ことを、取り違える。']]},
+    {t:'どんな実験？',r:[['名前','Deese（1959年）の研究を、Roediger と McDermott（1995年）が発展させた方法で、頭文字をとってDRMパラダイムと呼ぶ。'],['目的','虚記憶（実際にはなかったことを、あったと思う記憶）を、実験室で作り出す。'],['わかること','記憶は、録画の再生ではなく、意味にもとづいて組み立てられている。']]},
+    {t:'日常では？',r:[['会議の記憶','「そういう話が出たはず」と、話の流れから、なかった発言を補ってしまう。'],['目撃・聞き取り','質問の仕方や、周りの話で、記憶が変わることがある。'],['対策','確かだと感じても、記録（議事録・メール・録音）で確かめる。']]}
+  ];
+  const db=$('drBody');
+  btnList($('drSteps'),DE,(x,i)=>'項目 '+(i+1),x=>x.t,x=>{rows(db,x.r);});
+
+  /* ---- 7: usage ---- */
+  const US=[
+    {t:'会議・資料',r:[['系列位置効果','聞き手は、最初と最後を覚えやすく、真ん中は残りにくい。'],['工夫','最も伝えたいことは、最初に言い、最後にも、くり返す。'],['補う','決定事項・期限は、口頭だけにせず、書いて残す。']]},
+    {t:'聞き取り・報告',r:[['DRM','話の流れから、なかったことを、あったように補って思い出すことがある。'],['注意','「たしか、こう言っていた」は、確認が必要。聞き取りは、誘導しない聞き方を心がける。'],['補う','録音・議事録・メールなど、記録で確かめる。']]},
+    {t:'生成AI',r:[['長い入力','長い文章の真ん中にある情報は、先頭や末尾にくらべて、活用されにくい傾向がある、という研究報告がある（「Lost in the Middle」）。'],['工夫','重要な指示は、先頭か末尾に置く。長い資料は分けて渡す。'],['たとえ','AIの要約が、元の文章にない内容を、もっともらしく足すことがある（ハルシネーション）。人の虚記憶と、現象として似た面がある。元の資料で確かめる。']]}
+  ];
+  const ub=$('useBody');
+  btnList($('useSteps'),US,(x,i)=>'場面 '+(i+1),x=>x.t,x=>{rows(ub,x.r);});
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
