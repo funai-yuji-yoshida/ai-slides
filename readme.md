@@ -14,6 +14,7 @@
 
 | スライド | 内容 |
 |---|---|
+| [インターネットの仕組み　住所・小包・お届けで、考える](https://funai-yuji-yoshida.github.io/ai-slides/slides/internet-basics/) | ページが表示されるまでの流れ、IPアドレスとDNS、パケット、URLの読み方、HTTPSを、たとえ話と体験でやさしく理解する。生成AIを使うときの裏側の注意点つき（住所・サイト名は架空） |
 | [ロジスティック回帰とは　はい・いいえを確率で予測する](https://funai-yuji-yoshida.github.io/ai-slides/slides/logistic-regression/) | 成約するか・解約するかなど「はい／いいえ」を確率で予測するロジスティック回帰を、S字曲線・しきい値・混同行列を動かしながら理解する。結果の読み方と注意点つき（データは架空） |
 | [系列位置効果とDRMパラダイム　覚えやすい位置と、ないはずの記憶](https://funai-yuji-yoshida.github.io/ai-slides/slides/memory-effects/) | 最初と最後が残りやすい系列位置効果と、見ていない言葉を「見た」と思う虚記憶（DRMパラダイム）。2つの記憶の実験を自分で体験し、仕事とAI活用への示唆を考える |
 | [回帰分析とは　データ分析の基礎知識](https://funai-yuji-yoshida.github.io/ai-slides/slides/regression-basics/) | データに線を引いて予測する回帰分析を、動かしながら理解する。相関と因果、過学習、外れ値、平均と中央値など、結果を読み違えないための基礎知識もあわせて学ぶ（データは架空） |

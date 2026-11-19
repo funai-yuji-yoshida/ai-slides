@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>インターネットの仕組み　住所・小包・お届けで、考える</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+
+/* simpson */
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 16px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.brow{display:grid;grid-template-columns:8em 1fr;gap:6px 12px;align-items:center;margin:10px 0}
+.brow .tr{height:22px;background:var(--indigo-soft);border-radius:4px;overflow:hidden}
+.brow .tr i{display:block;height:100%;background:var(--sub);border-radius:4px}
+.brow .tr i.win{background:var(--indigo)}
+.brow .bv{grid-column:2;font-variant-numeric:tabular-nums;font-size:.95em}
+@media (max-width:620px){.brow{grid-template-columns:1fr}.brow .bv{grid-column:1}}
+input[type=range]{accent-color:var(--indigo)}
+.mails th{width:6em;white-space:nowrap}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps5{grid-template-columns:1fr}}
+.checks li[role=checkbox][aria-checked=true]{border-color:var(--ok);background:var(--ok-soft)}
+.checks li[role=checkbox]:hover{border-color:var(--indigo)}
+.chart{width:100%;height:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;display:block}
+.chart text{fill:var(--sub);font-size:12px;font-family:inherit}
+.chart .ax{stroke:var(--sub);stroke-width:1}
+.chart .gr{stroke:var(--line);stroke-width:1}
+.chart .pt{fill:var(--indigo);stroke:var(--surface);stroke-width:1.5}
+.chart .pt.out{fill:var(--ng)}
+.chart .pt.hol{fill:transparent;stroke:var(--indigo);stroke-width:2}
+.chart .ln{stroke:var(--mark);stroke-width:3.5;stroke-linecap:round}
+.chart .ln.dash{stroke:var(--sub);stroke-width:2;stroke-dasharray:6 5}
+.chart .cv{fill:none;stroke:var(--mark);stroke-width:3.5;stroke-linejoin:round}
+.chart.fig{background:var(--surface)}
+.chart .fgsq{fill:var(--sub);fill-opacity:.22;stroke:var(--sub);stroke-width:1.5}
+.chart .fgln{stroke:var(--ink);stroke-width:5;stroke-linecap:round}
+.chart .fgrs{stroke:var(--ink);stroke-width:4}
+.chart .fgpt{fill:var(--ink)}
+.chart .fgax{stroke:var(--ink);stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.chart .fgtx{fill:var(--sub);font-size:24px;font-weight:700}
+.chart .fgttl{fill:var(--ink);font-size:28px;font-weight:900}
+.chart .fgpill{fill:var(--surface);stroke:var(--ink);stroke-width:4}
+.chart .sq{fill:var(--ng);fill-opacity:.2;stroke:var(--ng);stroke-width:1}
+.chart .rs{stroke:var(--ng);stroke-width:2;opacity:.75}
+.mails th{width:6em}
+.steps-list{margin:0 0 12px;padding-left:1.2em}
+.steps-list li{margin-bottom:4px}
+.bigword{font-size:clamp(28px,5vw,56px);font-weight:900;min-height:1.6em;line-height:1.5;margin:6px 0;overflow-wrap:anywhere}
+.ta{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:6px}
+.poscells{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+@media (max-width:620px){.poscells{grid-template-columns:repeat(3,1fr)}}
+.pc{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:.9em}
+.pc b{display:block;font-size:12px;color:var(--sub)}
+.pc.ok{background:var(--ok-soft);border-color:var(--ok)}.pc.ng{background:var(--ng-soft);border-color:var(--ng)}
+.chart .cv.b{stroke:var(--sub);stroke-dasharray:8 6}
+.chart .lb{fill:var(--indigo);font-weight:700;font-size:13px}
+.btn:disabled{opacity:.4;cursor:default}
+.pkgs{display:flex;flex-wrap:wrap;gap:6px;min-height:3em}
+.pkg{display:inline-flex;flex-direction:column;border:1.5px solid var(--ink);border-radius:6px;background:var(--surface);padding:2px 10px;line-height:1.5}
+.pkg b{font-size:11px;color:var(--sub)}
+.pkg i{font-style:normal;font-weight:700}
+.pkg.lost{border-style:dashed}
+.up{padding:0 1px;border-radius:3px}
+.up.on{background:var(--mark);color:#1C2430}
+.dom{background:var(--mark);color:#1C2430;border-radius:3px;padding:0 3px;font-weight:700}
+.urlbox{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="インターネットの仕組み　手紙と住所とお届けで考える">
+ <div class="inner">
+  <h1>インターネットの仕組み</h1>
+  <p class="sub">住所・小包・お届けで、考える</p>
+  <div class="rule"></div>
+  <p>ブラウザでページを開く。AIにメッセージを送る。その裏側で、何が起きているのでしょうか。専門用語は、郵便や宅配にたとえて、動かしながら、やさしく整理します。</p>
+  <p class="note">本ページの住所（IPアドレス）・サイト名・パスワードは、説明のための架空の例です。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="インターネットとは：ネットワークの集まり">
+ <div class="inner">
+  <span class="tag">基本</span>
+  <h2>インターネットとは：ネットワークの集まり</h2>
+  <p class="def">インターネットは、世界中の小さなネットワークが、つながり合ったものです。ひとつの巨大なコンピューターがあるわけではありません。</p>
+  <div class="cards">
+   <div class="card"><div class="n">① 端末</div><h3>あなたのパソコン・スマホ</h3><p>情報を、見たり送ったりする側。「クライアント」とも呼ぶ。</p></div>
+   <div class="card"><div class="n">② サーバー</div><h3>情報を持つコンピューター</h3><p>Webページやデータを、預かっていて、頼まれたら返す。</p></div>
+   <div class="card"><div class="n">③ ルーター</div><h3>道案内の交差点</h3><p>荷物（データ）を、次の行き先へ振り分け、リレー式に届ける。</p></div>
+  </div>
+  <p class="msg">データは、いくつもの<mark>中継点を、リレーして</mark>届く。</p>
+  <p class="note">どこか1か所が止まっても、別の道を通って届くしくみになっています（常にとは限りません）。</p>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="ページが表示されるまで">
+ <div class="inner">
+  <span class="tag">体験 1</span>
+  <h2>ページが表示されるまで</h2>
+  <p class="def">URLを入力して、ページが表示されるまでの流れを、5つの段階で見てみましょう。順番に選んでください。</p>
+  <div class="steps steps5" id="flow" role="group" aria-label="流れ"></div>
+  <div class="panel" id="flowBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="体験：住所を調べるDNS">
+ <div class="inner">
+  <span class="tag">体験 2</span>
+  <h2>住所を調べる：IPアドレスとDNS</h2>
+  <p class="def">コンピューターどうしは、「IPアドレス」という番号の住所で、相手を探します。人が覚えやすい名前（ドメイン名）から、番号を調べる「電話帳」が、DNSです。サイト名を選んで、調べてみましょう。（住所は架空）</p>
+  <div class="seg" id="segDns" role="group" aria-label="サイト名"></div>
+  <div class="cols">
+   <div class="panel"><h3>① ブラウザが、DNSに聞く</h3><div class="pre" id="dnsQ"></div></div>
+   <div class="panel"><h3>② DNSが、住所を答える</h3><div class="pre" id="dnsA"></div></div>
+  </div>
+  <div class="result" id="dnsRes" aria-live="polite"></div>
+  <p class="note">example で終わる名前や、203.0.113.x などの番号は、説明用に予約された、実在しない値です。</p>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="体験：荷物を小包に分けて送るパケット">
+ <div class="inner">
+  <span class="tag">体験 3</span>
+  <h2>データは「小包（パケット）」に分けて届く</h2>
+  <p class="def">インターネットでは、データを小さな小包に分けて送ります。小包には、番号が付いています。道の混み具合で、届く順番はバラバラになることがあります。送って確かめましょう。</p>
+  <div class="panel">
+   <p style="margin:0 0 4px;font-weight:700">送るメッセージ：「お見積書を、本日中にお送りします。」</p>
+   <label for="pkSize" style="font-weight:700">1つの小包に入れる文字数：<span id="pkSizeV"></span></label>
+   <input type="range" id="pkSize" min="2" max="8" step="1" value="4" style="width:100%">
+   <div class="row-btns" style="margin-top:8px">
+    <button class="btn" id="pkSend" type="button">送る</button>
+    <button class="btn ghost" id="pkLose" type="button">1つ、途中で失われた場合</button>
+   </div>
+  </div>
+  <div class="cols" style="margin-top:12px">
+   <div class="panel"><h3>送った小包</h3><div class="pkgs" id="pkOut"></div></div>
+   <div class="panel"><h3>届いた順（バラバラ）</h3><div class="pkgs" id="pkIn"></div></div>
+  </div>
+  <div class="panel" style="margin-top:12px"><h3>番号順に組み立てた結果</h3><div class="pre" id="pkDone"></div></div>
+  <div class="result" id="pkRes" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="URLの読み方">
+ <div class="inner">
+  <span class="tag">基本</span>
+  <h2>URLの読み方：どこを見る？</h2>
+  <p class="def">URLは、「どこの、何を、どうやって」取りに行くかを書いた、住所と宛名のようなものです。部分を選んで、意味を確認しましょう。</p>
+  <div class="pre urlbox" id="urlBox" style="font-size:clamp(14px,2vw,22px)"></div>
+  <div class="steps" id="urlSteps" role="group" aria-label="URLの部品" style="margin-top:12px"></div>
+  <div class="panel" id="urlBody" aria-live="polite"></div>
+  <div class="panel" style="margin-top:12px">
+   <h3>怪しいURLを見分けるコツ：ホスト名は「右から」読む</h3>
+   <div class="seg" id="segUrl" role="group" aria-label="例"></div>
+   <div class="pre" id="urlEx"></div>
+   <div class="result" id="urlRes" aria-live="polite"></div>
+  </div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="HTTPとHTTPS：盗み見の防止">
+ <div class="inner">
+  <span class="tag">安全性</span>
+  <h2>HTTPとHTTPS：途中での盗み見を防ぐ</h2>
+  <p class="def">データは、いくつもの中継点を通ります。暗号化していないと、途中で、中身を読まれるおそれがあります。切り替えて、途中の人から見える内容を比べましょう。（パスワードは架空）</p>
+  <div class="seg" id="segHttp" role="group" aria-label="通信方式">
+   <button type="button" data-h="0" aria-pressed="true">HTTP（暗号化なし）</button>
+   <button type="button" data-h="1" aria-pressed="false">HTTPS（暗号化あり）</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>あなたが送る内容</h3><div class="pre">ID：sato
+パスワード：demo-pw-1234</div></div>
+   <div class="panel"><h3>途中の中継点から見える内容</h3><div class="pre" id="httpSee"></div></div>
+  </div>
+  <div class="result" id="httpRes" aria-live="polite"></div>
+  <p class="note">HTTPSは、通信の途中を守るしくみです。サイト自体が安全で本物であることまでは、保証しません。偽サイトが、HTTPSを使うこともあります。</p>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="生成AIを使うときの裏側">
+ <div class="inner">
+  <span class="tag">AI活用</span>
+  <h2>生成AIを使うとき、裏で起きていること</h2>
+  <p class="def">AIに質問を送るときも、同じインターネットの仕組みが働いています。注意すべき点を、選んで確認しましょう。</p>
+  <div class="steps" id="aiSteps" role="group" aria-label="AIと通信"></div>
+  <div class="panel" id="aiBody" aria-live="polite"></div>
+  <p class="note">関連：<a href="../api-mcp-basics/">APIとMCP　つなぎ方と、守り方</a>のスライドで、AIと外部サービスのつなぎ方を確認できます。</p>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <ul class="checks">
+   <li><span>1</span><div><b>インターネットは、ネットワークの集まり</b>端末・サーバー・ルーターが、リレー式に、データを届ける。</div></li>
+   <li><span>2</span><div><b>名前から住所へ：DNS</b>サイト名（ドメイン名）から、IPアドレスを調べて、相手を探す。</div></li>
+   <li><span>3</span><div><b>データは、小包（パケット）に分けて届く</b>番号順に組み立てる。失われたら、再送される。</div></li>
+   <li><span>4</span><div><b>URLは、右から読む。HTTPSは、途中を守る</b>鍵マークは、サイトの安全を保証するものではない。</div></li>
+   <li><span>5</span><div><b>AIに送る内容は、通信してサービス側に届く</b>機密・個人情報は、規約と社内ルールを確認してから。</div></li>
+  </ul>
+  <p class="msg">見えない通信の道筋を<mark>想像できる</mark>と、安全に使える。</p>
+  <p class="note">本ページの住所・サイト名・パスワードは、説明のための架空の例です。</p>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[0].click();
+  }
+  function rows(box,pairs){box.innerHTML='<table class="mails"><tbody></tbody></table>';const tb=box.querySelector('tbody');
+    pairs.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];tb.appendChild(tr);});}
+
+  /* ---- 3: flow ---- */
+  const FL=[
+    {t:'URLを入力',h:'ブラウザに、ページの住所（URL）を入力する',r:[['やること','「https://www.example.com/」のように、見たいページを指定する。'],['たとえ','宅配の「宛名」を書く。']]},
+    {t:'住所を調べる',h:'DNSで、サイト名をIPアドレスに変える',r:[['やること','サイト名（www.example.com）から、番号の住所（IPアドレス）を調べる。'],['たとえ','電話帳で、名前から住所を引く。']]},
+    {t:'お願いを送る',h:'サーバーに、「ページをください」と頼む（リクエスト）',r:[['やること','小包（パケット）に分けて、中継点をリレーして、サーバーへ届く。'],['たとえ','注文書を、宅配便で送る。']]},
+    {t:'返事が届く',h:'サーバーが、ページの中身を返す（レスポンス）',r:[['やること','HTMLや画像などを、これも小包に分けて、送り返す。'],['たとえ','注文した荷物が、届く。']]},
+    {t:'表示される',h:'ブラウザが、受け取ったデータを組み立てて表示する',r:[['やること','小包を番号順に組み立て、HTML・画像・文字を、画面に描く。'],['たとえ','届いた部品を、組み立てて完成。']]}
+  ];
+  const fb=$('flowBody');
+  btnList($('flow'),FL,(x,i)=>'段階 '+(i+1),x=>x.t,x=>{rows(fb,[['いま','' + x.h]].concat(x.r));});
+
+  /* ---- 4: DNS ---- */
+  const DNS=[['www.example.com','203.0.113.10','2001:db8::10'],['shop.example','198.51.100.24','2001:db8::24'],['mail.example.org','192.0.2.77','2001:db8::77']];
+  function showDns(i){const d=DNS[i];
+    $('dnsQ').textContent='「'+d[0]+'」の住所を教えてください。';
+    $('dnsA').textContent='IPv4：'+d[1]+'\nIPv6：'+d[2];
+    res($('dnsRes'),'good','名前（'+d[0]+'）が、番号（'+d[1]+'）に変わりました。ブラウザは、この番号の相手に、接続します。名前の持ち主が引っ越して番号が変わっても、DNSの登録を変えれば、利用者は同じ名前で、たどり着けます。');}
+  DNS.forEach((d,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed',String(i===0));b.textContent=d[0];$('segDns').appendChild(b)});
+  seg($('segDns'),b=>showDns([...$('segDns').children].indexOf(b)));showDns(0);
+
+  /* ---- 5: packets ---- */
+  const MSG='お見積書を、本日中にお送りします。';
+  let pk=[];
+  function split(){const n=+$('pkSize').value;$('pkSizeV').textContent=n+' 文字';pk=[];for(let i=0;i<MSG.length;i+=n)pk.push({no:pk.length+1,t:MSG.slice(i,i+n)});
+    drawPk($('pkOut'),pk);$('pkIn').innerHTML='';$('pkDone').textContent='（「送る」を押してください）';res($('pkRes'),'','');}
+  function drawPk(box,list,miss){box.innerHTML='';list.forEach(p=>{const d=document.createElement('span');d.className='pkg'+(miss===p.no?' lost':'');d.innerHTML='<b></b><i></i>';d.querySelector('b').textContent='No.'+p.no;d.querySelector('i').textContent=p.t;box.appendChild(d)})}
+  function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+  function sendPk(lose){
+    let arr=shuffle(pk);if(arr.length>1&&arr.every((p,i)=>p.no===i+1))arr=arr.slice(1).concat(arr[0]);
+    let missNo=null;if(lose){missNo=1+Math.floor(Math.random()*pk.length);arr=arr.filter(p=>p.no!==missNo)}
+    drawPk($('pkIn'),arr);
+    const ordered=arr.slice().sort((a,b)=>a.no-b.no);
+    if(lose){let s='';for(let n=1;n<=pk.length;n++){const f=ordered.find(p=>p.no===n);s+=f?f.t:'□'}
+      $('pkDone').textContent=s;res($('pkRes'),'bad','No.'+missNo+' の小包が、届きませんでした。番号が抜けていることで、受け取る側が気づき、「もう一度送って」と頼みます（再送）。再送のあと、元の文章が完成します：'+MSG);}
+    else{$('pkDone').textContent=ordered.map(p=>p.t).join('');res($('pkRes'),'good','届いた順は、バラバラでした。それでも、番号順に並べ直すと、元の文章に戻ります。');}
+  }
+  $('pkSize').addEventListener('input',split);$('pkSend').onclick=()=>sendPk(false);$('pkLose').onclick=()=>sendPk(true);split();
+
+  /* ---- 6: URL ---- */
+  const UP=[
+    {k:'https',l:'https',t:'プロトコル（通信の約束）',r:[['意味','どんなルールで通信するか。https は、暗号化つきのWebの通信。'],['たとえ','宅配の「配送方法」。']]},
+    {k:'www.example.com',l:'www.example.com',t:'ホスト名',r:[['意味','どのサーバーに行くか。DNSで、IPアドレスに変えられる。'],['たとえ','届け先の「建物名」。']]},
+    {k:':443',l:':443',t:'ポート番号',r:[['意味','サーバーの中の、どの窓口か。httpsは443が標準で、ふつうは省略される。'],['たとえ','建物の「受付番号」。']]},
+    {k:'/shop/items',l:'/shop/items',t:'パス',r:[['意味','サーバーの中の、どのページ・ファイルか。'],['たとえ','建物の中の「部屋」。']]},
+    {k:'?id=25',l:'?id=25',t:'クエリ',r:[['意味','サーバーへの、追加のお願い。「id=25番の商品」のように、条件を渡す。'],['たとえ','注文書の「備考欄」。']]},
+    {k:'#review',l:'#review',t:'フラグメント',r:[['意味','ページの中の、どの位置を表示するか。ブラウザ内で使われ、サーバーには、ふつう送られない。'],['たとえ','開いた本の「しおり」。']]}
+  ];
+  const ub=$('urlBox');
+  function drawUrl(sel){ub.innerHTML='';UP.forEach((p,i)=>{const s=document.createElement('span');s.className='up'+(i===sel?' on':'');s.textContent=(i===0?'':'')+(i===0?'https://':p.l);ub.appendChild(s)})}
+  btnList($('urlSteps'),UP,(x,i)=>'部品 '+(i+1),x=>x.t,(x,i)=>{drawUrl(i);rows($('urlBody'),x.r);});
+  const UE=[
+    {u:['https://www.','example.com','/login'],d:'example.com',m:'ホスト名の右側にある「example.com」が、実際の持ち主（ドメイン）です。公式のサイトの形です。',c:'good'},
+    {u:['https://www.example.com.','account-check.example','/login'],d:'account-check.example',m:'先頭に「example.com」と書いてあっても、実際の持ち主は、右側の「account-check.example」です。前の部分は、後から付け足せる、目くらましです。入力せず、公式の入口から入り直します。',c:'bad'}
+  ];
+  UE.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed',String(i===0));b.textContent=i===0?'公式の形':'怪しい形（架空）';$('segUrl').appendChild(b)});
+  function showUe(i){const x=UE[i];$('urlEx').innerHTML='';x.u.forEach((p,j)=>{const s=document.createElement('span');if(j===1)s.className='dom';s.textContent=p;$('urlEx').appendChild(s)});res($('urlRes'),x.c,'実際の持ち主：'+x.d+'　'+x.m);}
+  seg($('segUrl'),b=>showUe([...$('segUrl').children].indexOf(b)));showUe(0);
+
+  /* ---- 7: http/https ---- */
+  function showHttp(k){
+    $('httpSee').textContent=k?'17 03 03 00 5a 9f c2 71 e0 4b\n8d 3a 66 f1 0c b5 29 d7 ...\n（意味のわからない、暗号文）':'POST /login\nID：sato\nパスワード：demo-pw-1234\n（そのまま、読める）';
+    res($('httpRes'),k?'good':'bad',k?'暗号化されているため、途中で盗み見されても、中身は読めません。ログインや個人情報を扱うページは、「https」から始まるかを確認します。':'暗号化されていないため、途中の中継点から、IDやパスワードがそのまま読めてしまうおそれがあります。公共のWi-Fiなどでは、特に注意が必要です。');
+  }
+  seg($('segHttp'),b=>showHttp(+b.dataset.h));showHttp(0);
+
+  /* ---- 8: AI ---- */
+  const AI=[
+    {t:'送った内容の行き先',r:[['何が起きる','入力した文章は、インターネットを通って、AIサービスのサーバーに届く。'],['注意','機密情報や個人情報を入れる前に、サービスの規約と、社内ルールを確認する。']]},
+    {t:'待ち時間',r:[['何が起きる','通信や、AIの処理に時間がかかる。回線が混んでいたり、長い文章だったりすると、遅くなることがある。'],['注意','「止まった」と思っても、少し待つ。重要な作業は、通信が安定した場所で行う。']]},
+    {t:'ネットにつながらない時',r:[['何が起きる','クラウド型のAIは、通信が切れると使えない。'],['注意','業務が止まらないよう、代わりの手段（手順書、別の方法）を、用意しておく。']]},
+    {t:'偽サイトに注意',r:[['何が起きる','AIサービスにそっくりな、偽のログイン画面が作られることがある。'],['注意','ブックマークや、公式の入口から開く。URLは右から読み、ホスト名を確認する。']]}
+  ];
+  const ab=$('aiBody');
+  btnList($('aiSteps'),AI,(x,i)=>'観点 '+(i+1),x=>x.t,x=>{rows(ab,x.r);});
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
