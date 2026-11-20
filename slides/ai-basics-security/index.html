@@ -261,6 +261,28 @@ input[type=range]{accent-color:var(--indigo)}
 .scope{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px;text-align:center;font-weight:700;font-size:.85em;color:var(--sub);border-top:3px solid var(--indigo);padding-top:4px}
 .scopeNote{text-align:center;font-size:13px;color:var(--sub);margin:2px 0 0}
 @media (max-width:820px){.stairs{grid-template-columns:1fr}.stair{min-height:0!important;border-radius:10px}.scope{display:none}.scopeNote{display:none}}
+.cpts{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.cpt{border:1.5px solid var(--line);border-radius:999px;padding:2px 12px;font-weight:700;font-size:.9em;color:var(--sub)}
+.cpt.on{background:var(--mark);border-color:var(--mark);color:#1C2430}
+.agentlog{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
+.agentlog li{border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--bg)}
+.agentlog li.now{border-color:var(--indigo);background:var(--indigo-soft)}
+.agentlog li b{margin-right:8px}
+.agentlog .tg{font-size:12px;font-weight:700;background:var(--mark);color:#1C2430;border-radius:999px;padding:0 8px}
+.agentlog li div{font-size:.92em;color:var(--sub);margin-top:2px}
+.nest{display:flex}
+.nest .layer{flex:1;border:2px solid var(--line);border-radius:12px;padding:8px;margin:0;background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.nest .l0{background:var(--surface)}
+.nest .l1{background:var(--indigo-soft)}
+.nest .l2{background:var(--surface)}
+.nest .l3{background:var(--indigo-soft)}
+.nest .l4{background:var(--mark-soft);border-color:var(--mark)}
+.nest .nl{cursor:pointer;border-radius:8px;padding:4px 8px;line-height:1.4;border:1.5px solid transparent}
+.nest .nl b{display:block}
+.nest .nl span{font-size:12px;color:var(--sub)}
+.nest .nl:hover{border-color:var(--indigo)}
+.nest .nl[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.nest .nl[aria-pressed="true"] span{color:var(--on-indigo);opacity:.9}
 </style>
 </head>
 <body>
@@ -292,7 +314,8 @@ input[type=range]{accent-color:var(--indigo)}
    <div class="card"><div class="n">第3章（10ページ）</div><h3>よい出力のための設計</h3><p>プロンプトからグラフまでの5段階。</p><div class="links"><a href="../ai-output-engineering/">詳しく：出力を良くする設計</a></div></div>
    <div class="card"><div class="n">第4章（11〜12ページ）</div><h3>RAG：資料を持ち込ませる</h3><p>仕組み、必要性、デメリット。</p><div class="links"><a href="../rag-basics/">詳しく：RAG</a></div></div>
    <div class="card"><div class="n">第5章（13〜22ページ）</div><h3>安全に使う・作る・守る</h3><p>情報の棚卸しと保管、プロンプトインジェクション、キー、AI生成アプリ、詐欺。</p><div class="links"><a href="../ai-security-prelearning/">詳しく：AIセキュリティ事前学習</a><a href="../ai-security/">生成AIを止めないためのセキュリティ</a></div></div>
-   <div class="card"><div class="n">終章（23〜24ページ）</div><h3>AXを目指す提案</h3><p>自社の段階のチェックと、4つのステップ、最初の90日。</p></div>
+   <div class="card"><div class="n">第6章（23〜30ページ）</div><h3>AIの進化と未来</h3><p>答えるAIから動くAIへ。エージェントの5概念と、3つのトレンド。</p></div>
+   <div class="card"><div class="n">終章（31〜32ページ）</div><h3>AXを目指す提案</h3><p>自社の段階のチェックと、4つのステップ、最初の90日。</p></div>
   </div>
  </div>
 </section>
@@ -596,6 +619,151 @@ input[type=range]{accent-color:var(--indigo)}
  </div>
 </section>
 
+<!-- CH6-A -->
+<section class="slide" data-title="第6章　AIの進化：答えるAIから動くAIへ">
+ <div class="inner">
+  <span class="tag">第6章　AIの進化と未来 1</span>
+  <h2>AIの進化：答えるAIから、動くAIへ</h2>
+  <p class="def">生成AIは、「質問に答える」だけの存在から、「資料を使い」「道具を使い」「自分で段取りして動く」存在へ広がってきました。段階を選んで確認しましょう。（時期は、おおまかな目安）</p>
+  <div class="steps steps5" id="evo" role="group" aria-label="進化の段階"></div>
+  <div class="panel" id="evoBody" aria-live="polite"></div>
+  <p class="note">段階は、きれいに入れ替わるのではなく、重なりながら広がっています。AIエージェントは、4段階目以降にあたります。</p>
+ </div>
+</section>
+
+<!-- CH6-B -->
+<section class="slide" data-title="体験：AIエージェントが動く様子">
+ <div class="inner">
+  <span class="tag">第6章　AIの進化と未来 2</span>
+  <h2>体験：AIエージェントが、動く様子</h2>
+  <p class="def">AIエージェントは、目標を受け取り、計画し、道具を使い、結果を確かめながら、仕事を進めます。「次へ進める」を押して、動きを追いましょう。各ステップに、5つの概念のどれが働いているか出ます。（すべて架空のシミュレーション）</p>
+  <div class="panel">
+   <p style="margin:0 0 6px;font-weight:700">依頼：「来週の定例会議の資料を、準備して」</p>
+   <div class="cpts" id="cpts" aria-hidden="true"></div>
+   <ol class="agentlog" id="agLog" aria-live="polite"></ol>
+   <div class="row-btns"><button class="btn" id="agNext" type="button">次へ進める</button><button class="btn ghost" id="agReset" type="button">最初から</button></div>
+  </div>
+  <div class="result" id="agRes" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- CH6-C -->
+<section class="slide" data-title="5つの概念の全体図">
+ <div class="inner">
+  <span class="tag">第6章　AIの進化と未来 3</span>
+  <h2>5つの概念の全体図：Prompt / Context / Loop / Harness / Graph</h2>
+  <p class="def">AIエージェントを設計するときの、5つの概念です。内側ほど「1回の指示」に近く、外側ほど「仕組み全体」に近くなります。枠をクリックして、それぞれの中身を確認しましょう。</p>
+  <div class="cols">
+   <div class="nest" id="nest" role="group" aria-label="5つの概念の入れ子の図"></div>
+   <div class="panel" id="nestBody" aria-live="polite"></div>
+  </div>
+  <p class="note">詳しくは：<a href="../ai-output-engineering/">よりよいAIの出力のために　プロンプトからグラフまで</a></p>
+ </div>
+</section>
+
+<!-- CH6-D -->
+<section class="slide" data-title="AIの未来：どこへ向かい、どう備えるか">
+ <div class="inner">
+  <span class="tag">第6章　AIの進化と未来 4</span>
+  <h2>AIの未来：どこへ向かい、どう備えるか</h2>
+  <p class="def">次のような流れが、見られます。ただし、これは確実な予測ではなく、現在の流れからの「見立て」です。項目を選んで確認しましょう。</p>
+  <div class="steps steps5" id="fut" role="group" aria-label="見立て"></div>
+  <div class="panel" id="futBody" aria-live="polite"></div>
+  <div class="cards" style="margin-top:12px">
+   <div class="card"><div class="n">備え 1</div><h3>小さく試す</h3><p>1つの業務で試し、効果と課題を、自社のデータで確かめる。</p></div>
+   <div class="card"><div class="n">備え 2</div><h3>ルールと権限</h3><p>入力してよい情報、AIに与える権限、人が承認する場面を、決める。</p></div>
+   <div class="card"><div class="n">備え 3</div><h3>人の判断力</h3><p>目的を決め、結果を見極め、責任を持つ力。AIを疑いながら使う力。</p></div>
+  </div>
+  <p class="msg">未来を当てるより、<mark>変化に備える</mark>。</p>
+ </div>
+</section>
+
+<!-- CH6-E -->
+<section class="slide" data-title="AIのトレンド：3つの潮流">
+ <div class="inner">
+  <span class="tag">第6章　AIの進化と未来 5</span>
+  <h2>AIのトレンド（未来）：3つの潮流</h2>
+  <p class="def">これからのAIの動きとして、よく挙げられる3つの潮流です。次のページから、1つずつ確認します。</p>
+  <div class="cards">
+   <div class="card"><div class="n">潮流 1（次のページ）</div><h3>マルチエージェントシステム</h3><p>1つの万能AIではなく、専門を持つ複数のAIが、チームのように連携して進める。</p></div>
+   <div class="card"><div class="n">潮流 2</div><h3>マルチモーダルAI</h3><p>文字だけでなく、画像・音声・動画など、複数の種類の情報を、まとめて扱う。</p></div>
+   <div class="card"><div class="n">潮流 3</div><h3>ハイパーパーソナライゼーション</h3><p>一人ひとりの行動や状況に合わせて、内容や提案を、細かく変える。</p></div>
+  </div>
+  <p class="msg">「<mark>チーム化</mark>」「<mark>五感化</mark>」「<mark>個別化</mark>」。</p>
+  <p class="note">トレンドは、変化が速く、実現の度合いも分野ごとに異なります。ここでの内容は、現在の流れからの見立てです。</p>
+ </div>
+</section>
+
+<!-- CH6-F -->
+<section class="slide" data-title="トレンド1：マルチエージェントシステム">
+ <div class="inner">
+  <span class="tag">トレンド 1</span>
+  <h2>マルチエージェントシステム：AIの専門家チーム</h2>
+  <p class="def">単一の万能AIにすべてを任せるのではなく、それぞれが異なる専門知識やスキルを持つ複数のAIエージェントが、人間の専門家チームのように連携して、複雑な目標を達成する仕組みです。</p>
+  <div class="seg" id="segMa" role="group" aria-label="方式">
+   <button type="button" data-m="0" aria-pressed="true">1つのAIに、全部任せる</button>
+   <button type="button" data-m="1" aria-pressed="false">AIのチームで進める</button>
+  </div>
+  <div class="panel">
+   <p style="margin:0 0 6px;font-weight:700">目標：「新しい水筒（架空）の、発売キャンペーンを企画する」</p>
+   <div class="cpts" id="maChips" aria-hidden="true"></div>
+   <ol class="agentlog" id="maLog" aria-live="polite"></ol>
+   <div class="row-btns"><button class="btn" id="maNext" type="button">次へ進める</button><button class="btn ghost" id="maReset" type="button">最初から</button></div>
+  </div>
+  <div class="result" id="maRes" aria-live="polite"></div>
+  <div class="cols" style="margin-top:12px">
+   <div class="panel"><h3>期待できること</h3><ul style="margin:0;padding-left:1.3em"><li>専門ごとに、役割と指示を絞れる。</li><li>調べる・書くなどを、並行して進められる。</li><li>点検役を置いて、お互いに確認できる。</li></ul></div>
+   <div class="panel"><h3>気をつけること</h3><ul style="margin:0;padding-left:1.3em"><li>仕組みが複雑になり、費用と確認の手間が増える。</li><li>誤りが、AIからAIへ伝わって、積み重なる。</li><li>最終判断と責任は、人が持つ。承認の場面を決めておく。</li></ul></div>
+  </div>
+ </div>
+</section>
+
+<!-- CH6-G -->
+<section class="slide" data-title="トレンド2：マルチモーダルAI">
+ <div class="inner">
+  <span class="tag">トレンド 2</span>
+  <h2>マルチモーダルAI：文字・画像・音声・動画を、まとめて扱う</h2>
+  <p class="def">人は、見て・聞いて・読んで、状況を理解します。マルチモーダルAIは、複数の種類の情報（モダリティ）を、組み合わせて理解し、生成できるAIです。種類を選んで確認しましょう。</p>
+  <div class="steps" id="mm" role="group" aria-label="種類"></div>
+  <div class="panel" id="mmBody" aria-live="polite"></div>
+  <div class="panel" style="margin-top:12px">
+   <h3>組み合わせると、できること（例）</h3>
+   <ul style="margin:0;padding-left:1.3em">
+    <li><b>画像＋音声</b>：現場の写真と音声メモから、点検報告書の下書きを作る。</li>
+    <li><b>動画＋文字</b>：会議の録画から、議事録と決定事項の一覧を作る。</li>
+    <li><b>文字＋画像</b>：商品の説明文から、販促用の画像案を作る。</li>
+   </ul>
+  </div>
+  <p class="note">画像や音声は、個人情報（顔・声・住所の写り込みなど）を含みやすくなります。入力前に、写っているものと、社内のルールを確認します。</p>
+ </div>
+</section>
+
+<!-- CH6-H -->
+<section class="slide" data-title="トレンド3：ハイパーパーソナライゼーション">
+ <div class="inner">
+  <span class="tag">トレンド 3</span>
+  <h2>ハイパーパーソナライゼーション：一人ひとりに合わせる</h2>
+  <p class="def">従来の「属性ごと」の出し分けから、個人の行動・好み・状況に合わせた、きめ細かな内容や提案へ。レベルを切り替えて、違いを確かめましょう。（顧客と文面は、すべて架空）</p>
+  <div class="panel"><h3>顧客（架空）：Aさん</h3><p style="margin:0">30代・出張が多い・先週、ランニングシューズを検索した・今週は、雨が続く地域に滞在中。</p></div>
+  <div class="seg" id="segHp" role="group" aria-label="レベル" style="margin-top:12px">
+   <button type="button" data-h="0" aria-pressed="true">全員に同じ</button>
+   <button type="button" data-h="1" aria-pressed="false">属性ごと（従来）</button>
+   <button type="button" data-h="2" aria-pressed="false">一人ひとり（ハイパー）</button>
+  </div>
+  <div class="cols">
+   <div class="panel"><h3>届く案内（例）</h3><div class="pre" id="hpMsg"></div></div>
+   <div class="panel"><h3>必要になるデータ</h3><div class="pre" id="hpData"></div></div>
+  </div>
+  <div class="result" id="hpRes" aria-live="polite"></div>
+  <div class="cards" style="margin-top:12px">
+   <div class="card"><div class="n">守る点 1</div><h3>同意と透明性</h3><p>どんなデータを、何のために使うかを、伝えて、同意を得る。</p></div>
+   <div class="card"><div class="n">守る点 2</div><h3>行き過ぎない</h3><p>「見られている」と感じさせない、ほどよい範囲にとどめる。</p></div>
+   <div class="card"><div class="n">守る点 3</div><h3>偏りと閉じ込め</h3><p>同じ情報ばかりが出て、選択肢が狭まらないよう、確認する。</p></div>
+  </div>
+  <p class="note">個人情報の取り扱いには、法令にもとづく対応が必要です。情報管理の基本は、第5章を参照してください。</p>
+ </div>
+</section>
+
 <!-- AX-9A -->
 <section class="slide" data-title="いま、どの段階？ 自社の診断">
  <div class="inner">
@@ -640,7 +808,8 @@ input[type=range]{accent-color:var(--indigo)}
    <li><span>4</span><div><b>RAGで資料を渡す。ただし万能ではない</b>検索の外れ、資料の整備、権限の管理に、気をつける。</div></li>
    <li><span>5</span><div><b>まず、自社の情報を棚卸しする</b>何の情報が、どこにあり、誰が扱うかを台帳にし、重要度で分けて、保存場所と権限を決める。</div></li>
    <li><span>6</span><div><b>安全は、入力・出力・権限・人の確認で守る</b>キーは合い鍵。AIが作ったアプリはレビューする。重要な操作は、人が確認する。</div></li>
-   <li><span>7</span><div><b>AXは、土台・小さな試行・人の確認から</b>デジタイゼーション→デジタライゼーション→DXの土台の上に、AIを前提に業務を作り直す。小さく始めて、広げる。</div></li>
+   <li><span>7</span><div><b>AIは、エージェントへ進化している</b>Prompt・Context・Loop・Harness・Graphの5つを設計し、人が目的と判断を担う。マルチエージェント・マルチモーダル・ハイパーパーソナライゼーションが、トレンド。未来は予測であり、変化に備えて小さく試す。</div></li>
+   <li><span>8</span><div><b>AXは、土台・小さな試行・人の確認から</b>デジタイゼーション→デジタライゼーション→DXの土台の上に、AIを前提に業務を作り直す。小さく始めて、広げる。</div></li>
   </ul>
   <p class="msg">AIを<mark>疑いながら、使いこなす</mark>。</p>
   <div class="links">
@@ -933,6 +1102,125 @@ input[type=range]{accent-color:var(--indigo)}
   ];
   const axb=$('axStepBody');
   btnList($('axStep'),AXS,(x,i)=>'ステップ '+(i+1),x=>x.t+'（'+x.s+'）',x=>{rows(axb,x.r);});
+
+  /* ---- CH6-A: evolution ---- */
+  const EV=[
+    {t:'質問に答える',s:'2022年ごろ〜',r:[['できること','文章の生成、要約、翻訳、アイデア出し。1回ごとの質問に、答える。'],['人の役割','質問を考え、答えを確かめ、実際の作業は、人が行う。'],['弱点','最新情報・社内の情報を、知らない。もっともらしい間違いがある。']]},
+    {t:'資料を使う',s:'RAGなど',r:[['できること','社内資料や最新の情報を探し、渡されて、それをもとに答える。'],['人の役割','どの資料を使うかを整え、答えと出典を確認する。'],['弱点','検索を外すと、答えも外れる。資料の整備と権限管理が必要。']]},
+    {t:'道具を使う',s:'ツール・API・MCP',r:[['できること','検索、計算、ファイル操作、外部サービスなどを、道具として呼び出す。'],['人の役割','使える道具と権限を決め、結果を確認する。'],['弱点','権限を与えすぎると、誤操作や悪用のリスクが大きくなる。']]},
+    {t:'自分で動く',s:'AIエージェント',r:[['できること','目標を受け取り、計画を立て、道具を使い、結果を確かめて、複数のステップを進める。'],['人の役割','目的と条件を示し、途中と最後に、確認・承認する。'],['弱点','誤りが積み重なる、止まらない、想定外の動きをする、などのリスク。']]},
+    {t:'複数で協力する',s:'マルチエージェント',r:[['できること','調べる役・書く役・点検する役など、複数のAIが、役割分担して進める。'],['人の役割','全体の設計（役割と流れ）を決め、結果に責任を持つ。'],['弱点','仕組みが複雑になり、確認の手間と、費用が増える。']]}
+  ];
+  const evb=$('evoBody');
+  btnList($('evo'),EV,(x,i)=>'段階 '+(i+1),x=>x.t+'（'+x.s+'）',x=>{rows(evb,x.r);});
+
+  /* ---- CH6-B: agent simulation ---- */
+  const CPT=['Prompt','Context','Loop','Harness','Graph'];
+  const AG=[
+    ['Prompt','指示を受ける','目標と条件を受け取る。「A4で2枚。決めたいことを明記」。'],
+    ['Loop','計画を立てる','やることを分ける。①過去の議事録を探す ②進捗を集める ③資料案を作る ④点検する。'],
+    ['Context','必要な情報を集める','議事録と案件一覧から、今回に必要な部分だけを選んで、読む。（全部は読まない）'],
+    ['Harness','道具を使う（権限の範囲で）','共有ドライブを、読み取り専用で検索する。削除や送信は、許可されていない。'],
+    ['Graph','役割を分担する','「調べ役」「書き役」「点検役」の3つのAIが、分担して進める。'],
+    ['Loop','点検して、直す','資料の数字を、元データと照合する。1か所の不一致を見つけて、直す。'],
+    ['Harness','人に承認を求める','参加者への送付の前に、「この内容で送ってよいですか」と、人に確認する。'],
+    ['Prompt','結果を報告する','資料案と、根拠（参照した資料）を、まとめて報告する。人が承認すれば、送付する。']
+  ];
+  let agi=0;
+  function drawAg(){
+    const cp=$('cpts');cp.innerHTML='';const cur=agi>0?AG[agi-1][0]:null;
+    CPT.forEach(c=>{const s=document.createElement('span');s.className='cpt'+(c===cur?' on':'');s.textContent=c;cp.appendChild(s)});
+    const ol=$('agLog');ol.innerHTML='';
+    AG.slice(0,agi).forEach((a,i)=>{const li=document.createElement('li');li.innerHTML='<b></b><span class="tg"></span><div></div>';
+      li.querySelector('b').textContent=a[1];li.querySelector('.tg').textContent=a[0];li.querySelector('div').textContent=a[2];if(i===agi-1)li.className='now';ol.appendChild(li)});
+    $('agNext').disabled=agi>=AG.length;
+    if(agi===0)res($('agRes'),'','「次へ進める」を押してください。');
+    else if(agi<AG.length)res($('agRes'),'','ステップ '+agi+' / '+AG.length+'：「'+AG[agi-1][0]+'」が働いています。');
+    else res($('agRes'),'good','完了しました。AIは、計画・実行・点検をくり返しましたが、送付の前には人の承認を求めています。このように、5つの概念を組み合わせて、「どこまで任せ、どこで人が確認するか」を設計します。');
+  }
+  $('agNext').onclick=()=>{if(agi<AG.length){agi++;drawAg()}};
+  $('agReset').onclick=()=>{agi=0;drawAg()};drawAg();
+
+  /* ---- CH6-C: nested diagram ---- */
+  const NS5=[
+    {k:'Graph',t:'Graph（グラフ）',s:'複数のAIをつなぐ',r:[['設計するもの','複数のAIや道具の、役割分担と、情報の流れ。'],['問い','誰が、何を担当し、どうつなぐか。'],['例','調べ役・書き役・点検役を分けて、つなぐ。'],['注意','仕組みが複雑になり、確認の手間と費用が増える。']]},
+    {k:'Harness',t:'AI Harness（ハーネス）',s:'道具・権限・確認の仕組み',r:[['設計するもの','AIが使える道具、守るルール、人が確認する場面。'],['問い','何をしてよく、何は、人が承認するか。'],['例','読み取り専用にする。送信や削除の前に、承認を求める。操作の記録を残す。'],['注意','権限を与えすぎない。止める手段を、用意する。']]},
+    {k:'Loop',t:'Loop（ループ）',s:'繰り返しと止め方',r:[['設計するもの','「作る→確認→直す」の、繰り返し方と、終わらせ方。'],['問い','いつまで繰り返し、いつ止めるか。'],['例','テストに通るまで直す。ただし、最大5回まで。'],['注意','止め方を決めないと、無駄に続く。費用もかさむ。']]},
+    {k:'Context',t:'Context（コンテキスト）',s:'AIに見せる情報',r:[['設計するもの','AIに見せる情報全体。資料・会話の履歴・例などを、何をどの順で渡すか。'],['問い','何を、どれだけ、見せるか。'],['例','必要な資料だけを渡す。古い履歴は、要約する。'],['注意','多すぎても、少なすぎても、精度が落ちやすい。']]},
+    {k:'Prompt',t:'Prompt（プロンプト）',s:'指示',r:[['設計するもの','AIへの指示の書き方。'],['問い','何を、どう頼むか。'],['例','目的・背景・条件・出力の形を、はっきり伝える。'],['注意','指示だけで、解決できる範囲には、限りがある。']]}
+  ];
+  const nb=$('nestBody'),nestEl=$('nest');
+  function selNest(x,btn){nestEl.querySelectorAll('.nl').forEach(e=>e.setAttribute('aria-pressed','false'));btn.setAttribute('aria-pressed','true');rows(nb,x.r);}
+  let parent=nestEl,firstBtn=null;
+  NS5.forEach((x,i)=>{const box=document.createElement('div');box.className='layer l'+i;
+    const lab=document.createElement('div');lab.className='nl';lab.setAttribute('role','button');lab.tabIndex=0;lab.setAttribute('aria-pressed','false');
+    lab.innerHTML='<b></b><span></span>';lab.querySelector('b').textContent=x.t;lab.querySelector('span').textContent=x.s;
+    const act=e=>{e.stopPropagation();selNest(x,lab)};lab.onclick=act;lab.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();act(e)}};
+    box.appendChild(lab);parent.appendChild(box);parent=box;if(!firstBtn)firstBtn=[x,lab]});
+  selNest(firstBtn[0],firstBtn[1]);
+
+  /* ---- CH6-D: future ---- */
+  const FU=[
+    {t:'自律度の向上',r:[['見られる流れ','1回の指示で、複数のステップをこなせる範囲が、広がっていく傾向。'],['期待','定型の調べもの、下書き、点検などの負担が、減る。'],['注意','誤りが積み重なる、想定外の動きをする、などのリスクも大きくなる。']]},
+    {t:'長い仕事を任せる',r:[['見られる流れ','数分の作業から、より長い時間のかかる作業を、任せる試みが進んでいる。'],['期待','調査や開発など、まとまった仕事の一部を、AIが担う。'],['注意','途中経過の確認、止める手段、ログが、いっそう大切になる。']]},
+    {t:'人の役割の変化',r:[['見られる流れ','「人が作業し、AIが手伝う」から、「AIが下ごしらえし、人が判断する」へ。'],['人に残る役割','目的を決める、結果を見極める、責任を持つ、AIには難しい対人の判断。'],['注意','判断力を育てずに、AIに任せきりにしない。']]},
+    {t:'標準化と接続',r:[['見られる流れ','MCPのような共通の規格で、AIが道具やデータにつながりやすくなる流れ。'],['期待','つなぎ込みの手間が減り、道具を組み合わせやすくなる。'],['注意','つながる先が増えるほど、権限管理と安全確認が必要になる。']]},
+    {t:'課題とリスク',r:[['信頼性','もっともらしい間違い（ハルシネーション）が、なくなるとは限らない。'],['安全','プロンプトインジェクション、権限の悪用、情報漏えい。'],['社会・組織','責任の所在、ルール整備、費用、人材の育成。']]}
+  ];
+  const fub=$('futBody');
+  btnList($('fut'),FU,(x,i)=>'見立て '+(i+1),x=>x.t,x=>{rows(fub,x.r);});
+
+  /* ---- CH6-F: multi-agent ---- */
+  const MAC=['PM AI','リサーチャーAI','マーケターAI','ライターAI','点検役AI','人'];
+  const MAS=[
+    ['PM AI','計画と分担','目標を「調査→企画→文章」に分け、担当と順番を決める。進み具合も、見守る。'],
+    ['リサーチャーAI','市場と競合の調査','競合3社の訴求を整理。「軽さ」を前面に出す会社が多く、「洗いやすさ」への言及は少ない。（出典つき。要確認）'],
+    ['マーケターAI','狙いと訴求を決める','ターゲットを、通勤で毎日使う20〜30代に。訴求は「洗いやすさ」に絞る案を出す。'],
+    ['ライターAI','文章を作る','告知文の案を、3パターン作る。'],
+    ['点検役AI','別の目で点検する','数字・表現・著作権の面で、2か所の修正を提案する。'],
+    ['人','最終確認と承認','方針と最終案を確認し、承認する。（責任は、人が持つ）']
+  ];
+  let mai=0,mamode=0;
+  function drawMa(){
+    const cp=$('maChips');cp.innerHTML='';const cur=(mamode&&mai>0)?MAS[mai-1][0]:null;
+    if(mamode)MAC.forEach(c=>{const s=document.createElement('span');s.className='cpt'+(c===cur?' on':'');s.textContent=c;cp.appendChild(s)});
+    const ol=$('maLog');ol.innerHTML='';
+    if(!mamode){
+      if(mai>0){const li=document.createElement('li');li.className='now';li.innerHTML='<b></b><span class="tg"></span><div></div>';li.querySelector('b').textContent='万能AI（1つ）';li.querySelector('.tg').textContent='全部担当';
+        li.querySelector('div').textContent='調査も、企画も、文章作りも、点検も、1つのAIが順に行う。一度に扱う内容が増え、専門性が薄くなったり、見落としが出たりしやすい。';ol.appendChild(li)}
+      $('maNext').disabled=mai>=1;
+      res($('maRes'),mai>=1?'bad':'',mai>=1?'1つのAIが全部を担当すると、内容が広がるほど、指示が長くなり、確認も難しくなります。自分の誤りには、気づきにくいこともあります。':'「次へ進める」を押してください。');
+      return;
+    }
+    MAS.slice(0,mai).forEach((a,i)=>{const li=document.createElement('li');li.innerHTML='<b></b><span class="tg"></span><div></div>';
+      li.querySelector('b').textContent=a[1];li.querySelector('.tg').textContent=a[0];li.querySelector('div').textContent=a[2];if(i===mai-1)li.className='now';ol.appendChild(li)});
+    $('maNext').disabled=mai>=MAS.length;
+    if(mai===0)res($('maRes'),'','「次へ進める」を押してください。');
+    else if(mai<MAS.length)res($('maRes'),'','ステップ '+mai+' / '+MAS.length+'：「'+MAS[mai-1][0]+'」が担当しています。');
+    else res($('maRes'),'good','専門を持つAIが、役割分担して進め、点検役が確認し、最後は人が承認しました。このように、「誰が何を担当し、どこで人が確認するか」を設計するのが、マルチエージェントの要点です。（シミュレーションです）');
+  }
+  $('maNext').onclick=()=>{const lim=mamode?MAS.length:1;if(mai<lim){mai++;drawMa()}};
+  $('maReset').onclick=()=>{mai=0;drawMa()};
+  seg($('segMa'),b=>{mamode=+b.dataset.m;mai=0;drawMa()});drawMa();
+
+  /* ---- CH6-G: multimodal ---- */
+  const MMX=[
+    {t:'文字',s:'テキスト',r:[['できること','文章の理解・生成・要約・翻訳。'],['業務の例','メールの下書き、資料の要約。'],['注意','もっともらしい間違い（ハルシネーション）に注意。']]},
+    {t:'画像',s:'写真・図表',r:[['できること','画像の内容を説明する、図表の読み取り、画像の生成。'],['業務の例','現場写真の状況整理、手書きメモや図面の読み取り、販促画像の案。'],['注意','写り込んだ個人情報・機密。画像の読み違い。画像の中の文字に紛れた指示（プロンプトインジェクション）。']]},
+    {t:'音声',s:'話し声・音',r:[['できること','文字起こし、要約、音声での対話、音声の生成。'],['業務の例','会議・商談の議事録、電話対応の記録、音声での問い合わせ対応。'],['注意','録音の同意。固有名詞・専門用語の聞き取り誤り。声の偽装（なりすまし）。']]},
+    {t:'動画',s:'映像',r:[['できること','映像の内容の理解・要約、場面の検索、映像の生成。'],['業務の例','研修動画の要約、作業手順の確認、店舗・現場の映像の分析。'],['注意','映り込む人の同意とプライバシー。処理の費用と時間が、大きくなりやすい。']]}
+  ];
+  const mmb=$('mmBody');
+  btnList($('mm'),MMX,(x,i)=>'種類 '+(i+1),x=>x.t+'（'+x.s+'）',x=>{rows(mmb,x.r);});
+
+  /* ---- CH6-H: hyper-personalization ---- */
+  const HPX=[
+    {m:'【全員への案内】\n新作スニーカー、発売中。',d:'特になし。',c:'',x:'誰にとっても、同じ内容。作るのは簡単ですが、自分に関係あると感じてもらいにくいことがあります。'},
+    {m:'【30代・男性向け】\nランニング用品の特集です。',d:'年齢・性別などの属性。',c:'good',x:'属性（グループ）ごとに、出し分けます。同じ属性の人には、同じ案内が届きます。'},
+    {m:'【Aさんへ】\n出張先は、雨が続きそうです。\n先週ご覧の、防水のランニングシューズが、\n今週、持ち運びやすい軽量タイプで入荷しました。',d:'閲覧・検索の履歴、現在地・天気などの状況、過去の購入。',c:'bad',x:'個人の行動と状況に合わせて、内容が変わります。役に立つ一方、細かなデータを多く使います。同意・透明性・行き過ぎないことが、いっそう大切です。'}
+  ];
+  function showHp(k){const x=HPX[k];$('hpMsg').textContent=x.m;$('hpData').textContent='使うデータ：\n'+x.d;res($('hpRes'),x.c,x.x);}
+  seg($('segHp'),b=>showHp(+b.dataset.h));showHp(0);
 
   /* ---- 11: prompt injection sim ---- */
   function showInj(k){
