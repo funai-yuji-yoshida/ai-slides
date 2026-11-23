@@ -1,5 +1,14 @@
 [
   {
+    "title": "RAGとは　AIに「調べてから答えさせる」仕組み",
+    "description": "RAG＝検索＋生成。ファインチューニングとの違い、アノテーション・メタデータ・オントロジー、GraphRAG、小さく始める進め方を、動くデモで学ぶ（文書名・社名は架空）",
+    "path": "slides/rag-ontology/",
+    "tags": [
+      "基礎"
+    ],
+    "updated": "2026-11-23"
+  },
+  {
     "title": "データベースの基礎知識　表・種類・CRUD",
     "description": "テーブル・ロー・カラム、マスタとトランザクション、CRUD、DBの種類（RDB・NoSQL・ベクトルDBなど）、トランザクション処理を、架空のデータで動かしながら理解する。AIにDBやSQLを頼むときの注意点つき",
     "path": "slides/database-basics/",

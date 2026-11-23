@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RAGとは｜AIに「調べてから答えさせる」仕組み</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Old+Mincho:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F5F7; --card:#FFFFFF; --ink:#1C2B44; --muted:#5A6778;
+  --rule:#C9D2DC; --marker:#F5D547; --on-marker:#1C2B44; --link:#2F5F9E;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+  --serif:"Zen Old Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#141B26; --card:#1C2533; --ink:#E6ECF2; --muted:#9AA8B8;
+    --rule:#33404F; --marker:#E9C93A; --on-marker:#141B26; --link:#8DB6EA;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141B26; --card:#1C2533; --ink:#E6ECF2; --muted:#9AA8B8;
+  --rule:#33404F; --marker:#E9C93A; --on-marker:#141B26; --link:#8DB6EA;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.7;font-size:16px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+
+/* ---- stage ---- */
+.viewport{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden}
+.stage{width:1280px;height:720px;position:relative;transform-origin:center center}
+.slide{position:absolute;inset:0;padding:64px 88px 72px;display:none;flex-direction:column;background:var(--paper)}
+.slide.active{display:flex}
+.slide h2{font-family:var(--serif);font-weight:900;font-size:44px;line-height:1.3;margin:0 0 8px;letter-spacing:.01em}
+.slide .lead{font-size:22px;color:var(--muted);margin:0 0 28px;max-width:46em}
+.slide p,.slide li{font-size:21px}
+.slide .src{position:absolute;left:88px;bottom:28px;font-size:13px;color:var(--muted)}
+.slide .src a{color:var(--link)}
+mark{background:linear-gradient(transparent 38%,var(--marker) 38%,var(--marker) 92%,transparent 92%);color:inherit;padding:0 .1em}
+
+/* nav */
+.nav{position:fixed;right:20px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:center;z-index:5}
+.nav button{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:6px 14px;cursor:pointer}
+.nav button:hover{border-color:var(--ink)}
+.count{font-size:14px;color:var(--muted);min-width:4.5em;text-align:center;font-variant-numeric:tabular-nums}
+.progress{position:fixed;left:0;top:env(safe-area-inset-top,0px);height:3px;background:var(--ink);transition:width .25s}
+
+/* cover */
+.cover{justify-content:center}
+.cover h1{font-family:var(--serif);font-weight:900;font-size:96px;line-height:1.1;margin:0}
+.cover .sub{font-size:34px;font-family:var(--serif);font-weight:600;margin:18px 0 40px}
+.cover .who{font-size:18px;color:var(--muted)}
+.catalog{position:absolute;right:88px;top:120px;width:360px;background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:22px 26px 26px;transform:rotate(2deg)}
+.catalog::before{content:"";position:absolute;left:50%;bottom:14px;width:14px;height:14px;border-radius:50%;border:2px solid var(--rule);transform:translateX(-50%)}
+.catalog .ln{border-bottom:1px solid var(--rule);padding:6px 0;font-size:17px}
+.catalog .ln:first-child{font-weight:700}
+
+/* conclusion */
+.equation{display:flex;align-items:center;gap:28px;margin:12px 0 36px}
+.term{background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:22px 28px;min-width:260px}
+.term b{display:block;font-family:var(--serif);font-size:36px;font-weight:900}
+.term span{font-size:18px;color:var(--muted)}
+.op{font-family:var(--serif);font-size:48px;font-weight:900}
+.points{margin:0;padding-left:1.2em}
+.points li{margin:6px 0}
+
+/* two columns */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.box{background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:22px 26px}
+.box h3{font-size:22px;margin:0 0 8px}
+.box p{margin:0;font-size:19px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+
+/* demo flow */
+.demo{display:grid;grid-template-columns:330px 1fr;gap:28px;flex:1;min-height:0}
+.shelf{display:flex;flex-direction:column;gap:10px}
+.doc{background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:10px 14px;font-size:16px;transition:border-color .2s}
+.doc small{display:block;color:var(--muted);font-size:13px}
+.doc.hit{border-color:var(--ink);border-width:2px}
+.doc.hit .t{background:linear-gradient(transparent 38%,var(--marker) 38%,var(--marker) 92%,transparent 92%)}
+.flowpane{display:flex;flex-direction:column;gap:14px}
+.steps{display:flex;gap:8px;margin:0;padding:0;list-style:none}
+.steps li{flex:1;border-top:4px solid var(--rule);padding-top:6px;font-size:16px;color:var(--muted)}
+.steps li.on{border-color:var(--ink);color:var(--ink);font-weight:700}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:18px 22px;flex:1;font-size:19px}
+.panel .q{font-weight:700;margin-top:0}
+.panel .prompt{border-left:4px solid var(--marker);padding-left:12px;margin-top:10px;font-size:17px}
+.ctrl{display:flex;gap:10px}
+.ctrl button{border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:6px;padding:8px 20px;cursor:pointer}
+.ctrl button.ghost{background:transparent;color:var(--ink)}
+
+/* tables */
+table{border-collapse:collapse;width:100%;font-size:19px;background:var(--card)}
+th,td{border:1px solid var(--rule);padding:12px 16px;text-align:left;vertical-align:top}
+th{font-weight:700;background:transparent}
+td:first-child{font-weight:700;white-space:nowrap}
+
+/* answer slide */
+.verdict{font-family:var(--serif);font-weight:900;font-size:40px;margin:0 0 20px}
+
+/* triple */
+.triple{display:flex;align-items:flex-start;gap:0;margin:20px 0 30px}
+.triple .n{background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:14px 30px;font-size:24px;font-weight:700}
+.triple .e{flex:0 0 220px;text-align:center;position:relative;font-size:18px}
+.triple .e::after{content:"";position:absolute;left:0;right:0;top:35px;border-top:2px solid var(--ink)}
+.triple .e span{display:block;padding-top:2px}
+.triple .lbl{font-size:14px;color:var(--muted);text-align:center;margin-top:6px}
+
+/* graph */
+.graphwrap{display:grid;grid-template-columns:1fr 520px;gap:32px;flex:1;min-height:0}
+.toggle{display:inline-flex;border:1px solid var(--ink);border-radius:6px;overflow:hidden;margin-bottom:16px}
+.toggle button{border:0;background:transparent;padding:8px 18px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+svg text{font-family:var(--sans);fill:var(--ink)}
+svg .node rect{fill:var(--card);stroke:var(--rule);stroke-width:1.5}
+svg .edge line{stroke:var(--rule);stroke-width:2}
+svg .edge text{font-size:14px;fill:var(--muted)}
+svg.graph-on .path rect{stroke:var(--ink);stroke-width:3}
+svg.graph-on .path line{stroke:var(--ink);stroke-width:3}
+svg.graph-on .edge.path text{fill:var(--ink);font-weight:700}
+svg.chunk-on .chunkhit rect{stroke:var(--ink);stroke-width:3}
+
+/* steps slide */
+.ladder{list-style:none;margin:0;padding:0;counter-reset:s}
+.ladder li{counter-increment:s;display:grid;grid-template-columns:56px 1fr;gap:16px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--rule)}
+.ladder li::before{content:counter(s);font-family:var(--serif);font-weight:900;font-size:34px}
+.ladder b{font-size:22px}
+.ladder span{display:block;color:var(--muted);font-size:18px}
+
+/* summary */
+.summary li{font-size:24px;margin:12px 0}
+
+/* ---- mobile: stack slides ---- */
+@media (max-width:820px){
+  .viewport{position:static;display:block;overflow:visible}
+  .stage{width:auto;height:auto;transform:none!important}
+  .slide{position:relative;display:flex;padding:40px 20px 48px;border-bottom:1px solid var(--rule)}
+  .nav,.progress{display:none}
+  .slide h2{font-size:28px}
+  .slide .lead{font-size:17px}
+  .slide p,.slide li{font-size:17px}
+  .cover h1{font-size:56px}.cover .sub{font-size:22px}
+  .catalog{position:static;transform:none;width:auto;margin-top:24px}
+  .equation{flex-direction:column;align-items:stretch;gap:8px}
+  .op{text-align:center}
+  .cols,.three,.demo,.graphwrap{grid-template-columns:1fr}
+  .triple{flex-direction:column}
+  .triple .e{flex:none;padding:8px 0}
+  .triple .e::after{display:none}
+  .table-scroll{overflow-x:auto}
+  table{font-size:15px}
+  .slide .src{position:static;margin-top:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="viewport">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="表紙">
+  <h1>RAG</h1>
+  <p class="sub">AIに「調べてから答えさせる」仕組み</p>
+  <p class="who">検索拡張生成（Retrieval-Augmented Generation）入門<br>アノテーション・オントロジーとの関係まで</p>
+  <p class="who" style="margin-top:10px;font-size:15px">本ページの文書名・社名・規程は、説明のための架空の例です。</p>
+  <div class="catalog" aria-hidden="true">
+    <div class="ln">質問：有給の申請期限は？</div>
+    <div class="ln">参照：就業規則 第24条</div>
+    <div class="ln">参照：人事FAQ 2026年版</div>
+    <div class="ln">回答：取得日の3営業日前まで</div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="結論">
+  <h2>結論：RAG ＝ 検索 ＋ 生成</h2>
+  <p class="lead">AIの頭を作り直すのではなく、答える直前に「資料を手渡す」方法です。</p>
+  <div class="equation">
+    <div class="term"><b>検索</b><span>社内文書から関係する部分を探す</span></div>
+    <div class="op">＋</div>
+    <div class="term"><b>生成</b><span>見つけた資料を読んでAIが答える</span></div>
+  </div>
+  <ul class="points">
+    <li>AIの再学習は不要。文書を差し替えればすぐ最新になる</li>
+    <li>回答に<mark>根拠の文書</mark>を示せるので、人が確認しやすい</li>
+    <li>ただし、渡す資料の質と「意味の整理」で精度が決まる</li>
+  </ul>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="なぜ必要か">
+  <h2>なぜRAGが必要なのか</h2>
+  <p class="lead">生成AI（LLM）は賢いが、あなたの会社のことは知りません。</p>
+  <div class="three">
+    <div class="box"><h3>社内情報を知らない</h3><p>就業規則、製品仕様、過去の見積は学習データに入っていない。</p></div>
+    <div class="box"><h3>知識に締切がある</h3><p>学習した時点より後の情報は持っていない。</p></div>
+    <div class="box"><h3>もっともらしく間違える</h3><p>知らないことでも文章を作ってしまう（ハルシネーション）。</p></div>
+  </div>
+  <p style="margin-top:32px">RAGは、この3つを「答える前に資料を読ませる」ことでまとめて軽くします。</p>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="仕組み">
+  <h2>動きを見てみる</h2>
+  <p class="lead" style="margin-bottom:18px">「次へ」を押すと、質問から回答までの4段階が進みます。</p>
+  <div class="demo">
+    <div class="shelf" id="shelf" aria-label="社内文書">
+      <div class="doc"><span class="t">就業規則 第24条（年次有給休暇）</span><small>人事部｜2026年4月改定</small></div>
+      <div class="doc"><span class="t">経費精算マニュアル</span><small>経理部｜2025年10月</small></div>
+      <div class="doc"><span class="t">人事FAQ：休暇の申請方法</span><small>人事部｜2026年版</small></div>
+      <div class="doc"><span class="t">製品Aの保守契約約款</span><small>営業部｜2024年</small></div>
+      <div class="doc"><span class="t">新人研修テキスト</span><small>総務部｜2026年</small></div>
+    </div>
+    <div class="flowpane">
+      <ol class="steps" id="steps">
+        <li>① 質問</li><li>② 検索</li><li>③ 資料を添える</li><li>④ 回答</li>
+      </ol>
+      <div class="panel" id="panel" aria-live="polite"></div>
+      <div class="ctrl">
+        <button type="button" id="flowNext">1段階進める</button>
+        <button type="button" class="ghost" id="flowReset">最初から</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="事前準備">
+  <h2>裏側の準備：文書を「探せる形」にする</h2>
+  <p class="lead">質問が来る前に、文書を検索しやすく加工しておきます。</p>
+  <ol class="ladder">
+    <li><div><b>分割する（チャンク化）</b><span>長い文書を数百字ずつの段落に切る。大きすぎても小さすぎても精度が落ちる。</span></div></li>
+    <li><div><b>数値に変換する（ベクトル化）</b><span>文章の「意味」を数字の並びにする。言い回しが違っても近い意味なら近い数値になる。</span></div></li>
+    <li><div><b>保管する（ベクトルDB）</b><span>質問も同じく数値化し、意味が近い段落を素早く取り出す。</span></div></li>
+  </ol>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="ファインチューニングとの違い">
+  <h2>よく比べられる「ファインチューニング」との違い</h2>
+  <p class="lead">知識を足したいならまずRAG。話し方や型を覚えさせたいならファインチューニング。</p>
+  <div class="table-scroll">
+  <table>
+    <tr><th></th><th>RAG</th><th>ファインチューニング</th></tr>
+    <tr><td>やること</td><td>答える時に資料を渡す</td><td>AI自体を追加学習させる</td></tr>
+    <tr><td>情報の更新</td><td>文書を差し替えるだけ</td><td>学習のやり直しが必要</td></tr>
+    <tr><td>根拠の提示</td><td>できる</td><td>基本できない</td></tr>
+    <tr><td>正解ラベル付きデータ</td><td>学習には不要</td><td>必要（ここでアノテーションが効く）</td></tr>
+    <tr><td>向く用途</td><td>社内規程・マニュアル・FAQ検索</td><td>文体、出力形式、専門的な判断の癖</td></tr>
+  </table>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="アノテーション">
+  <h2>アノテーションはRAGに要るのか</h2>
+  <p class="verdict">「機械学習で必要」は半分正解。</p>
+  <div class="cols">
+    <div class="box">
+      <h3>必須なのは「教師あり学習」</h3>
+      <p>画像に「不良品」、文章に「クレーム」など正解ラベルを付けて学ばせる方式。ファインチューニングもこれに近い。一方、LLMの事前学習は大量の文章から次の言葉を当てる方式で、人手のラベルは基本使わない。</p>
+    </div>
+    <div class="box">
+      <h3>RAGでは形を変えて効く</h3>
+      <p>モデルを学習させないので学習用ラベルは不要。代わりに次の2つの「印付け」が精度を左右する。</p>
+      <p style="margin-top:10px">・<mark>メタデータ</mark>：部署・日付・文書種別・有効期限<br>・<mark>評価データ</mark>：想定質問と正解の根拠文書のセット</p>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="オントロジーとは">
+  <h2>オントロジー：AIのための「意味の設計図」</h2>
+  <p class="lead">業務に出てくる概念（モノ・コト）と、その属性・関係を、機械が読める形で決めたもの。</p>
+  <div class="triple" aria-label="トリプルの例">
+    <div><div class="n">顧客A社</div><div class="lbl">主語</div></div>
+    <div class="e"><span>契約している</span><div class="lbl" style="margin-top:26px">述語（関係）</div></div>
+    <div><div class="n">商品X</div><div class="lbl">目的語</div></div>
+  </div>
+  <ul class="points">
+    <li>「主語―述語―目的語」の3つ組（トリプル）で事実を積み上げる</li>
+    <li>標準規格はRDF（事実を書く文法）とOWL（ルールまで書ける文法）</li>
+    <li>LLMが知らない<mark>自社固有の言葉の意味</mark>（例：「解約」「優良顧客」の定義）を補う</li>
+  </ul>
+  <p class="src">参考：<a href="https://www.salesforce.com/jp/blog/jp-what-is-ontology/" target="_blank" rel="noopener">Salesforce「オントロジーとは」</a></p>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="似た言葉">
+  <h2>似た言葉は3つ押さえれば十分</h2>
+  <p class="lead">分類、意味と関係、実データの地図。役割が違います。</p>
+  <div class="three">
+    <div class="box"><h3>タクソノミー</h3><p>上下の分類だけ。<br>例：機械 ＞ 空調 ＞ 業務用エアコン</p></div>
+    <div class="box"><h3>オントロジー</h3><p>概念どうしの関係に名前をつけ、意味のルールを決める「設計図」。</p></div>
+    <div class="box"><h3>ナレッジグラフ</h3><p>設計図に沿って、実データ（A社、商品Xなど）を関係で結んだ「地図」。</p></div>
+  </div>
+  <p class="src">参考：<a href="https://www.salesforce.com/jp/blog/jp-what-is-ontology/" target="_blank" rel="noopener">Salesforce「オントロジーとは」</a></p>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="GraphRAG">
+  <h2>オントロジー × RAG ＝ GraphRAG</h2>
+  <div class="graphwrap">
+    <div>
+      <p class="lead" style="margin-bottom:12px">質問：「A社が契約している商品の担当部署は？」</p>
+      <div class="toggle" role="group" aria-label="方式の切り替え">
+        <button type="button" id="tgChunk" aria-pressed="true">普通のRAG</button>
+        <button type="button" id="tgGraph" aria-pressed="false">GraphRAG</button>
+      </div>
+      <p id="graphText"></p>
+    </div>
+    <svg id="graph" class="chunk-on" viewBox="0 0 520 400" role="img" aria-label="A社、商品X、保守サービス、産業機器部を関係でつないだ図">
+      <g class="edge path"><line x1="130" y1="80" x2="370" y2="80"/><text x="250" y="68" text-anchor="middle">契約している</text></g>
+      <g class="edge path"><line x1="400" y1="100" x2="400" y2="300"/><text x="412" y="205">担当する</text></g>
+      <g class="edge"><line x1="110" y1="100" x2="110" y2="300"/><text x="122" y="205">問い合わせた</text></g>
+      <g class="node path chunkhit"><rect x="30" y="50" width="150" height="56" rx="6"/><text x="105" y="84" text-anchor="middle" font-size="18">顧客A社</text></g>
+      <g class="node path"><rect x="330" y="50" width="150" height="56" rx="6"/><text x="405" y="84" text-anchor="middle" font-size="18">商品X</text></g>
+      <g class="node path"><rect x="310" y="300" width="190" height="56" rx="6"/><text x="405" y="334" text-anchor="middle" font-size="18">産業機器部</text></g>
+      <g class="node chunkhit"><rect x="30" y="300" width="160" height="56" rx="6"/><text x="110" y="334" text-anchor="middle" font-size="18">問い合わせ記録</text></g>
+    </svg>
+  </div>
+  <p class="src">参考：<a href="https://www.salesforce.com/jp/blog/jp-what-is-ontology/" target="_blank" rel="noopener">Salesforce「オントロジーとは」</a></p>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="3つの意味づけ">
+  <h2>精度を決める3つの「意味づけ」</h2>
+  <p class="lead">どれもAIに渡すデータへの下ごしらえ。目的と粒度が違います。</p>
+  <div class="table-scroll">
+  <table>
+    <tr><th></th><th>何をする</th><th>RAGでの役割</th><th>誰が決める</th></tr>
+    <tr><td>アノテーション</td><td>1件ずつ正解ラベルを付ける</td><td>評価用データ作り（学習用は不要）</td><td>現場の担当者</td></tr>
+    <tr><td>メタデータ</td><td>文書に部署・日付などの属性を付ける</td><td>検索の絞り込み、古い文書の除外</td><td>文書の管理者</td></tr>
+    <tr><td>オントロジー</td><td>概念と関係のルールを決める</td><td>用語のゆれ吸収、関係をたどる回答</td><td>業務を知る責任者</td></tr>
+  </table>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="進め方">
+  <h2>小さく始める進め方</h2>
+  <p class="lead">いきなりGraphRAGではなく、普通のRAGから段階的に。</p>
+  <ol class="ladder">
+    <li><div><b>対象業務と文書を1つに絞る</b><span>例：人事規程の問い合わせ対応</span></div></li>
+    <li><div><b>古い版を捨て、メタデータを付ける</b><span>有効な最新版だけを検索対象にする</span></div></li>
+    <li><div><b>想定質問20〜50問で評価する</b><span>正解の根拠文書が出てくるかを数える</span></div></li>
+    <li><div><b>用語と関係を定義する</b><span>外れた質問の原因が「言葉のゆれ」「関係」ならオントロジーへ</span></div></li>
+  </ol>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-title="まとめ">
+  <h2>まとめ</h2>
+  <ul class="summary">
+    <li>RAGは、答える直前に社内資料を検索して渡す仕組み</li>
+    <li>モデルを学習しないので、学習用アノテーションは不要</li>
+    <li>代わりにメタデータと評価データが精度を左右する</li>
+    <li>オントロジーは「意味の設計図」。関係をたどる質問に効く</li>
+    <li>RAGの成否は、AIより先に<mark>データの意味の整理</mark>で決まる</li>
+  </ul>
+</section>
+
+</div>
+</div>
+<nav class="nav" aria-label="スライド操作">
+  <button type="button" id="prev" aria-label="前のスライド">前へ</button>
+  <span class="count" id="count"></span>
+  <button type="button" id="next" aria-label="次のスライド">次へ</button>
+</nav>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  const stage=document.getElementById('stage');
+  let i=0;
+  function fromHash(){const m=/^#s(\d+)$/.exec(location.hash);return m?Math.min(Math.max(+m[1]-1,0),slides.length-1):0}
+  function show(n){
+    i=Math.min(Math.max(n,0),slides.length-1);
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('count').textContent=(i+1)+' / '+slides.length;
+    document.getElementById('progress').style.width=((i+1)/slides.length*100)+'%';
+    if(location.hash!=='#s'+(i+1)){
+      try{history.replaceState(null,'','#s'+(i+1))}catch(e){/* プレビュー環境（srcdoc）ではURL更新を省略 */}
+    }
+  }
+  function fit(){
+    if(window.innerWidth<=820){stage.style.transform='none';return}
+    const s=Math.min(window.innerWidth/1280,(window.innerHeight-56)/720);
+    stage.style.transform='scale('+s+')';
+  }
+  document.getElementById('prev').onclick=()=>show(i-1);
+  document.getElementById('next').onclick=()=>show(i+1);
+  document.addEventListener('keydown',e=>{
+    if(e.target.closest('button')&&(e.key===' '||e.key==='Enter'))return;
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(i+1)}
+    if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(i-1)}
+  });
+  window.addEventListener('hashchange',()=>show(fromHash()));
+  window.addEventListener('resize',fit);
+  fit();show(fromHash());
+
+  /* flow demo */
+  const docs=[...document.querySelectorAll('#shelf .doc')];
+  const stepEls=[...document.querySelectorAll('#steps li')];
+  const panel=document.getElementById('panel');
+  const states=[
+    '<p class="q">社員：「有給休暇は何日前までに申請すればいい？」</p><p>まだAIは何も見ていません。</p>',
+    '<p class="q">検索：質問と意味が近い段落を探す</p><p>5つの文書から「就業規則 第24条」と「人事FAQ」がヒット。経費や製品の文書は除外されます。</p>',
+    '<p class="q">AIへの指示（プロンプト）</p><div class="prompt">次の資料だけを根拠に答えてください。<br>資料1：就業規則 第24条「取得日の3営業日前までに申請…」<br>資料2：人事FAQ「申請はワークフローから…」<br>質問：有給休暇は何日前までに申請すればいい？</div>',
+    '<p class="q">回答</p><p>取得日の3営業日前までに、ワークフローから申請してください。<br><small style="color:var(--muted)">根拠：就業規則 第24条／人事FAQ 2026年版</small></p>'
+  ];
+  let f=0;
+  function renderFlow(){
+    panel.innerHTML=states[f];
+    stepEls.forEach((el,k)=>el.classList.toggle('on',k<=f));
+    docs.forEach((d,k)=>d.classList.toggle('hit',f>=1&&(k===0||k===2)));
+    document.getElementById('flowNext').disabled=f===3;
+  }
+  document.getElementById('flowNext').onclick=()=>{if(f<3){f++;renderFlow()}};
+  document.getElementById('flowReset').onclick=()=>{f=0;renderFlow()};
+  renderFlow();
+
+  /* graph toggle */
+  const g=document.getElementById('graph'),gt=document.getElementById('graphText');
+  const bC=document.getElementById('tgChunk'),bG=document.getElementById('tgGraph');
+  function setMode(graph){
+    g.classList.toggle('graph-on',graph);g.classList.toggle('chunk-on',!graph);
+    bC.setAttribute('aria-pressed',!graph);bG.setAttribute('aria-pressed',graph);
+    gt.innerHTML=graph
+      ?'関係をたどる：A社 →（契約している）→ 商品X →（担当する）→ 産業機器部。<br>文書に一文で書かれていなくても、<mark>つながりから答えを導ける</mark>。'
+      :'「A社」に似た文章を探すだけ。問い合わせ記録はヒットしても、担当部署が同じ段落に書かれていなければ答えられない。';
+  }
+  bC.onclick=()=>setMode(false);bG.onclick=()=>setMode(true);
+  setMode(false);
+})();
+</script>
+<!-- 一覧へ戻るボタン（ai-slides共通） -->
+<a href="../../" class="aislides-back" aria-label="スライド一覧へ戻る">← 一覧</a>
+<style>
+.aislides-back{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:9999;
+  font:700 13px/1 "Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;letter-spacing:.02em;
+  color:#1C2430;background:rgba(255,255,255,.88);border:1px solid rgba(28,36,48,.18);border-radius:999px;padding:8px 14px;
+  text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.12);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:.85;transition:opacity .2s}
+.aislides-back:hover{opacity:1}
+.aislides-back:focus-visible{outline:3px solid #F2C230;outline-offset:2px;opacity:1}
+@media print{.aislides-back{display:none}}
+</style>
+</body>
+</html>
