@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>認知反射テスト（CRT）　直感の答えを、疑えるか</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --ink:#1C2430; --sub:#5B6676; --line:#D9DEE7;
+  --indigo:#2B3A8C; --indigo-soft:#E3E7F6; --on-indigo:#FFFFFF; --mark:#F2C230; --mark-soft:#FDF3CF;
+  --code-bg:#1E2540; --code-ink:#E6E9F2;
+  --ok:#1F7A5A; --ok-soft:#DDF1E8; --ng:#B3412F; --ng-soft:#F7E1DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+    --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+    --code-bg:#0B0E18; --code-ink:#DCE1EE;
+    --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151F; --surface:#1A1F2E; --ink:#E8EBF2; --sub:#9AA3B5; --line:#2C3346;
+  --indigo:#8C9BEA; --indigo-soft:#262E4C; --on-indigo:#12151F; --mark-soft:#3A3320;
+  --code-bg:#0B0E18; --code-ink:#DCE1EE;
+  --ok:#5BC79E; --ok-soft:#1B3A30; --ng:#E98572; --ng-soft:#432520;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:clamp(15px,1.45vw,19px);line-height:1.75;-webkit-font-smoothing:antialiased}
+code,pre{font-family:"JetBrains Mono","Zen Kaku Gothic New",Consolas,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--indigo)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+
+.deck{position:relative;height:100%;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;display:none;padding:clamp(24px,4vw,56px) clamp(20px,5vw,72px)}
+.slide.active{display:flex;flex-direction:column;animation:fade .35s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide.active{animation:none}*{transition:none!important}}
+.inner{width:100%;max-width:1120px;margin:auto}
+
+/* controls */
+.bar{display:flex;align-items:center;gap:12px;padding:10px clamp(14px,3vw,32px);border-top:1px solid var(--line);background:var(--surface)}
+.bar .navbtn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 14px;font-size:15px;white-space:nowrap}
+.bar .navbtn:hover:not(:disabled){border-color:var(--indigo)}
+.bar .navbtn:disabled{opacity:.35;cursor:default}
+.hide-sm{display:inline}
+@media (max-width:620px){.hide-sm{display:none}}
+.progress{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.count{font-size:14px;color:var(--sub);min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+.toc{position:absolute;inset:0;background:var(--bg);z-index:5;display:none;overflow-y:auto;padding:40px clamp(20px,5vw,72px)}
+.toc.open{display:block}
+.toc ol{max-width:720px;margin:0 auto;padding:0;list-style:none}
+.toc li button{width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 4px;display:flex;gap:16px}
+.toc li button span{color:var(--sub);min-width:2em;font-variant-numeric:tabular-nums}
+.toc h2{max-width:720px;margin:0 auto 16px}
+
+/* type */
+h1{font-size:clamp(34px,6vw,72px);font-weight:900;line-height:1.2;margin:0 0 20px}
+h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;line-height:1.3;margin:0 0 6px}
+h3{font-size:clamp(18px,1.9vw,23px);font-weight:900;margin:0 0 6px;line-height:1.45}
+p{margin:0 0 12px}
+.def{font-size:clamp(17px,1.9vw,23px);color:var(--sub);margin:0 0 24px}
+.tag{display:inline-block;font-size:14px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:4px;padding:1px 10px;margin-bottom:10px}
+.note{font-size:14px;color:var(--sub)}
+mark{background:linear-gradient(transparent 62%,var(--mark) 62%);color:inherit;padding:0 2px}
+.msg{margin-top:22px;padding:16px 0;border-top:2px solid var(--ink);font-size:clamp(18px,2.2vw,28px);font-weight:900;line-height:1.5}
+
+/* cover */
+.cover .inner{max-width:900px}
+.cover .rule{width:72px;height:6px;background:var(--indigo);margin:28px 0 22px}
+.cover .sub{font-size:clamp(18px,2.4vw,28px);font-weight:700;margin:0 0 10px}
+.cover .org{color:var(--sub);font-size:15px;margin-top:36px}
+
+/* common blocks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--indigo);border-radius:8px;padding:16px 18px}
+.card p{margin:0;color:var(--sub);font-size:.95em}
+.card .n{font-size:14px;font-weight:700;color:var(--indigo)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--surface)}
+.seg button{border:none;border-right:1px solid var(--line);background:transparent;padding:7px 16px;font-size:15px}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;font-size:.9em;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{color:var(--ok);font-weight:700}.ng{color:var(--ng);font-weight:700}
+.verdict{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;margin-right:6px}
+.verdict.ok{background:var(--ok-soft)}.verdict.ng{background:var(--ng-soft)}
+
+/* timeline */
+.tl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tl button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;line-height:1.35;text-align:left}
+.tl button b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tl button span{color:var(--sub);font-size:12.5px}
+.tl button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on-indigo)}
+.tl button[aria-pressed="true"] span{color:inherit;opacity:.85}
+.era{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:0 8px;background:var(--mark-soft);margin-bottom:6px}
+.detail h3{font-size:clamp(20px,2.3vw,28px)}
+
+/* rule vs learn */
+.mails{width:100%;border-collapse:collapse;font-size:.95em}
+.mails th,.mails td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.mails th{font-size:13px;color:var(--sub);font-weight:700}
+
+/* next token */
+.gen{font-size:clamp(22px,3vw,36px);font-weight:700;margin:6px 0 14px;min-height:1.6em;overflow-wrap:anywhere}
+.gen .new{background:var(--mark-soft);border-radius:4px;padding:0 4px}
+.cands{display:grid;gap:8px;margin-bottom:12px}
+.cand{display:grid;grid-template-columns:5.5em 1fr 3.2em;gap:10px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;text-align:left}
+.cand:hover:not(:disabled){border-color:var(--indigo)}
+.cand:disabled{cursor:default;opacity:.55}
+.cand .w{font-weight:700}
+.cand .tr{height:14px;background:var(--indigo-soft);border-radius:3px;overflow:hidden}
+.cand .tr i{display:block;height:100%;background:var(--indigo)}
+.cand .p{text-align:right;font-variant-numeric:tabular-nums;font-size:.9em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--indigo);background:var(--indigo);color:var(--on-indigo);border-radius:8px;padding:7px 16px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--indigo)}
+.result{margin-top:12px;padding:10px 14px;border-radius:8px;border-left:5px solid var(--line);background:var(--bg);min-height:3.2em}
+.result.good{background:var(--ok-soft);border-color:var(--ok)}
+.result.bad{background:var(--ng-soft);border-color:var(--ng)}
+
+/* tokens */
+.flow{display:grid;gap:10px}
+.flowrow{display:grid;grid-template-columns:7em 1fr;gap:12px;align-items:center}
+.flowrow>b{font-size:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);border-radius:6px;padding:3px 10px;background:var(--surface);font-weight:700}
+.chip.id{font-family:"JetBrains Mono",monospace;font-weight:400;border-color:var(--line);color:var(--sub);background:var(--bg);font-size:.9em}
+@media (max-width:620px){.flowrow{grid-template-columns:1fr;gap:4px}}
+
+/* attention */
+.sent{display:flex;flex-wrap:wrap;gap:4px 2px;font-size:clamp(20px,2.6vw,32px);font-weight:700;margin:10px 0 16px;line-height:2.2}
+.w-btn{border:none;background:transparent;border-radius:6px;padding:0 6px;font-weight:700;font-size:inherit;position:relative}
+.w-btn.pick{outline:2px solid var(--indigo);background:var(--indigo-soft)}
+.w-btn .wt{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%);font-size:13px;font-weight:700;color:var(--on-indigo);background:var(--indigo);border-radius:3px;padding:0 6px;line-height:1.5;white-space:nowrap}
+
+/* stages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.steps button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;text-align:left;border-top:4px solid var(--line)}
+.steps button b{display:block;font-size:13px;color:var(--sub)}
+.steps button[aria-pressed="true"]{border-color:var(--indigo);border-top-color:var(--indigo);background:var(--indigo-soft)}
+@media (max-width:620px){.steps{grid-template-columns:1fr}}
+
+/* hallucination */
+.bubble{border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--bg);border:1px solid var(--line)}
+.bubble.q{background:var(--indigo-soft);border-color:transparent}
+.bubble.ai{border-left:5px solid var(--indigo)}
+.bubble.ai.bad{border-left-color:var(--ng);background:var(--ng-soft)}
+.bubble.ai.good{border-left-color:var(--ok);background:var(--ok-soft)}
+.bubble small{display:block;color:var(--sub);font-size:13px;margin-bottom:2px}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:2.2em 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.checks li>span{font-weight:900;font-size:1.3em;color:var(--indigo);line-height:1.3}
+.checks b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.links a{display:inline-block;background:var(--mark-soft);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;border-radius:6px;padding:4px 12px}
+.links a:hover{text-decoration:underline}
+
+
+/* simpson */
+.el{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 16px;font-weight:700}
+.el[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.el:disabled{cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.brow{display:grid;grid-template-columns:8em 1fr;gap:6px 12px;align-items:center;margin:10px 0}
+.brow .tr{height:22px;background:var(--indigo-soft);border-radius:4px;overflow:hidden}
+.brow .tr i{display:block;height:100%;background:var(--sub);border-radius:4px}
+.brow .tr i.win{background:var(--indigo)}
+.brow .bv{grid-column:2;font-variant-numeric:tabular-nums;font-size:.95em}
+@media (max-width:620px){.brow{grid-template-columns:1fr}.brow .bv{grid-column:1}}
+input[type=range]{accent-color:var(--indigo)}
+.mails th{width:6em;white-space:nowrap}
+.steps5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:820px){.steps5{grid-template-columns:1fr}}
+.checks li[role=checkbox][aria-checked=true]{border-color:var(--ok);background:var(--ok-soft)}
+.checks li[role=checkbox]:hover{border-color:var(--indigo)}
+.chart{width:100%;height:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;display:block}
+.chart text{fill:var(--sub);font-size:12px;font-family:inherit}
+.chart .ax{stroke:var(--sub);stroke-width:1}
+.chart .gr{stroke:var(--line);stroke-width:1}
+.chart .pt{fill:var(--indigo);stroke:var(--surface);stroke-width:1.5}
+.chart .pt.out{fill:var(--ng)}
+.chart .pt.hol{fill:transparent;stroke:var(--indigo);stroke-width:2}
+.chart .ln{stroke:var(--mark);stroke-width:3.5;stroke-linecap:round}
+.chart .ln.dash{stroke:var(--sub);stroke-width:2;stroke-dasharray:6 5}
+.chart .cv{fill:none;stroke:var(--mark);stroke-width:3.5;stroke-linejoin:round}
+.chart.fig{background:var(--surface)}
+.chart .fgsq{fill:var(--sub);fill-opacity:.22;stroke:var(--sub);stroke-width:1.5}
+.chart .fgln{stroke:var(--ink);stroke-width:5;stroke-linecap:round}
+.chart .fgrs{stroke:var(--ink);stroke-width:4}
+.chart .fgpt{fill:var(--ink)}
+.chart .fgax{stroke:var(--ink);stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.chart .fgtx{fill:var(--sub);font-size:24px;font-weight:700}
+.chart .fgttl{fill:var(--ink);font-size:28px;font-weight:900}
+.chart .fgpill{fill:var(--surface);stroke:var(--ink);stroke-width:4}
+.chart .sq{fill:var(--ng);fill-opacity:.2;stroke:var(--ng);stroke-width:1}
+.chart .rs{stroke:var(--ng);stroke-width:2;opacity:.75}
+.mails th{width:6em}
+.steps-list{margin:0 0 12px;padding-left:1.2em}
+.steps-list li{margin-bottom:4px}
+.bigword{font-size:clamp(28px,5vw,56px);font-weight:900;min-height:1.6em;line-height:1.5;margin:6px 0;overflow-wrap:anywhere}
+.ta{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:6px}
+.poscells{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+@media (max-width:620px){.poscells{grid-template-columns:repeat(3,1fr)}}
+.pc{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:.9em}
+.pc b{display:block;font-size:12px;color:var(--sub)}
+.pc.ok{background:var(--ok-soft);border-color:var(--ok)}.pc.ng{background:var(--ng-soft);border-color:var(--ng)}
+.chart .cv.b{stroke:var(--sub);stroke-dasharray:8 6}
+.chart .lb{fill:var(--indigo);font-weight:700;font-size:13px}
+.btn:disabled{opacity:.4;cursor:default}
+.tblwrap{overflow-x:auto}
+.dbt{border-collapse:collapse;width:100%;font-size:.92em;background:var(--surface)}
+.dbt th,.dbt td{border:1px solid var(--line);padding:6px 10px;text-align:left;white-space:nowrap}
+.dbt thead th{background:var(--indigo-soft);font-size:13px}
+.dbt tr.types th{background:var(--mark-soft);font-weight:400;font-size:12px;color:var(--sub)}
+.dbt.whole{outline:3px solid var(--mark);outline-offset:2px}
+.dbt .hl{background:var(--mark-soft);box-shadow:inset 0 0 0 2px var(--mark)}
+.dbt tr.hlrow td{background:var(--mark-soft)}
+.dbt .bad{background:var(--ng-soft);color:var(--ng);font-weight:700}
+.btn.ghost{background:transparent}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide cover" data-title="認知反射テスト（CRT）　直感の答えを、疑えるか">
+ <div class="inner">
+  <h1>認知反射テスト（CRT）</h1>
+  <p class="sub">直感の答えを、疑えるか</p>
+  <div class="rule"></div>
+  <p>心理学者シェイン・フレデリックが考案した、たった3問のテストです。「すぐ浮かぶ答え」と「少し考えた答え」が食い違う問題で、自分の考え方のクセを体験します。AIの答えを疑う力にも、つながります。</p>
+  <p class="note">3問とも、先に自分で答えてから、解説を読んでください。</p>
+  <p class="org">船井総合研究所 AIソリューション開発室</p>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="第1問：バットとボール">
+ <div class="inner">
+  <span class="tag">第1問</span>
+  <h2>バットとボール</h2>
+  <div class="panel"><p style="margin:0;font-size:1.15em">バットとボールは、合わせて <b>1.10ドル</b> です。バットは、ボールより <b>1.00ドル高い</b> です。ボールは、何セントですか？</p></div>
+  <div class="row-btns" style="margin-top:14px"><label for="in1" style="font-weight:700">あなたの答え（セント）：</label><input class="inp" id="in1" type="text" inputmode="decimal" autocomplete="off" style="width:7em"><button class="btn" id="go1" type="button">答える</button></div>
+  <div class="result" id="res1" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="第2問：機械と製品">
+ <div class="inner">
+  <span class="tag">第2問</span>
+  <h2>機械と製品</h2>
+  <div class="panel"><p style="margin:0;font-size:1.15em">5台の機械が、5分で、5個の製品を作ります。100台の機械が、100個の製品を作るには、何分かかりますか？</p></div>
+  <div class="row-btns" style="margin-top:14px"><label for="in2" style="font-weight:700">あなたの答え（分）：</label><input class="inp" id="in2" type="text" inputmode="decimal" autocomplete="off" style="width:7em"><button class="btn" id="go2" type="button">答える</button></div>
+  <div class="result" id="res2" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="第3問：睡蓮の葉">
+ <div class="inner">
+  <span class="tag">第3問</span>
+  <h2>睡蓮の葉</h2>
+  <div class="panel"><p style="margin:0;font-size:1.15em">湖に、睡蓮の葉の群生があります。群生は、毎日2倍の大きさになります。湖全体を覆うのに48日かかる場合、湖の半分を覆うには、何日かかりますか？</p></div>
+  <div class="row-btns" style="margin-top:14px"><label for="in3" style="font-weight:700">あなたの答え（日）：</label><input class="inp" id="in3" type="text" inputmode="decimal" autocomplete="off" style="width:7em"><button class="btn" id="go3" type="button">答える</button></div>
+  <div class="result" id="res3" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="結果：あなたの答え">
+ <div class="inner">
+  <span class="tag">結果</span>
+  <h2>結果：あなたの答え</h2>
+  <p class="def">3問の答えを、まとめます。「直感の答え」を選んでいても、珍しいことではありません。</p>
+  <div class="tblwrap"><table class="dbt" id="crtTbl"></table></div>
+  <div class="result" id="crtRes" aria-live="polite" style="margin-top:12px"></div>
+  <p class="note">3問の正解数だけで、能力や適性は、測れません。このスライドは、考え方のクセに気づくための体験です。</p>
+ </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="CRTとは">
+ <div class="inner">
+  <span class="tag">基本</span>
+  <h2>CRTとは：直感と熟考を、見分けるテスト</h2>
+  <p class="def">CRT（Cognitive Reflection Test）は、2005年にシェイン・フレデリックが発表した、3つの問題からなるテストです。どの問題も、「すぐ浮かぶ答え」が、間違いになるように作られています。</p>
+  <div class="cards">
+   <div class="card"><div class="n">① 直感（速い）</div><h3>すぐ浮かぶ答え</h3><p>考える前に、勝手に浮かんでくる。もっともらしく、自信を持ちやすい。</p></div>
+   <div class="card"><div class="n">② 熟考（遅い）</div><h3>確かめて出す答え</h3><p>立ち止まって、式を立てたり、検算したりして出す。手間がかかる。</p></div>
+   <div class="card"><div class="n">③ 問われること</div><h3>「確かめるか」</h3><p>賢さではなく、直感の答えを疑って、確かめる習慣があるかを見る。</p></div>
+  </div>
+  <p class="note">直感と熟考の考え方は、<a href="../kahneman/">カーネマンに学ぶ</a>のスライドでも扱っています。</p>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="なぜ間違えるのか">
+ <div class="inner">
+  <span class="tag">解説</span>
+  <h2>なぜ、直感の答えに、引っぱられるのか</h2>
+  <p class="def">間違いは、「計算ができない」から起きるとは限りません。確かめる一手間が、省かれるからです。</p>
+  <div class="steps" id="why" role="group" aria-label="理由"></div>
+  <div class="panel" id="whyBody" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="仕事の場面で：売上の増減">
+ <div class="inner">
+  <span class="tag">仕事の場面</span>
+  <h2>仕事にも、同じ落とし穴がある</h2>
+  <p class="def">次の問題を、直感で答えてから、「答えを見る」を押しましょう。（数字は架空の例）</p>
+  <div class="panel"><p style="margin:0;font-size:1.1em">ある商品の売上が、前年に比べて <b>50%増えた</b> あと、翌年に <b>50%減りました</b>。売上は、元に戻りましたか？</p></div>
+  <div class="row-btns" style="margin-top:12px"><button class="btn" id="bonusBtn" type="button">答えを見る</button></div>
+  <div class="result" id="bonusRes" aria-live="polite"></div>
+  <div class="panel" style="margin-top:12px"><h3>ほかにも、起きやすい場面</h3>
+   <ul style="margin:0;padding-left:1.3em"><li>「割引率」と「値上げ率」を、足し引きして考えてしまう。</li><li>「平均」を、そのまま全員の姿だと思ってしまう。</li><li>「前回と同じはず」と、確認せずに進めてしまう。</li></ul></div>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="AIの答えを疑う力へ">
+ <div class="inner">
+  <span class="tag">AI活用</span>
+  <h2>AIの答えにも、「確かめる一手間」を</h2>
+  <p class="def">AIの答えは、すらすらと自信ありげに出てきます。人間の「直感の答え」と、似た面があります。観点を選んで確認しましょう。</p>
+  <div class="steps" id="aiCrt" role="group" aria-label="観点"></div>
+  <div class="panel" id="aiCrtBody" aria-live="polite"></div>
+  <p class="note">関連：<a href="../ai-does-not-calculate/">生成AIは「計算」していない？</a>、<a href="../ai-pitfalls/">AIを疑う力</a></p>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="まとめ">
+ <div class="inner">
+  <span class="tag">まとめ</span>
+  <h2>まとめ</h2>
+  <ul class="checks">
+   <li><span>1</span><div><b>CRTは、3問で「直感」と「熟考」を見分ける</b>すぐ浮かぶ答えが、間違いになる問題です。</div></li>
+   <li><span>2</span><div><b>間違いは、能力不足とは限らない</b>確かめる一手間が、省かれるだけで起きる。</div></li>
+   <li><span>3</span><div><b>「すぐ浮かんだ」「自信がある」は、正しさの証拠ではない</b>数字・割合・日数は、式にして検算する。</div></li>
+   <li><span>4</span><div><b>AIの答えも、同じように確かめる</b>式と根拠を出させ、別の方法で検算する。重要な判断は、人が最終確認する。</div></li>
+  </ul>
+  <p class="msg">速い答えほど、<mark>一度、疑う</mark>。</p>
+ </div>
+</section>
+
+<div class="toc" id="toc"><h2>目次</h2><ol id="tocList"></ol></div>
+</div>
+
+<nav class="bar" aria-label="スライド操作">
+ <a class="navbtn" href="../../" style="text-decoration:none;color:inherit">一覧</a>
+ <button class="navbtn" id="tocBtn" aria-expanded="false">目次</button>
+ <button class="navbtn" id="prev" aria-label="前のスライド">←<span class="hide-sm"> 前へ</span></button>
+ <div class="progress"><span id="prog"></span></div>
+ <span class="count" id="count"></span>
+ <button class="navbtn" id="next" aria-label="次のスライド"><span class="hide-sm">次へ </span>→</button>
+</nav>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const slides=[...document.querySelectorAll('.slide')];
+  const prevB=$('prev'),nextB=$('next'),prog=$('prog'),count=$('count');
+  const toc=$('toc'),tocBtn=$('tocBtn'),tocList=$('tocList');
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    slides[cur].classList.remove('active');
+    cur=i;slides[cur].classList.add('active');slides[cur].scrollTop=0;
+    prevB.disabled=cur===0;nextB.disabled=cur===slides.length-1;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(cur+1));}catch(e){}
+  }
+  prevB.onclick=()=>show(cur-1);nextB.onclick=()=>show(cur+1);
+  slides.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('span');
+    n.textContent=i+1;b.appendChild(n);b.appendChild(document.createTextNode(s.dataset.title));
+    b.onclick=()=>{closeToc();show(i)};li.appendChild(b);tocList.appendChild(li);});
+  function closeToc(){toc.classList.remove('open');tocBtn.setAttribute('aria-expanded','false')}
+  tocBtn.onclick=()=>{const o=toc.classList.toggle('open');tocBtn.setAttribute('aria-expanded',o)};
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(e.key==='Escape'){closeToc();return}
+    if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+    else if(e.key===' '&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='A'){e.preventDefault();show(e.shiftKey?cur-1:cur+1)}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+  });
+  let sx=null,sy=null;const stage=$('stage');
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!toc.classList.contains('open'))show(dx<0?cur+1:cur-1);sx=null},{passive:true});
+
+  function res(el,cls,text){el.className='result'+(cls?' '+cls:'');el.textContent=text;}
+  function seg(el,fn){const bs=[...el.querySelectorAll('button')];
+    bs.forEach(b=>b.addEventListener('click',()=>{bs.forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b)}));}
+  function btnList(box,items,label,sub,fn){
+    items.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');
+      b.innerHTML='<b></b><span></span>';b.querySelector('b').textContent=label(x,i);b.querySelector('span').textContent=sub(x,i);
+      b.onclick=()=>{[...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b));fn(x,i)};box.appendChild(b);});
+    box.children[0].click();
+  }
+  function rows(box,pairs){box.innerHTML='<table class="mails"><tbody></tbody></table>';const tb=box.querySelector('tbody');
+    pairs.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<th></th><td></td>';tr.children[0].textContent=r[0];tr.children[1].textContent=r[1];tb.appendChild(tr);});}
+
+  function tbl(el,cols,rowsData,opt){opt=opt||{};el.innerHTML='';
+    const th=document.createElement('thead'),trh=document.createElement('tr');
+    cols.forEach(c=>{const t=document.createElement('th');t.textContent=c;trh.appendChild(t)});th.appendChild(trh);el.appendChild(th);
+    const tb=document.createElement('tbody');
+    rowsData.forEach((r,ri)=>{const tr=document.createElement('tr');if(opt.rowCls&&opt.rowCls(ri))tr.className=opt.rowCls(ri);
+      r.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});tb.appendChild(tr)});el.appendChild(tb)}
+
+  /* ---- CRT questions ---- */
+  const CQ=[
+    {ans:5,intu:10,unit:'セント',name:'バットとボール',
+     sol:'ボールを x セントとすると、バットは x＋100 セント。合計 x＋(x＋100)＝110 より、2x＝10、x＝5。ボールは5セント（バットは105セント。差は100セント）。',
+     why:'直感の「10セント」だと、バットは110セントで、合計120セントになってしまいます。'},
+    {ans:5,intu:100,unit:'分',name:'機械と製品',
+     sol:'5台で5分に5個 → 1台は、5分で1個を作る。だから、100台なら、同じ5分で100個を作れる。答えは5分。',
+     why:'数字が並ぶので「5→5→5 だから、100→100→100」と、パターンで答えたくなります。'},
+    {ans:47,intu:24,unit:'日',name:'睡蓮の葉',
+     sol:'毎日2倍になるので、湖全体を覆う前日（47日目）は、ちょうど半分。答えは47日。',
+     why:'「半分だから、48日の半分の24日」と、比例で考えたくなります。増え方は、倍々なので、比例しません。'}
+  ];
+  const norm=s=>s.replace(/[０-９．]/g,c=>c==='．'?'.':String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/,/g,'');
+  const status=[null,null,null];
+  function judge(i,raw){
+    const m=norm(raw).match(/\d+(?:\.\d+)?/);if(!m)return null;
+    let v=parseFloat(m[0]);if(i===0&&v>0&&v<1)v=v*100;
+    return v===CQ[i].ans?'correct':(v===CQ[i].intu?'intuitive':'other');
+  }
+  CQ.forEach((q,i)=>{
+    const inp=$('in'+(i+1)),btn=$('go'+(i+1)),out=$('res'+(i+1));
+    const run=()=>{
+      const st=judge(i,inp.value);
+      if(!st){res(out,'','数字で答えを入力してください。');return}
+      status[i]=st;
+      const head=st==='correct'?'正解です。':(st==='intuitive'?'「'+q.intu+q.unit+'」は、多くの人が、すぐに思いつく答え（直感の答え）です。正解は '+q.ans+q.unit+' です。':'正解は '+q.ans+q.unit+' です。');
+      res(out,st==='correct'?'good':'bad',head+'　'+q.sol+(st==='correct'?'':' '+q.why));
+    };
+    btn.onclick=run;inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();run()}});
+  });
+  /* 3問の答えは、初期値を空欄にする（ブラウザの入力復元も打ち消す） */
+  function clearAnswers(){
+    [1,2,3].forEach(i=>{$('in'+i).value='';res($('res'+i),'','');status[i-1]=null});
+  }
+  clearAnswers();
+  window.addEventListener('pageshow',e=>{clearAnswers();if(typeof drawCrt==='function')drawCrt()});
+  /* result table: redraw when the slide is opened (use observer on class change) */
+  function drawCrt(){
+    const rows=CQ.map((q,i)=>[(i+1)+'. '+q.name,q.intu+q.unit,q.ans+q.unit,{correct:'正解',intuitive:'直感の答え',other:'そのほか',null:'未回答'}[String(status[i])]]);
+    tbl($('crtTbl'),['問題','直感の答え','正解','あなたの結果'],rows,{});
+    const done=status.filter(Boolean).length,ok=status.filter(x=>x==='correct').length,iu=status.filter(x=>x==='intuitive').length;
+    res($('crtRes'),ok===3?'good':'',done<3?'まだ答えていない問題があります。前のページに戻って、答えてみましょう。':(ok===3?'3問とも、正解でした。直感の答えを疑って、確かめられました。実際の仕事でも、その一手間を続けましょう。':(iu>0?'直感の答えを選んだ問題が '+iu+' 問ありました。多くの人が、同じように引っぱられます。大切なのは、「速い答えは、一度疑う」という習慣です。':'正解は '+ok+' 問でした。解説を読み直して、考え方を確かめましょう。')));
+  }
+  new MutationObserver(()=>{if($('crtTbl').closest('.slide').classList.contains('active'))drawCrt()}).observe($('crtTbl').closest('.slide'),{attributes:true,attributeFilter:['class']});
+  drawCrt();
+
+  /* ---- why ---- */
+  const WH=[
+    {t:'速く浮かぶ',r:[['何が起きる','考える前に、答えが勝手に浮かぶ。浮かんだ答えには、「しっくり感」がある。'],['影響','しっくり来るので、確かめる必要を感じにくい。']]},
+    {t:'確かめを省く',r:[['何が起きる','式を立てる、検算するという、手間のかかる確認が、省かれる。'],['影響','確かめれば気づける間違いが、そのまま答えになる。']]},
+    {t:'自信と正しさ',r:[['何が起きる','すぐ浮かんだ答えは、自信を持ちやすい。'],['影響','「自信がある」ことと「正しい」ことは別。自信は、正しさの証拠にならない。']]},
+    {t:'対策',r:[['やること','①「すぐ浮かんだ」と気づく。②式にする（数字を書き出す）。③別の方法で、検算する。'],['ポイント','特に、数字・割合・日数の問題は、手を動かして確かめる。']]}
+  ];
+  const wb=$('whyBody');
+  btnList($('why'),WH,(x,i)=>'観点 '+(i+1),x=>x.t,x=>{rows(wb,x.r);});
+
+  /* ---- bonus ---- */
+  $('bonusBtn').onclick=()=>{res($('bonusRes'),'bad','元には戻りません。たとえば、売上100が、50%増えて150。そこから、150の50%（75）が減って、75になります。元の100より、25%少ない水準です。「増えた割合」と「減った割合」は、基準にする数字が違うため、打ち消し合いません。')};
+  res($('bonusRes'),'','');
+
+  /* ---- AI ---- */
+  const AC=[
+    {t:'似ている点',r:[['人の直感','すぐ浮かぶ、もっともらしい答えに、自信を持つ。'],['AI','答えらしい文章を、すらすらと自信ありげに返す。内容が合っているかは、別の話。']]},
+    {t:'有名な問題',r:[['傾向','CRTのような有名な問題は、解説が多く出回っているため、AIが正しく答えることもあると言われる。'],['注意','数字や設定を変えた問題では、誤ることがある。「解けた」からと、いつも解けるとは限らない。']]},
+    {t:'試してみる',r:[['やり方','数字を変えた、新しい問題を作って、AIに解かせてみる。例：バットとボールで、合計2.20ドル、差が2.00ドル。'],['確認','答えだけでなく、式と考え方を出させ、自分で検算する。（この例の正解は10セント）']]},
+    {t:'使い方のルール',r:[['式を出させる','答えだけでなく、途中の式を出させる。'],['別の方法で検算','コードや表計算で、計算し直す。'],['人が最終確認','お金・数量・期限など、重要な数字は、人が確認する。']]}
+  ];
+  const acb=$('aiCrtBody');
+  btnList($('aiCrt'),AC,(x,i)=>'観点 '+(i+1),x=>x.t,x=>{rows(acb,x.r);});
+
+  const h=parseInt(location.hash.slice(1),10);slides[0].classList.add('active');show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>

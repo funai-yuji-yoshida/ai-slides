@@ -14,6 +14,7 @@
 
 | スライド | 内容 |
 |---|---|
+| [認知反射テスト（CRT）　直感の答えを、疑えるか](https://funai-yuji-yoshida.github.io/ai-slides/slides/crt-reflection/) | バットとボール、機械と製品、睡蓮の葉。たった3問で、直感の答えと熟考の答えの違いを体験し、AIの答えを疑う力につなげる |
 | [RAGとは　AIに「調べてから答えさせる」仕組み](https://funai-yuji-yoshida.github.io/ai-slides/slides/rag-ontology/) | RAG＝検索＋生成。ファインチューニングとの違い、アノテーション・メタデータ・オントロジー、GraphRAG、小さく始める進め方を、動くデモで学ぶ（文書名・社名は架空） |
 | [データベースの基礎知識　表・種類・CRUD](https://funai-yuji-yoshida.github.io/ai-slides/slides/database-basics/) | テーブル・ロー・カラム、マスタとトランザクション、CRUD、DBの種類（RDB・NoSQL・ベクトルDBなど）、トランザクション処理を、架空のデータで動かしながら理解する。AIにDBやSQLを頼むときの注意点つき |
 | [インターネットの仕組み　住所・小包・お届けで、考える](https://funai-yuji-yoshida.github.io/ai-slides/slides/internet-basics/) | ページが表示されるまでの流れ、IPアドレスとDNS、パケット、URLの読み方、HTTPSを、たとえ話と体験でやさしく理解する。生成AIを使うときの裏側の注意点つき（住所・サイト名は架空） |
